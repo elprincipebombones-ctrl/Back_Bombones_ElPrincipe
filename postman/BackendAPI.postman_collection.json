@@ -1,0 +1,97 @@
+{
+  "info": {
+    "name": "Backend API",
+    "_postman_id": "b1a1c1d0-0000-4000-8000-000000000001",
+    "description": "Colección de endpoints del Backend API (Node + Express + Sequelize).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "token", "value": "" },
+    { "key": "refreshToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res && res.data) {",
+                  "  pm.collectionVariables.set('token', res.data.token);",
+                  "  pm.collectionVariables.set('refreshToken', res.data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"admin@empresa.com\",\n  \"password\": \"Admin123*\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api", "auth", "refresh"] },
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }
+          }
+        },
+        {
+          "name": "Perfil",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/perfil", "host": ["{{baseUrl}}"], "path": ["api", "auth", "perfil"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/usuarios", "host": ["{{baseUrl}}"], "path": ["api", "usuarios"] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/usuarios", "host": ["{{baseUrl}}"], "path": ["api", "usuarios"] }, "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Nuevo\",\n  \"correo\": \"nuevo@empresa.com\",\n  \"password\": \"Password1\",\n  \"rolId\": \"UUID-DEL-ROL\"\n}" } } },
+        { "name": "Obtener", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/usuarios/:id", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", ":id"] } } },
+        { "name": "Actualizar", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/usuarios/:id", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", ":id"] }, "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Actualizado\"\n}" } } },
+        { "name": "Eliminar", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/usuarios/:id", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", ":id"] } } }
+      ]
+    },
+    {
+      "name": "Roles",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/roles", "host": ["{{baseUrl}}"], "path": ["api", "roles"] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/roles", "host": ["{{baseUrl}}"], "path": ["api", "roles"] }, "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"NuevoRol\",\n  \"descripcion\": \"...\",\n  \"permisos\": [],\n  \"menus\": []\n}" } } },
+        { "name": "Actualizar", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/roles/:id", "host": ["{{baseUrl}}"], "path": ["api", "roles", ":id"] }, "body": { "mode": "raw", "raw": "{\n  \"descripcion\": \"Actualizado\"\n}" } } },
+        { "name": "Eliminar", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/roles/:id", "host": ["{{baseUrl}}"], "path": ["api", "roles", ":id"] } } }
+      ]
+    },
+    {
+      "name": "Permisos",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/permisos", "host": ["{{baseUrl}}"], "path": ["api", "permisos"] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/permisos", "host": ["{{baseUrl}}"], "path": ["api", "permisos"] }, "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Modulo.Accion\",\n  \"modulo\": \"Modulo\"\n}" } } }
+      ]
+    },
+    {
+      "name": "Menus",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/menus", "host": ["{{baseUrl}}"], "path": ["api", "menus"] } } },
+        { "name": "Crear", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/menus", "host": ["{{baseUrl}}"], "path": ["api", "menus"] }, "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Reportes\",\n  \"ruta\": \"/reportes\",\n  \"icono\": \"assessment\",\n  \"orden\": 10\n}" } } }
+      ]
+    }
+  ]
+}
