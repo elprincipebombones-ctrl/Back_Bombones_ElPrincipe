@@ -35,8 +35,6 @@ const construirRespuestaSesion = (usuario) => {
 };
 
 exports.login = async (req, res, next) => {
-  console.log('Login request body:', req.body.correo); // Debugging line
-  console.log('Login request body:', req.body.password); // Debug
   try {
     const { correo, password } = req.body;
     const usuario = await Usuario.scope('withPassword').findOne({
@@ -70,7 +68,7 @@ exports.login = async (req, res, next) => {
   }
 };
 
-exports.refresh = async (req, res, next) => {
+exports.refresh = async (req, res, _next) => {
   try {
     const { refreshToken } = req.body;
     const decoded = verificarRefreshToken(refreshToken);
