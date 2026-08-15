@@ -16,7 +16,7 @@ const swaggerSpec = swaggerJSDoc({
     },
     security: [{ bearerAuth: [] }],
   },
-  apis: ['./routes/*.js'],
+  apis: ['./routes/*.js', './routes/recepcion/*.js'],
 });
 console.log(Object.keys(swaggerSpec.paths));
 module.exports = swaggerSpec;
