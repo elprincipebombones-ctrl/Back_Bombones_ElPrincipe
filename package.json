@@ -10,7 +10,9 @@
     "migrate:undo": "sequelize-cli db:migrate:undo",
     "seed": "sequelize-cli db:seed:all",
     "undo": "sequelize-cli db:seed:undo:all",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "audit:calidad": "node scripts/auditar-calidad.js",
+    "test:checklists": "node scripts/probar-api-checklists.js"
   },
   "keywords": ["express", "sequelize", "postgresql", "jwt", "api"],
   "author": "",

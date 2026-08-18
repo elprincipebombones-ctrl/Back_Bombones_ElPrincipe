@@ -20,6 +20,7 @@ module.exports = definir(
     precisionDecimal: { type: DataTypes.INTEGER, allowNull: true, field: 'precision_decimal' },
     permiteObservacion: { type: DataTypes.BOOLEAN, field: 'permite_observacion', defaultValue: true },
     requiereEvidencia: { type: DataTypes.BOOLEAN, field: 'requiere_evidencia', defaultValue: false },
+    bloquearAlGuardar: { type: DataTypes.BOOLEAN, field: 'bloquear_al_guardar', defaultValue: false },
     estado: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
   },
   'campos_formato',

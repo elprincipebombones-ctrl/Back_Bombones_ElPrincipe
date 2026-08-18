@@ -14,6 +14,12 @@ const {
   CondicionRegla,
   AccionRegla,
   TipoAccion,
+  ChecklistSeccion,
+  CriterioInspeccion,
+  AccionCriterio,
+  ElementoChecklist,
+  ElementoInspeccion,
+  CategoriaElemento,
 } = require('../../models');
 const crearCrud = require('./crearCrud');
 const { ok, fail } = require('../../utils/response');
@@ -66,7 +72,23 @@ exports.obtenerCompleta = async (req, res, next) => {
               model: CampoFormato,
               as: 'campos',
               include: [
-                { model: ParametroCalidad, as: 'parametro' },
+                {
+                  model: ParametroCalidad,
+                  as: 'parametro',
+                  include: [
+                    { model: TipoCampo, as: 'tipoCampo' },
+                    { model: UnidadMedida, as: 'unidadMedida' },
+                    {
+                      model: ReglaCalidad,
+                      as: 'reglas',
+                      include: [
+                        { model: NivelSeveridad, as: 'nivelSeveridad' },
+                        { model: CondicionRegla, as: 'condiciones' },
+                        { model: AccionRegla, as: 'acciones', include: [{ model: TipoAccion, as: 'tipoAccion' }] },
+                      ],
+                    },
+                  ],
+                },
                 { model: TipoCampo, as: 'tipoCampo' },
                 { model: UnidadMedida, as: 'unidadMedida' },
                 { model: OpcionCampo, as: 'opciones' },
@@ -81,12 +103,48 @@ exports.obtenerCompleta = async (req, res, next) => {
                 },
               ],
             },
+            {
+              model: ChecklistSeccion,
+              as: 'checklists',
+              include: [
+                {
+                  model: CriterioInspeccion,
+                  as: 'criterio',
+                  include: [
+                    { model: TipoCampo, as: 'tipoCampo' },
+                    { model: NivelSeveridad, as: 'nivelSeveridad' },
+                    {
+                      model: AccionCriterio,
+                      as: 'acciones',
+                      include: [{ model: TipoAccion, as: 'tipoAccion' }],
+                    },
+                  ],
+                },
+                {
+                  model: ElementoChecklist,
+                  as: 'elementos',
+                  include: [{
+                    model: ElementoInspeccion,
+                    as: 'elemento',
+                    include: [{ model: CategoriaElemento, as: 'categoria' }],
+                  }],
+                },
+              ],
+            },
           ],
         },
       ],
       order: [
         [{ model: SeccionFormato, as: 'secciones' }, 'orden', 'ASC'],
         [{ model: SeccionFormato, as: 'secciones' }, { model: CampoFormato, as: 'campos' }, 'orden', 'ASC'],
+        [{ model: SeccionFormato, as: 'secciones' }, { model: ChecklistSeccion, as: 'checklists' }, 'orden', 'ASC'],
+        [
+          { model: SeccionFormato, as: 'secciones' },
+          { model: ChecklistSeccion, as: 'checklists' },
+          { model: ElementoChecklist, as: 'elementos' },
+          'orden',
+          'ASC',
+        ],
       ],
     });
     if (!version) return fail(res, 'Versión de formato no encontrada', 404);

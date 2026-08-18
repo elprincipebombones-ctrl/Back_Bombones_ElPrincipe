@@ -1,0 +1,95 @@
+{
+  "info": {
+    "name": "Flujo completo TEMP-CAVA",
+    "description": "Ejecutar en orden para validar inspección, reglas, desviación, acciones y cierre.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "token", "value": "" },
+    { "key": "versionFormatoId", "value": "" },
+    { "key": "campoTemperaturaId", "value": "" },
+    { "key": "unidadCelsiusId", "value": "" },
+    { "key": "inspeccionId", "value": "" },
+    { "key": "desviacionId", "value": "" },
+    { "key": "accionAlertaId", "value": "" },
+    { "key": "accionObservacionId", "value": "" },
+    { "key": "accionEvidenciaId", "value": "" },
+    { "key": "accionCorrectivaId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Login",
+      "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('token', pm.response.json().data.token);"] } }],
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/auth/login", "body": { "mode": "raw", "raw": "{\n  \"correo\": \"admin@empresa.com\",\n  \"password\": \"Admin123*\"\n}" } }
+    },
+    {
+      "name": "2. Obtener TEMP-CAVA publicado",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "const formato = pm.response.json().data.find(f => f.codigo === 'TEMP-CAVA');",
+        "const version = formato.versiones.find(v => v.estadoVersion === 'PUBLICADO');",
+        "pm.collectionVariables.set('versionFormatoId', version.id);"
+      ] } }],
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/calidad/formatos" }
+    },
+    {
+      "name": "3. Obtener estructura y campo",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "const campos = pm.response.json().data.secciones.flatMap(s => s.campos);",
+        "const campo = campos.find(c => c.codigo === 'TEMPERATURA');",
+        "pm.collectionVariables.set('campoTemperaturaId', campo.id);",
+        "pm.collectionVariables.set('unidadCelsiusId', campo.unidadMedida.id);"
+      ] } }],
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/calidad/versiones-formato/{{versionFormatoId}}/completa" }
+    },
+    {
+      "name": "4. Crear inspección",
+      "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('inspeccionId', pm.response.json().data.id);"] } }],
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/calidad/inspecciones", "body": { "mode": "raw", "raw": "{\n  \"version_formato_id\": \"{{versionFormatoId}}\",\n  \"fecha_inspeccion\": \"2026-08-15\",\n  \"observaciones\": \"Prueba TEMP-CAVA\"\n}" } }
+    },
+    {
+      "name": "5. Guardar 6.8 °C",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/calidad/inspecciones/{{inspeccionId}}/respuestas", "body": { "mode": "raw", "raw": "{\n  \"respuestas\": [{\n    \"campo_formato_id\": \"{{campoTemperaturaId}}\",\n    \"valor_numero\": 6.8,\n    \"opciones\": []\n  }]\n}" } }
+    },
+    {
+      "name": "6. Consultar y capturar desviación/acciones",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "const data = pm.response.json().data;",
+        "const d = data.desviaciones[0];",
+        "pm.collectionVariables.set('desviacionId', d.id);",
+        "const ids = Object.fromEntries(d.accionesCorrectivas.map(a => [a.tipoAccion.codigo, a.id]));",
+        "pm.collectionVariables.set('accionAlertaId', ids.GENERAR_ALERTA);",
+        "pm.collectionVariables.set('accionObservacionId', ids.EXIGIR_OBSERVACION);",
+        "pm.collectionVariables.set('accionEvidenciaId', ids.EXIGIR_EVIDENCIA);",
+        "pm.collectionVariables.set('accionCorrectivaId', ids.SOLICITAR_ACCION_CORRECTIVA);",
+        "pm.test('6.8 permanece bloqueada', () => { pm.expect(data.respuestas[0].valorNumero).to.eql('6.8'); pm.expect(data.respuestas[0].bloqueada).to.eql(true); });"
+      ] } }],
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/calidad/inspecciones/{{inspeccionId}}/completa" }
+    },
+    { "name": "7. Completar inspección", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/calidad/inspecciones/{{inspeccionId}}/completar" } },
+    {
+      "name": "8. Nueva medición 3.2 °C",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/calidad/acciones-correctivas/{{accionCorrectivaId}}/seguimientos", "body": { "mode": "raw", "raw": "{\n  \"tipo_registro\": \"NUEVA_MEDICION\",\n  \"valor_numero\": 3.2,\n  \"unidad_medida_id\": \"{{unidadCelsiusId}}\",\n  \"resultado_cumple\": true,\n  \"descripcion\": \"Nueva medición después del ajuste\"\n}" } }
+    },
+    {
+      "name": "9. Agregar evidencia",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/calidad/acciones-correctivas/{{accionEvidenciaId}}/evidencias", "body": { "mode": "raw", "raw": "{\n  \"nombre_archivo\": \"evidencia-temp-cava.jpg\",\n  \"tipo_archivo\": \"image/jpeg\",\n  \"url_archivo\": \"https://example.com/evidencias/temp-cava.jpg\"\n}" } }
+    },
+    { "name": "10. Cerrar alerta", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/calidad/acciones-correctivas/{{accionAlertaId}}/cerrar" } },
+    { "name": "11. Cerrar observación", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/calidad/acciones-correctivas/{{accionObservacionId}}/cerrar" } },
+    { "name": "12. Cerrar evidencia", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/calidad/acciones-correctivas/{{accionEvidenciaId}}/cerrar" } },
+    { "name": "13. Cerrar acción correctiva", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/calidad/acciones-correctivas/{{accionCorrectivaId}}/cerrar" } },
+    { "name": "14. Cerrar desviación", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/calidad/desviaciones/{{desviacionId}}/cerrar" } },
+    { "name": "15. Cerrar inspección", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/calidad/inspecciones/{{inspeccionId}}/cerrar" } },
+    {
+      "name": "16. Verificar histórico",
+      "event": [{ "listen": "test", "script": { "exec": [
+        "const data = pm.response.json().data;",
+        "pm.test('Inspección cerrada', () => pm.expect(data.estado).to.eql('CERRADA'));",
+        "pm.test('Respuesta original 6.8 intacta', () => pm.expect(data.respuestas[0].valorNumero).to.eql('6.8'));",
+        "pm.test('Desviación cerrada', () => pm.expect(data.desviaciones[0].estado).to.eql('CERRADA'));"
+      ] } }],
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/calidad/inspecciones/{{inspeccionId}}/completa" }
+    }
+  ]
+}

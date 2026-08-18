@@ -9,7 +9,9 @@ module.exports = ({
   campoUnico,
   relaciones = [],
   bajaLogica = true,
+  antesDeCrear,
   antesDeActualizar,
+  antesDeEliminar,
 }) => {
   const comprobarRelaciones = async (body) => {
     for (const relacion of relaciones) {
@@ -40,6 +42,10 @@ module.exports = ({
 
   const crear = async (req, res, next) => {
     try {
+      if (antesDeCrear) {
+        const mensaje = await antesDeCrear(req.body);
+        if (mensaje) return fail(res, mensaje, 409);
+      }
       if (campoUnico && req.body[campoUnico]) {
         const existe = await modelo.findOne({ where: { [campoUnico]: req.body[campoUnico] } });
         if (existe) return fail(res, `Ya existe ${nombre.toLowerCase()} con ese ${campoUnico}`, 409);
@@ -79,6 +85,10 @@ module.exports = ({
     try {
       const registro = await modelo.findByPk(req.params.id);
       if (!registro) return fail(res, `${nombre} no encontrado`, 404);
+      if (antesDeEliminar) {
+        const mensaje = await antesDeEliminar(registro);
+        if (mensaje) return fail(res, mensaje, 409);
+      }
       if (bajaLogica && Object.prototype.hasOwnProperty.call(modelo.rawAttributes, 'estado')) {
         await registro.update({ estado: false });
         return ok(res, registro, `${nombre} desactivado`);

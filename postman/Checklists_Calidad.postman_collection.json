@@ -1,0 +1,72 @@
+{
+  "info": {
+    "name": "Calidad - Checklists reutilizables",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "token", "value": "" },
+    { "key": "categoriaId", "value": "" },
+    { "key": "checklistId", "value": "" },
+    { "key": "seccionId", "value": "" },
+    { "key": "criterioId", "value": "" },
+    { "key": "elementoId", "value": "" },
+    { "key": "versionId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Autenticación",
+      "item": [{
+        "name": "Iniciar sesión",
+        "request": {
+          "method": "POST",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": { "mode": "raw", "raw": "{\n  \"correo\": \"admin@empresa.com\",\n  \"password\": \"Admin123*\"\n}" },
+          "url": "{{baseUrl}}/auth/login"
+        },
+        "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('token', pm.response.json().data.token);"] } }]
+      }]
+    },
+    {
+      "name": "Catálogos",
+      "item": [
+        {
+          "name": "Listar categorías",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/calidad/categorias-elemento" },
+          "event": [{ "listen": "test", "script": { "exec": ["const equipos=pm.response.json().data.find(x=>x.codigo==='EQUIPOS');", "pm.collectionVariables.set('categoriaId',equipos.id);"] } }]
+        },
+        {
+          "name": "Elementos activos por categoría",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/calidad/elementos-inspeccion?categoria_id={{categoriaId}}&estado=true" }
+        },
+        {
+          "name": "Listar criterios",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/calidad/criterios-inspeccion" }
+        }
+      ]
+    },
+    {
+      "name": "Constructor",
+      "item": [
+        {
+          "name": "Crear checklist",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"seccionFormatoId\": \"{{seccionId}}\",\n  \"criterioInspeccionId\": \"{{criterioId}}\",\n  \"nombre\": \"Limpieza de equipos\",\n  \"orden\": 1,\n  \"elementoIds\": [\"{{elementoId}}\"]\n}" },
+            "url": "{{baseUrl}}/calidad/checklists-seccion"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('checklistId',pm.response.json().data.id);"] } }]
+        },
+        {
+          "name": "Elementos del checklist",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/calidad/checklists-seccion/{{checklistId}}/elementos" }
+        },
+        {
+          "name": "Versión completa",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/calidad/versiones-formato/{{versionId}}/completa" }
+        }
+      ]
+    }
+  ]
+}

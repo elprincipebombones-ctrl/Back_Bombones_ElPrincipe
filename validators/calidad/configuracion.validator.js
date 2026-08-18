@@ -77,11 +77,11 @@ exports.actualizarSeccionValidator = [
 ];
 const camposCampo = (opcional = false) => [
   id('seccionFormatoId', opcional),
-  id('parametroCalidadId', true, true),
-  id('tipoCampoId', opcional),
+  id('parametroCalidadId', opcional),
+  id('tipoCampoId', true, true),
   id('unidadMedidaId', true, true),
-  codigo(opcional),
-  body('etiqueta')[opcional ? 'optional' : 'exists']().trim().isLength({ min: 1, max: 150 }),
+  codigo(true),
+  body('etiqueta').optional().trim().isLength({ min: 1, max: 150 }),
   body('descripcion').optional({ nullable: true }).isLength({ max: 255 }),
   body('textoAyuda').optional({ nullable: true }).isLength({ max: 255 }),
   body('esObligatorio').optional().isBoolean(),
@@ -99,6 +99,7 @@ const camposCampo = (opcional = false) => [
   body('precisionDecimal').optional({ nullable: true }).isInt({ min: 0, max: 10 }),
   body('permiteObservacion').optional().isBoolean(),
   body('requiereEvidencia').optional().isBoolean(),
+  body('bloquearAlGuardar').optional().isBoolean(),
   body('estado').optional().isBoolean(),
 ];
 exports.crearCampoValidator = camposCampo(false);

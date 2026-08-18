@@ -11,13 +11,15 @@ const codigo = (opcional = false) => {
   return regla.trim().isLength({ min: 2, max: 30 }).matches(/^[A-Z0-9_-]+$/);
 };
 const regla = (opcional = false) => [
-  id('campoFormatoId', opcional),
+  id('parametroCalidadId', opcional),
+  id('campoFormatoId', true, true),
   codigo(opcional),
   body('nombre')[opcional ? 'optional' : 'exists']().trim().isLength({ min: 2, max: 100 }),
   body('descripcion').optional({ nullable: true }).isLength({ max: 255 }),
   id('nivelSeveridadId', true, true),
   body('mensajeIncumplimiento').optional({ nullable: true }).isLength({ max: 255 }),
   body('operadorLogico').optional().isIn(['AND', 'OR']),
+  body('resultado')[opcional ? 'optional' : 'exists']().isIn(['CUMPLE', 'NO_CUMPLE']),
   body('estado').optional().isBoolean(),
 ];
 const condicion = (opcional = false) => [
@@ -34,6 +36,21 @@ const condicion = (opcional = false) => [
   body('valorJson').optional({ nullable: true }),
   body('orden').optional().isInt({ min: 0 }),
   body('estado').optional().isBoolean(),
+  body().custom((valor) => {
+    const operador = valor.operador;
+    if (!operador) return true;
+    const sinValor = ['VACIO', 'NO_VACIO'];
+    const dosValores = ['ENTRE', 'FUERA_DE_RANGO'];
+    if (!sinValor.includes(operador) &&
+      (valor.valor1 === undefined || valor.valor1 === null || valor.valor1 === '')) {
+      throw new Error('valor1 es obligatorio para el operador seleccionado');
+    }
+    if (dosValores.includes(operador) &&
+      (valor.valor2 === undefined || valor.valor2 === null || valor.valor2 === '')) {
+      throw new Error('valor2 es obligatorio para el operador seleccionado');
+    }
+    return true;
+  }),
 ];
 const accion = (opcional = false) => [
   id('reglaCalidadId', opcional),
