@@ -44,6 +44,7 @@ const swaggerSpec = swaggerJSDoc({
     },
     security: [{ bearerAuth: [] }],
   },
+  apis: ['./routes/*.js', './routes/recepcion/*.js'],
   apis: ['./routes/*.js', './routes/**/*.js'],
 });
 

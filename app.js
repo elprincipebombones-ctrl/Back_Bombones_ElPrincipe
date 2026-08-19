@@ -48,9 +48,14 @@ const PORT = process.env.PORT || 3000;
 const httpServer = http.createServer(app);
 sockets.init(httpServer);
 
+const { db } = require('./database/database');
+
+
+
 (async () => {
   try {
     await sequelize.authenticate();
+    await sequelize.sync();
     console.log('[db] Conexión establecida');
     httpServer.listen(PORT, () => {
       console.log(`[server] Escuchando en http://localhost:${PORT}`);
