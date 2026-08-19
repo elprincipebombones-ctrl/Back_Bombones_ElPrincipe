@@ -8,7 +8,16 @@
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:3000" },
     { "key": "token", "value": "" },
-    { "key": "refreshToken", "value": "" }
+    { "key": "refreshToken", "value": "" },
+    { "key": "versionFormatoId", "value": "" },
+    { "key": "campoTemperaturaId", "value": "" },
+    { "key": "unidadCelsiusId", "value": "" },
+    { "key": "inspeccionId", "value": "" },
+    { "key": "desviacionId", "value": "" },
+    { "key": "accionAlertaId", "value": "" },
+    { "key": "accionObservacionId", "value": "" },
+    { "key": "accionEvidenciaId", "value": "" },
+    { "key": "accionCorrectivaId", "value": "" }
   ],
   "item": [
     {
@@ -91,6 +100,31 @@
       "item": [
         { "name": "Listar", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/menus", "host": ["{{baseUrl}}"], "path": ["api", "menus"] } } },
         { "name": "Crear", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/menus", "host": ["{{baseUrl}}"], "path": ["api", "menus"] }, "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Reportes\",\n  \"ruta\": \"/reportes\",\n  \"icono\": \"assessment\",\n  \"orden\": 10\n}" } } }
+      ]
+    },
+    {
+      "name": "Calidad",
+      "item": [
+        { "name": "Listar tipos de inspección", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/calidad/tipos-inspeccion", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "tipos-inspeccion"] } } },
+        { "name": "Crear tipo de inspección", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/calidad/tipos-inspeccion", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "tipos-inspeccion"] }, "body": { "mode": "raw", "raw": "{\n  \"codigo\": \"RECEPCION\",\n  \"nombre\": \"Recepción\",\n  \"descripcion\": \"Control al recibir materias primas\"\n}" } } },
+        { "name": "Listar unidades de medida", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/calidad/unidades-medida", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "unidades-medida"] } } },
+        { "name": "Listar parámetros con reglas", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/calidad/parametros", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "parametros"] } } },
+        { "name": "Crear parámetro reutilizable", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/calidad/parametros", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "parametros"] }, "body": { "mode": "raw", "raw": "{\n  \"codigo\": \"CLORO_AGUA_POTABLE\",\n  \"nombre\": \"Cloro agua potable\",\n  \"tipoCampoId\": \"UUID-NUMERO\",\n  \"unidadMedidaId\": \"UUID-MG-L\",\n  \"valorMinimo\": 0.3,\n  \"valorMaximo\": 2,\n  \"precisionDecimal\": 2,\n  \"esObligatorioDefault\": true\n}" } } },
+        { "name": "Listar tipos de campo", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/calidad/tipos-campo", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "tipos-campo"] } } },
+        { "name": "Listar niveles de severidad", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/calidad/niveles-severidad", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "niveles-severidad"] } } },
+        { "name": "Listar tipos de acción", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/calidad/tipos-accion", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "tipos-accion"] } } },
+        { "name": "Crear formato con versión inicial", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/calidad/formatos", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "formatos"] }, "body": { "mode": "raw", "raw": "{\n  \"codigo\": \"TEMP-CAVA\",\n  \"nombre\": \"Control de temperatura cuarto frío\",\n  \"tipoInspeccionId\": \"UUID-TIPO-INSPECCION\",\n  \"versionInicial\": {\n    \"numeroVersion\": 1,\n    \"fechaVigenciaDesde\": \"2026-08-11\"\n  }\n}" } } },
+        { "name": "Crear sección", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/calidad/secciones-formato", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "secciones-formato"] }, "body": { "mode": "raw", "raw": "{\n  \"versionFormatoId\": \"UUID-VERSION\",\n  \"nombre\": \"Mediciones\",\n  \"orden\": 1\n}" } } },
+        { "name": "Crear campo desde parámetro", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/calidad/campos-formato", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "campos-formato"] }, "body": { "mode": "raw", "raw": "{\n  \"seccionFormatoId\": \"UUID-SECCION\",\n  \"parametroCalidadId\": \"UUID-TEMPERATURA\",\n  \"etiqueta\": \"Temperatura de cava\",\n  \"esObligatorio\": true,\n  \"orden\": 1\n}" } } },
+        { "name": "Obtener versión completa", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{baseUrl}}/api/calidad/versiones-formato/:id/completa", "host": ["{{baseUrl}}"], "path": ["api", "calidad", "versiones-formato", ":id", "completa"] } } }
+      ]
+    },
+    {
+      "name": "Reglas de calidad",
+      "item": [
+        { "name": "Crear regla por parámetro", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/reglas/reglas-calidad", "host": ["{{baseUrl}}"], "path": ["api", "reglas", "reglas-calidad"] }, "body": { "mode": "raw", "raw": "{\n  \"parametroCalidadId\": \"UUID-PARAMETRO\",\n  \"codigo\": \"CLORO_BAJO\",\n  \"nombre\": \"Cloro por debajo del rango\",\n  \"resultado\": \"NO_CUMPLE\",\n  \"nivelSeveridadId\": \"UUID-ALTA\",\n  \"mensajeIncumplimiento\": \"Cloro por debajo de 0.3 mg/l\",\n  \"operadorLogico\": \"AND\"\n}" } } },
+        { "name": "Crear condición", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/reglas/condiciones-regla", "host": ["{{baseUrl}}"], "path": ["api", "reglas", "condiciones-regla"] }, "body": { "mode": "raw", "raw": "{\n  \"reglaCalidadId\": \"UUID-REGLA\",\n  \"tipoCondicion\": \"RANGO\",\n  \"operador\": \"FUERA_DE_RANGO\",\n  \"valor1\": \"0\",\n  \"valor2\": \"4\",\n  \"orden\": 1\n}" } } },
+        { "name": "Crear acción", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/reglas/acciones-regla", "host": ["{{baseUrl}}"], "path": ["api", "reglas", "acciones-regla"] }, "body": { "mode": "raw", "raw": "{\n  \"reglaCalidadId\": \"UUID-REGLA\",\n  \"tipoAccionId\": \"UUID-TIPO-ACCION\",\n  \"configuracion\": {},\n  \"orden\": 1\n}" } } }
       ]
     }
   ]

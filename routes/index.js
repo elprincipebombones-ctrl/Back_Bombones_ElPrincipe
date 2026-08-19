@@ -15,5 +15,7 @@ router.use('/vehiculos', require('./recepcion/vehiculos.routes'))
 router.use('/categoria-producto', require('./recepcion/categoriaProducto.routes'))
 router.use('/recepciones', require('./recepcion/recepcion.routes'))
 
+router.use('/calidad', require('./calidad'));
+router.use('/reglas', require('./reglas'));
 
 module.exports = router;

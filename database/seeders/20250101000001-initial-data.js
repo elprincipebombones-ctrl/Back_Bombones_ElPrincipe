@@ -6,6 +6,11 @@ const now = new Date();
 
 module.exports = {
   async up(queryInterface) {
+    const [[administradorExistente]] = await queryInterface.sequelize.query(
+      `SELECT id FROM roles WHERE nombre = 'Administrador' LIMIT 1`,
+    );
+    if (administradorExistente) return;
+
     // Roles
     const roles = [
       { id: uuidv4(), nombre: 'Administrador', descripcion: 'Acceso total al sistema' },
