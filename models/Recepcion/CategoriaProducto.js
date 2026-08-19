@@ -1,8 +1,8 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../database/database');
 
-const Producto = sequelize.define(
-  'Producto',
+const CategoriaProducto = sequelize.define(
+  'CategoriaProducto',
   {
     id: {
       type: DataTypes.UUID,
@@ -26,22 +26,6 @@ const Producto = sequelize.define(
       allowNull: true
     },
 
-    categoriaProductoId: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: {
-        model: 'categorias_productos',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'RESTRICT'
-    },
-
-    unidadMedida: {
-      type: DataTypes.STRING(20),
-      allowNull: false
-    },
-
     estado: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
@@ -49,10 +33,10 @@ const Producto = sequelize.define(
     }
   },
   {
-    tableName: 'productos',
+    tableName: 'categorias_productos',
     timestamps: true,
     underscored: true
   }
 );
 
-module.exports = Producto;
+module.exports = CategoriaProducto;

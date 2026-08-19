@@ -12,6 +12,8 @@ router.use('/productos', require('./recepcion/producto.routes'))
 router.use('/proveedores', require('./recepcion/proveedor.routes'))
 router.use('/lugar-area', require('./recepcion/lugar-area.routes'))
 router.use('/vehiculos', require('./recepcion/vehiculos.routes'))
+router.use('/categoria-producto', require('./recepcion/categoriaProducto.routes'))
+router.use('/recepciones', require('./recepcion/recepcion.routes'))
 
 
 module.exports = router;

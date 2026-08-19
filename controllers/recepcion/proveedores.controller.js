@@ -1,4 +1,4 @@
-const  Proveedor  = require('../../models/Recepcion/Proveedor');
+const Proveedor = require('../../models/Recepcion/Proveedor');
 const { ok, created, fail } = require('../../utils/response');
 
 exports.listar = async (req, res, next) => {
@@ -29,7 +29,55 @@ exports.obtener = async (req, res, next) => {
 
 exports.crear = async (req, res, next) => {
   try {
-    const proveedor = await Proveedor.create(req.body);
+    const {
+      tipoDocumento,
+      numeroDocumento,
+      razonSocial,
+      nombreComercial,
+      telefono,
+      email,
+      direccion,
+      ciudad,
+      estado
+    } = req.body;
+
+    if (!tipoDocumento) {
+      return fail(res, 'Falta el tipo de documento', 400);
+    }
+
+    if (!numeroDocumento) {
+      return fail(res, 'Falta el número de documento', 400);
+    }
+
+    if (!razonSocial) {
+      return fail(res, 'Falta la razón social', 400);
+    }
+
+    const proveedorExistente = await Proveedor.findOne({
+      where: {
+        numeroDocumento
+      }
+    });
+
+    if (proveedorExistente) {
+      return fail(
+        res,
+        'Ya existe un proveedor con ese número de documento',
+        409
+      );
+    }
+
+    const proveedor = await Proveedor.create({
+      tipoDocumento,
+      numeroDocumento,
+      razonSocial,
+      nombreComercial,
+      telefono,
+      email,
+      direccion,
+      ciudad,
+      estado: estado !== undefined ? estado : true
+    });
 
     return created(res, proveedor);
   } catch (err) {
@@ -45,9 +93,35 @@ exports.actualizar = async (req, res, next) => {
       return fail(res, 'Proveedor no encontrado', 404);
     }
 
+    if (
+      req.body.numeroDocumento &&
+      req.body.numeroDocumento !== proveedor.numeroDocumento
+    ) {
+      const proveedorExistente = await Proveedor.findOne({
+        where: {
+          numeroDocumento: req.body.numeroDocumento
+        }
+      });
+
+      if (
+        proveedorExistente &&
+        proveedorExistente.id !== proveedor.id
+      ) {
+        return fail(
+          res,
+          'Ya existe un proveedor con ese número de documento',
+          409
+        );
+      }
+    }
+
     await proveedor.update(req.body);
 
-    return ok(res, proveedor, 'Proveedor actualizado');
+    return ok(
+      res,
+      proveedor,
+      'Proveedor actualizado'
+    );
   } catch (err) {
     return next(err);
   }
@@ -63,7 +137,11 @@ exports.eliminar = async (req, res, next) => {
 
     await proveedor.destroy();
 
-    return ok(res, null, 'Proveedor eliminado');
+    return ok(
+      res,
+      null,
+      'Proveedor eliminado'
+    );
   } catch (err) {
     return next(err);
   }

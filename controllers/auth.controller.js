@@ -34,11 +34,50 @@ const construirRespuestaSesion = (usuario) => {
   };
 };
 
+// exports.login = async (req, res, next) => {
+//   console.log('Login request body:', req.body.correo); // Debugging line
+//   console.log('Login request body:', req.body.password); // Debug
+//   try {
+//     const { correo, password } = req.body;
+//     const usuario = await Usuario.scope('withPassword').findOne({
+//       where: { correo },
+//       include: [
+//         {
+//           model: Rol,
+//           as: 'rol',
+//           include: [
+//             { model: Permiso, as: 'permisos', through: { attributes: [] } },
+//             { model: Menu, as: 'menus', through: { attributes: [] } },
+//           ],
+//         },
+//       ],
+//     });
+
+//     if (!usuario) return fail(res, 'Credenciales inválidas', 401);
+//     if (!usuario.estado) return fail(res, 'Usuario inactivo', 401);
+
+//     const valido = await usuario.validarPassword(password);
+//     if (!valido) return fail(res, 'Credenciales inválidas', 401);
+
+//     const payload = { id: usuario.id, correo: usuario.correo };
+//     const token = generarToken(payload);
+//     const refreshToken = generarRefreshToken(payload);
+
+//     const data = { token, refreshToken, ...construirRespuestaSesion(usuario) };
+//     return ok(res, data, 'Sesión iniciada');
+//   } catch (err) {
+//     return next(err);
+//   }
+// };
+
 exports.login = async (req, res, next) => {
-  console.log('Login request body:', req.body.correo); // Debugging line
-  console.log('Login request body:', req.body.password); // Debug
   try {
+    const inicio = Date.now();
+
     const { correo, password } = req.body;
+
+    console.log('1. Inicio login:', Date.now() - inicio, 'ms');
+
     const usuario = await Usuario.scope('withPassword').findOne({
       where: { correo },
       include: [
@@ -46,30 +85,79 @@ exports.login = async (req, res, next) => {
           model: Rol,
           as: 'rol',
           include: [
-            { model: Permiso, as: 'permisos', through: { attributes: [] } },
-            { model: Menu, as: 'menus', through: { attributes: [] } },
-          ],
-        },
-      ],
+            {
+              model: Permiso,
+              as: 'permisos',
+              through: { attributes: [] }
+            },
+            {
+              model: Menu,
+              as: 'menus',
+              through: { attributes: [] }
+            }
+          ]
+        }
+      ]
     });
 
-    if (!usuario) return fail(res, 'Credenciales inválidas', 401);
-    if (!usuario.estado) return fail(res, 'Usuario inactivo', 401);
+    console.log(
+      '2. Consulta usuario + rol + permisos + menus:',
+      Date.now() - inicio,
+      'ms'
+    );
+
+    if (!usuario) {
+      return fail(res, 'Credenciales inválidas', 401);
+    }
+
+    if (!usuario.estado) {
+      return fail(res, 'Usuario inactivo', 401);
+    }
 
     const valido = await usuario.validarPassword(password);
-    if (!valido) return fail(res, 'Credenciales inválidas', 401);
 
-    const payload = { id: usuario.id, correo: usuario.correo };
+    console.log(
+      '3. Validación password:',
+      Date.now() - inicio,
+      'ms'
+    );
+
+    if (!valido) {
+      return fail(res, 'Credenciales inválidas', 401);
+    }
+
+    const payload = {
+      id: usuario.id,
+      correo: usuario.correo
+    };
+
     const token = generarToken(payload);
     const refreshToken = generarRefreshToken(payload);
 
-    const data = { token, refreshToken, ...construirRespuestaSesion(usuario) };
+    console.log(
+      '4. Tokens generados:',
+      Date.now() - inicio,
+      'ms'
+    );
+
+    const data = {
+      token,
+      refreshToken,
+      ...construirRespuestaSesion(usuario)
+    };
+
+    console.log(
+      '5. Respuesta construida:',
+      Date.now() - inicio,
+      'ms'
+    );
+
     return ok(res, data, 'Sesión iniciada');
+
   } catch (err) {
     return next(err);
   }
 };
-
 exports.refresh = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
