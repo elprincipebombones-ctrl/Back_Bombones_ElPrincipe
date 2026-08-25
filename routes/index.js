@@ -14,8 +14,9 @@ router.use('/lugar-area', require('./recepcion/lugar-area.routes'))
 router.use('/vehiculos', require('./recepcion/vehiculos.routes'))
 router.use('/categoria-producto', require('./recepcion/categoriaProducto.routes'))
 router.use('/recepciones', require('./recepcion/recepcion.routes'))
-
+router.use('/bodegas', require('./Inventario/bodegas.routes'))
 router.use('/calidad', require('./calidad'));
 router.use('/reglas', require('./reglas'));
+router.use('/unidad-medida', require('./recepcion/unidadMedida.routes'));
 
 module.exports = router;

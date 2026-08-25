@@ -31,7 +31,9 @@ const VerificacionRecepcion = require('./Recepcion/VerificacionRecepcion');
 const TemperaturaRecepcion = require('./Recepcion/TemperaturaRecepcion');
 const CondicionAmbientalRecepcion = require('./Recepcion/CondicionAmbientalRecepcion');
 const ResultadoRecepcion = require('./Recepcion/ResultadoRecepcion');
-
+const Bodega = require('./Inventario/Bodega');
+const Usuario = require('./Usuario');
+const UnidadMedida = require('./Recepcion/UnidadMedida');
 
 
 
@@ -47,7 +49,9 @@ db.TemperaturaRecepcion = TemperaturaRecepcion;
 db.CondicionAmbientalRecepcion = CondicionAmbientalRecepcion;
 db.ResultadoRecepcion = ResultadoRecepcion;
 db.DetalleRecepcion = DetalleRecepcion;
- db.Recepcion = Recepcion;
+db.Recepcion = Recepcion;
+db.Bodega = Bodega;
+db.UnidadMedida = UnidadMedida;
 // ==========================================
 // Usuario - Rol
 // ==========================================
@@ -130,196 +134,27 @@ db.Producto.belongsTo(db.CategoriaProducto, {
   foreignKey: 'categoriaProductoId',
   as: 'categoriaProducto'
 });
-// ==========================================
 
-db.MateriaPrima.hasMany(db.DetalleRecepcion, {
-  foreignKey: 'materiaPrimaId',
+db.Producto.belongsTo(UnidadMedida, {
+  foreignKey: 'unidadMedidaId',
+  as: 'unidadMedida'
+});
+
+db.UnidadMedida.hasMany(db.Producto, {
+  foreignKey: 'unidadMedidaId',
+  as: 'productos'
+});
+
+db.UnidadMedida.hasMany(db.DetalleRecepcion, {
+  foreignKey: 'unidadMedidaId',
   as: 'detallesRecepcion'
 });
 
-db.DetalleRecepcion.belongsTo(db.MateriaPrima, {
-  foreignKey: 'materiaPrimaId',
-  as: 'materiaPrima'
+db.DetalleRecepcion.belongsTo(db.UnidadMedida, {
+  foreignKey: 'unidadMedidaId',
+  as: 'unidadMedida'
 });
-
 // ==========================================
-// Usuario - Recepción
-// ==========================================
-
-db.Usuario.hasMany(db.Recepcion, {
-  foreignKey: 'usuarioRecepcionId',
-  as: 'recepcionesRealizadas'
-});
-
-db.Recepcion.belongsTo(db.Usuario, {
-  foreignKey: 'usuarioRecepcionId',
-  as: 'usuarioRecepcion'
-});
-
-
-// ==========================================
-// Usuario - Verificación de Recepción
-// ==========================================
-
-db.Usuario.hasMany(db.Recepcion, {
-  foreignKey: 'usuarioVerificacionId',
-  as: 'recepcionesVerificadas'
-});
-
-db.Recepcion.belongsTo(db.Usuario, {
-  foreignKey: 'usuarioVerificacionId',
-  as: 'usuarioVerificacion'
-});
-
-
-// ==========================================
-// Usuario - Resultado de Recepción
-// ==========================================
-
-db.Usuario.hasMany(db.ResultadoRecepcion, {
-  foreignKey: 'usuarioDecisionId',
-  as: 'resultadosRecepcion'
-});
-
-db.ResultadoRecepcion.belongsTo(db.Usuario, {
-  foreignKey: 'usuarioDecisionId',
-  as: 'usuarioDecision'
-});
-
-
-// ==========================================
-// Recepción - Vehículo
-// ==========================================
-
-db.Recepcion.hasMany(db.RecepcionVehiculo, {
-  foreignKey: 'recepcionId',
-  as: 'vehiculos',
-  onDelete: 'CASCADE'
-});
-
-db.RecepcionVehiculo.belongsTo(db.Recepcion, {
-  foreignKey: 'recepcionId',
-  as: 'recepcion'
-});
-
-
-// ==========================================
-// Vehículo - Recepción
-// ==========================================
-
-db.Vehiculo.hasMany(db.RecepcionVehiculo, {
-  foreignKey: 'vehiculoId',
-  as: 'recepciones'
-});
-
-db.RecepcionVehiculo.belongsTo(db.Vehiculo, {
-  foreignKey: 'vehiculoId',
-  as: 'vehiculo'
-});
-
-// ==========================================
-// Recepción - Verificación de Recepción
-// ==========================================
-
-db.Recepcion.hasOne(db.VerificacionRecepcion, {
-  foreignKey: 'recepcionId',
-  as: 'verificacionRecepcion',
-  onDelete: 'CASCADE'
-});
-
-db.VerificacionRecepcion.belongsTo(db.Recepcion, {
-  foreignKey: 'recepcionId',
-  as: 'recepcion'
-});
-
-// ==========================================
-// Recepción - Temperaturas
-// ==========================================
-
-db.Recepcion.hasMany(db.TemperaturaRecepcion, {
-  foreignKey: 'recepcionId',
-  as: 'temperaturas',
-  onDelete: 'CASCADE'
-});
-
-db.TemperaturaRecepcion.belongsTo(db.Recepcion, {
-  foreignKey: 'recepcionId',
-  as: 'recepcion'
-});
-
-
-// ==========================================
-// Producto - Temperaturas de Recepción
-// ==========================================
-
-db.Producto.hasMany(db.TemperaturaRecepcion, {
-  foreignKey: 'productoId',
-  as: 'temperaturasRecepcion'
-});
-
-db.TemperaturaRecepcion.belongsTo(db.Producto, {
-  foreignKey: 'productoId',
-  as: 'producto'
-});
-
-// ==========================================
-// Recepción - Condiciones Ambientales
-// ==========================================
-
-db.Recepcion.hasOne(db.CondicionAmbientalRecepcion, {
-  foreignKey: 'recepcionId',
-  as: 'condicionAmbiental',
-  onDelete: 'CASCADE'
-});
-
-db.CondicionAmbientalRecepcion.belongsTo(db.Recepcion, {
-  foreignKey: 'recepcionId',
-  as: 'recepcion'
-});
-
-// ==========================================
-// Recepción - Resultado
-// ==========================================
-
-db.Recepcion.hasOne(db.ResultadoRecepcion, {
-  foreignKey: 'recepcionId',
-  as: 'resultadoRecepcion',
-  onDelete: 'CASCADE'
-});
-
-db.ResultadoRecepcion.belongsTo(db.Recepcion, {
-  foreignKey: 'recepcionId',
-  as: 'recepcion'
-});
-
-// ==========================================
-// Recepción - Detalles
-// ==========================================
-
-db.Recepcion.hasMany(db.DetalleRecepcion, {
-  foreignKey: 'recepcionId',
-  as: 'detalles',
-  onDelete: 'CASCADE'
-});
-
-db.DetalleRecepcion.belongsTo(db.Recepcion, {
-  foreignKey: 'recepcionId',
-  as: 'recepcion'
-});
-
-// ==========================================
-// Producto - Detalles de Recepción
-// ==========================================
-
-db.Producto.hasMany(db.DetalleRecepcion, {
-  foreignKey: 'productoId',
-  as: 'detallesRecepcion'
-});
-
-db.DetalleRecepcion.belongsTo(db.Producto, {
-  foreignKey: 'productoId',
-  as: 'producto'
-});
 
 // Calidad: maestros y formatos
 db.TipoInspeccion.hasMany(db.FormatoCalidad, {
@@ -684,6 +519,144 @@ db.Usuario.hasMany(db.EvidenciaAccionCorrectiva, {
   foreignKey: 'subidoPor',
   as: 'evidenciasSubidas',
 });
+
+// RECEPCIÓN
+Proveedor.hasMany(Recepcion, {
+  foreignKey: 'proveedorId',
+  as: 'recepciones'
+});
+
+Recepcion.belongsTo(Proveedor, {
+  foreignKey: 'proveedorId',
+  as: 'proveedor'
+});
+
+Bodega.hasMany(Recepcion, {
+  foreignKey: 'bodegaId',
+  as: 'recepciones'
+});
+
+Recepcion.belongsTo(Bodega, {
+  foreignKey: 'bodegaId',
+  as: 'bodega'
+});
+
+LugarArea.hasMany(Recepcion, {
+  foreignKey: 'lugarAreaId',
+  as: 'recepciones'
+});
+
+Recepcion.belongsTo(LugarArea, {
+  foreignKey: 'lugarAreaId',
+  as: 'lugarArea'
+});
+
+Usuario.hasMany(Recepcion, {
+  foreignKey: 'usuarioRecepcionId',
+  as: 'recepcionesRealizadas'
+});
+
+Recepcion.belongsTo(Usuario, {
+  foreignKey: 'usuarioRecepcionId',
+  as: 'usuarioRecepcion'
+});
+
+// DETALLES
+Recepcion.hasMany(DetalleRecepcion, {
+  foreignKey: 'recepcionId',
+  as: 'detalles'
+});
+
+DetalleRecepcion.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
+Producto.hasMany(DetalleRecepcion, {
+  foreignKey: 'productoId',
+  as: 'detallesRecepcion'
+});
+
+DetalleRecepcion.belongsTo(Producto, {
+  foreignKey: 'productoId',
+  as: 'producto'
+});
+
+// VEHÍCULO
+Recepcion.hasMany(RecepcionVehiculo, {
+  foreignKey: 'recepcionId',
+  as: 'vehiculos'
+});
+
+RecepcionVehiculo.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
+Vehiculo.hasMany(RecepcionVehiculo, {
+  foreignKey: 'vehiculoId',
+  as: 'recepcionesVehiculo'
+});
+
+RecepcionVehiculo.belongsTo(Vehiculo, {
+  foreignKey: 'vehiculoId',
+  as: 'vehiculo'
+});
+
+// VERIFICACIÓN
+Recepcion.hasOne(VerificacionRecepcion, {
+  foreignKey: 'recepcionId',
+  as: 'verificacion'
+});
+
+VerificacionRecepcion.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
+// TEMPERATURAS
+Recepcion.hasMany(TemperaturaRecepcion, {
+  foreignKey: 'recepcionId',
+  as: 'temperaturas'
+});
+
+TemperaturaRecepcion.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
+Producto.hasMany(TemperaturaRecepcion, {
+  foreignKey: 'productoId',
+  as: 'temperaturasRecepcion'
+});
+
+TemperaturaRecepcion.belongsTo(Producto, {
+  foreignKey: 'productoId',
+  as: 'producto'
+});
+
+// CONDICIÓN AMBIENTAL
+Recepcion.hasOne(CondicionAmbientalRecepcion, {
+  foreignKey: 'recepcionId',
+  as: 'condicionAmbiental'
+});
+
+CondicionAmbientalRecepcion.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
+// RESULTADO
+Recepcion.hasOne(ResultadoRecepcion, {
+  foreignKey: 'recepcionId',
+  as: 'resultado'
+});
+
+ResultadoRecepcion.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
 db.EvidenciaAccionCorrectiva.belongsTo(db.Usuario, { foreignKey: 'subidoPor', as: 'autor' });
 
 db.sequelize = sequelize;
