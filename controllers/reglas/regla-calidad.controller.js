@@ -29,10 +29,26 @@ module.exports = crearCrud({
       mensaje: 'Nivel de severidad no encontrado',
     },
   ],
-  antesDeCrear: (body) => (body.parametroCalidadId ? null : validarCampo(body.campoFormatoId)),
+  antesDeCrear: async (body) => {
+    const error = body.parametroCalidadId ? null : await validarCampo(body.campoFormatoId);
+    if (error) return error;
+    // Una regla nueva solo se activa después de guardar su condición.
+    body.estado = false;
+    return null;
+  },
   antesDeActualizar: async (regla, body) => {
-    if (body.parametroCalidadId || regla.parametroCalidadId) return null;
-    return (await validarCampo(regla.campoFormatoId)) || validarCampo(body.campoFormatoId);
+    if (!body.parametroCalidadId && !regla.parametroCalidadId) {
+      const error = (await validarCampo(regla.campoFormatoId)) ||
+        (await validarCampo(body.campoFormatoId));
+      if (error) return error;
+    }
+    if (body.estado === true) {
+      const condicion = await CondicionRegla.findOne({
+        where: { reglaCalidadId: regla.id, estado: true },
+      });
+      if (!condicion) return 'La regla no puede activarse sin una condición válida';
+    }
+    return null;
   },
   antesDeEliminar: (regla) => (regla.parametroCalidadId ? null : validarCampo(regla.campoFormatoId)),
 });

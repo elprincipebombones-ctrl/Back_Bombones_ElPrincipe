@@ -158,12 +158,7 @@ exports.login = async (req, res, next) => {
     return next(err);
   }
 };
-<<<<<<< HEAD
-exports.refresh = async (req, res, next) => {
-=======
-
 exports.refresh = async (req, res, _next) => {
->>>>>>> 112f10b80801a594c459de05646c5338f943eac1
   try {
     const { refreshToken } = req.body;
     const decoded = verificarRefreshToken(refreshToken);

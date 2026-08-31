@@ -8,7 +8,13 @@ module.exports = definir(
     versionFormatoId: { type: DataTypes.UUID, allowNull: false, field: 'version_formato_id' },
     lugarInspeccionId: { type: DataTypes.UUID, allowNull: true, field: 'lugar_inspeccion_id' },
     estado: {
-      type: DataTypes.ENUM('BORRADOR', 'COMPLETADA', 'PENDIENTE_ACCION', 'CERRADA'),
+      type: DataTypes.ENUM(
+        'BORRADOR',
+        'EN_PROCESO',
+        'PENDIENTE_ACCION',
+        'CERRADA',
+        'CERRADA_INCOMPLETA',
+      ),
       allowNull: false,
       defaultValue: 'BORRADOR',
     },

@@ -20,9 +20,17 @@ const {
   ElementoChecklist,
   ElementoInspeccion,
   CategoriaElemento,
+  ProgramaCalidad,
 } = require('../../models');
 const crearCrud = require('./crearCrud');
 const { ok, fail } = require('../../utils/response');
+const { sequelize } = require('../../models');
+const { created } = require('../../utils/response');
+const { ApiError } = require('../../utils/ApiError');
+const {
+  crearVersion,
+  publicarVersion,
+} = require('../../services/calidad/versiones-formato.service');
 
 const crud = crearCrud({
   modelo: VersionFormato,
@@ -37,12 +45,78 @@ const crud = crearCrud({
     { campo: 'publicadoPor', modelo: Usuario, mensaje: 'Usuario publicador no encontrado' },
   ],
   antesDeActualizar: (version) =>
-    version.estadoVersion === 'PUBLICADO'
-      ? 'Una versión publicada no puede modificarse; crea una nueva versión'
+    version.estadoVersion !== 'BORRADOR'
+      ? 'Una versión publicada u obsoleta no puede modificarse; crea una nueva versión'
+      : null,
+  antesDeEliminar: (version) =>
+    version.estadoVersion !== 'BORRADOR'
+      ? 'Una versión publicada u obsoleta no puede eliminarse'
       : null,
 });
 
 Object.assign(exports, crud);
+
+exports.crear = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const formato = await FormatoCalidad.findByPk(req.body.formatoCalidadId, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!formato) throw new ApiError('Formato no encontrado', 422);
+    const version = await crearVersion({
+      formatoCalidadId: formato.id,
+      datos: req.body,
+      transaction,
+    });
+    await transaction.commit();
+    return created(res, version, 'Versión borrador creada');
+  } catch (error) {
+    await transaction.rollback();
+    return next(error);
+  }
+};
+
+exports.actualizar = async (req, res, next) => {
+  try {
+    const version = await VersionFormato.findByPk(req.params.id);
+    if (!version) return fail(res, 'Versión de formato no encontrada', 404);
+    if (version.estadoVersion !== 'BORRADOR') {
+      return fail(res, 'Una versión publicada u obsoleta es de solo lectura', 409);
+    }
+    if (req.body.estadoVersion && req.body.estadoVersion !== 'BORRADOR') {
+      return fail(res, 'Usa la operación Publicar para cambiar el estado de la versión', 409);
+    }
+    await version.update({
+      ...(req.body.fechaVigenciaDesde !== undefined
+        ? { fechaVigenciaDesde: req.body.fechaVigenciaDesde }
+        : {}),
+      ...(req.body.fechaVigenciaHasta !== undefined
+        ? { fechaVigenciaHasta: req.body.fechaVigenciaHasta || null }
+        : {}),
+      ...(req.body.observaciones !== undefined ? { observaciones: req.body.observaciones } : {}),
+    });
+    return ok(res, version, 'Versión de formato actualizada');
+  } catch (error) {
+    return next(error);
+  }
+};
+
+exports.publicar = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const version = await publicarVersion({
+      versionId: req.params.id,
+      usuarioId: req.usuario.id,
+      transaction,
+    });
+    await transaction.commit();
+    return ok(res, version, 'Versión publicada; la anterior quedó obsoleta');
+  } catch (error) {
+    await transaction.rollback();
+    return next(error);
+  }
+};
 
 exports.listarPorFormato = async (req, res, next) => {
   try {
@@ -62,7 +136,14 @@ exports.obtenerCompleta = async (req, res, next) => {
   try {
     const version = await VersionFormato.findByPk(req.params.id, {
       include: [
-        { model: FormatoCalidad, as: 'formato', include: [{ model: TipoInspeccion, as: 'tipoInspeccion' }] },
+        {
+          model: FormatoCalidad,
+          as: 'formato',
+          include: [
+            { model: TipoInspeccion, as: 'tipoInspeccion' },
+            { model: ProgramaCalidad, as: 'programa' },
+          ],
+        },
         { model: Usuario, as: 'publicador', attributes: ['id', 'nombre', 'correo'] },
         {
           model: SeccionFormato,

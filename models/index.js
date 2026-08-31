@@ -32,9 +32,6 @@ const TemperaturaRecepcion = require('./Recepcion/TemperaturaRecepcion');
 const CondicionAmbientalRecepcion = require('./Recepcion/CondicionAmbientalRecepcion');
 const ResultadoRecepcion = require('./Recepcion/ResultadoRecepcion');
 
-
-
-
 db.Proveedor = Proveedor;
 db.Producto = Producto;
 db.MateriaPrima = MateriaPrima;
@@ -47,23 +44,21 @@ db.TemperaturaRecepcion = TemperaturaRecepcion;
 db.CondicionAmbientalRecepcion = CondicionAmbientalRecepcion;
 db.ResultadoRecepcion = ResultadoRecepcion;
 db.DetalleRecepcion = DetalleRecepcion;
- db.Recepcion = Recepcion;
+db.Recepcion = Recepcion;
 // ==========================================
 // Usuario - Rol
 // ==========================================
 
 db.Rol.hasMany(db.Usuario, {
   foreignKey: 'rolId',
-  as: 'usuarios'
+  as: 'usuarios',
 });
-
 
 db.Usuario.belongsTo(db.Rol, {
   foreignKey: 'rolId',
-  as: 'rol'
+  as: 'rol',
 });
 console.log(Object.keys(db));
-
 
 // ==========================================
 // Rol - Permiso
@@ -73,18 +68,15 @@ db.Rol.belongsToMany(db.Permiso, {
   through: db.RolPermiso,
   foreignKey: 'rolId',
   otherKey: 'permisoId',
-  as: 'permisos'
+  as: 'permisos',
 });
 
 db.Permiso.belongsToMany(db.Rol, {
   through: db.RolPermiso,
   foreignKey: 'permisoId',
   otherKey: 'rolId',
-  as: 'roles'
+  as: 'roles',
 });
-
-
-
 
 // ==========================================
 // Rol - Menú
@@ -94,16 +86,15 @@ db.Rol.belongsToMany(db.Menu, {
   through: db.RolMenu,
   foreignKey: 'rolId',
   otherKey: 'menuId',
-  as: 'menus'
+  as: 'menus',
 });
 
 db.Menu.belongsToMany(db.Rol, {
   through: db.RolMenu,
   foreignKey: 'menuId',
   otherKey: 'rolId',
-  as: 'roles'
+  as: 'roles',
 });
-
 
 // ==========================================
 // Proveedor - Vehículo
@@ -111,35 +102,34 @@ db.Menu.belongsToMany(db.Rol, {
 
 db.Proveedor.hasMany(db.Vehiculo, {
   foreignKey: 'proveedorId',
-  as: 'vehiculos'
+  as: 'vehiculos',
 });
 
 db.Vehiculo.belongsTo(db.Proveedor, {
   foreignKey: 'proveedorId',
-  as: 'proveedor'
+  as: 'proveedor',
 });
-
 
 // ==========================================
 db.CategoriaProducto.hasMany(db.Producto, {
   foreignKey: 'categoriaProductoId',
-  as: 'productos'
+  as: 'productos',
 });
 
 db.Producto.belongsTo(db.CategoriaProducto, {
   foreignKey: 'categoriaProductoId',
-  as: 'categoriaProducto'
+  as: 'categoriaProducto',
 });
 // ==========================================
 
 db.MateriaPrima.hasMany(db.DetalleRecepcion, {
   foreignKey: 'materiaPrimaId',
-  as: 'detallesRecepcion'
+  as: 'detallesRecepcion',
 });
 
 db.DetalleRecepcion.belongsTo(db.MateriaPrima, {
   foreignKey: 'materiaPrimaId',
-  as: 'materiaPrima'
+  as: 'materiaPrima',
 });
 
 // ==========================================
@@ -148,14 +138,13 @@ db.DetalleRecepcion.belongsTo(db.MateriaPrima, {
 
 db.Usuario.hasMany(db.Recepcion, {
   foreignKey: 'usuarioRecepcionId',
-  as: 'recepcionesRealizadas'
+  as: 'recepcionesRealizadas',
 });
 
 db.Recepcion.belongsTo(db.Usuario, {
   foreignKey: 'usuarioRecepcionId',
-  as: 'usuarioRecepcion'
+  as: 'usuarioRecepcion',
 });
-
 
 // ==========================================
 // Usuario - Verificación de Recepción
@@ -163,14 +152,13 @@ db.Recepcion.belongsTo(db.Usuario, {
 
 db.Usuario.hasMany(db.Recepcion, {
   foreignKey: 'usuarioVerificacionId',
-  as: 'recepcionesVerificadas'
+  as: 'recepcionesVerificadas',
 });
 
 db.Recepcion.belongsTo(db.Usuario, {
   foreignKey: 'usuarioVerificacionId',
-  as: 'usuarioVerificacion'
+  as: 'usuarioVerificacion',
 });
-
 
 // ==========================================
 // Usuario - Resultado de Recepción
@@ -178,14 +166,13 @@ db.Recepcion.belongsTo(db.Usuario, {
 
 db.Usuario.hasMany(db.ResultadoRecepcion, {
   foreignKey: 'usuarioDecisionId',
-  as: 'resultadosRecepcion'
+  as: 'resultadosRecepcion',
 });
 
 db.ResultadoRecepcion.belongsTo(db.Usuario, {
   foreignKey: 'usuarioDecisionId',
-  as: 'usuarioDecision'
+  as: 'usuarioDecision',
 });
-
 
 // ==========================================
 // Recepción - Vehículo
@@ -194,14 +181,13 @@ db.ResultadoRecepcion.belongsTo(db.Usuario, {
 db.Recepcion.hasMany(db.RecepcionVehiculo, {
   foreignKey: 'recepcionId',
   as: 'vehiculos',
-  onDelete: 'CASCADE'
+  onDelete: 'CASCADE',
 });
 
 db.RecepcionVehiculo.belongsTo(db.Recepcion, {
   foreignKey: 'recepcionId',
-  as: 'recepcion'
+  as: 'recepcion',
 });
-
 
 // ==========================================
 // Vehículo - Recepción
@@ -209,12 +195,12 @@ db.RecepcionVehiculo.belongsTo(db.Recepcion, {
 
 db.Vehiculo.hasMany(db.RecepcionVehiculo, {
   foreignKey: 'vehiculoId',
-  as: 'recepciones'
+  as: 'recepciones',
 });
 
 db.RecepcionVehiculo.belongsTo(db.Vehiculo, {
   foreignKey: 'vehiculoId',
-  as: 'vehiculo'
+  as: 'vehiculo',
 });
 
 // ==========================================
@@ -224,12 +210,12 @@ db.RecepcionVehiculo.belongsTo(db.Vehiculo, {
 db.Recepcion.hasOne(db.VerificacionRecepcion, {
   foreignKey: 'recepcionId',
   as: 'verificacionRecepcion',
-  onDelete: 'CASCADE'
+  onDelete: 'CASCADE',
 });
 
 db.VerificacionRecepcion.belongsTo(db.Recepcion, {
   foreignKey: 'recepcionId',
-  as: 'recepcion'
+  as: 'recepcion',
 });
 
 // ==========================================
@@ -239,14 +225,13 @@ db.VerificacionRecepcion.belongsTo(db.Recepcion, {
 db.Recepcion.hasMany(db.TemperaturaRecepcion, {
   foreignKey: 'recepcionId',
   as: 'temperaturas',
-  onDelete: 'CASCADE'
+  onDelete: 'CASCADE',
 });
 
 db.TemperaturaRecepcion.belongsTo(db.Recepcion, {
   foreignKey: 'recepcionId',
-  as: 'recepcion'
+  as: 'recepcion',
 });
-
 
 // ==========================================
 // Producto - Temperaturas de Recepción
@@ -254,12 +239,12 @@ db.TemperaturaRecepcion.belongsTo(db.Recepcion, {
 
 db.Producto.hasMany(db.TemperaturaRecepcion, {
   foreignKey: 'productoId',
-  as: 'temperaturasRecepcion'
+  as: 'temperaturasRecepcion',
 });
 
 db.TemperaturaRecepcion.belongsTo(db.Producto, {
   foreignKey: 'productoId',
-  as: 'producto'
+  as: 'producto',
 });
 
 // ==========================================
@@ -269,12 +254,12 @@ db.TemperaturaRecepcion.belongsTo(db.Producto, {
 db.Recepcion.hasOne(db.CondicionAmbientalRecepcion, {
   foreignKey: 'recepcionId',
   as: 'condicionAmbiental',
-  onDelete: 'CASCADE'
+  onDelete: 'CASCADE',
 });
 
 db.CondicionAmbientalRecepcion.belongsTo(db.Recepcion, {
   foreignKey: 'recepcionId',
-  as: 'recepcion'
+  as: 'recepcion',
 });
 
 // ==========================================
@@ -284,12 +269,12 @@ db.CondicionAmbientalRecepcion.belongsTo(db.Recepcion, {
 db.Recepcion.hasOne(db.ResultadoRecepcion, {
   foreignKey: 'recepcionId',
   as: 'resultadoRecepcion',
-  onDelete: 'CASCADE'
+  onDelete: 'CASCADE',
 });
 
 db.ResultadoRecepcion.belongsTo(db.Recepcion, {
   foreignKey: 'recepcionId',
-  as: 'recepcion'
+  as: 'recepcion',
 });
 
 // ==========================================
@@ -299,12 +284,12 @@ db.ResultadoRecepcion.belongsTo(db.Recepcion, {
 db.Recepcion.hasMany(db.DetalleRecepcion, {
   foreignKey: 'recepcionId',
   as: 'detalles',
-  onDelete: 'CASCADE'
+  onDelete: 'CASCADE',
 });
 
 db.DetalleRecepcion.belongsTo(db.Recepcion, {
   foreignKey: 'recepcionId',
-  as: 'recepcion'
+  as: 'recepcion',
 });
 
 // ==========================================
@@ -313,12 +298,12 @@ db.DetalleRecepcion.belongsTo(db.Recepcion, {
 
 db.Producto.hasMany(db.DetalleRecepcion, {
   foreignKey: 'productoId',
-  as: 'detallesRecepcion'
+  as: 'detallesRecepcion',
 });
 
 db.DetalleRecepcion.belongsTo(db.Producto, {
   foreignKey: 'productoId',
-  as: 'producto'
+  as: 'producto',
 });
 
 // Calidad: maestros y formatos
@@ -329,6 +314,32 @@ db.TipoInspeccion.hasMany(db.FormatoCalidad, {
 db.FormatoCalidad.belongsTo(db.TipoInspeccion, {
   foreignKey: 'tipoInspeccionId',
   as: 'tipoInspeccion',
+});
+db.ProgramaCalidad.hasMany(db.FormatoCalidad, {
+  foreignKey: 'programaId',
+  as: 'formatos',
+});
+db.FormatoCalidad.belongsTo(db.ProgramaCalidad, {
+  foreignKey: 'programaId',
+  as: 'programa',
+});
+
+db.FormatoCalidad.hasMany(db.ProgramacionFormato, {
+  foreignKey: 'formatoCalidadId',
+  as: 'programaciones',
+});
+db.ProgramacionFormato.belongsTo(db.FormatoCalidad, {
+  foreignKey: 'formatoCalidadId',
+  as: 'formato',
+});
+db.ProgramacionFormato.hasMany(db.DiaProgramacion, {
+  foreignKey: 'programacionFormatoId',
+  as: 'dias',
+  onDelete: 'CASCADE',
+});
+db.DiaProgramacion.belongsTo(db.ProgramacionFormato, {
+  foreignKey: 'programacionFormatoId',
+  as: 'programacion',
 });
 
 db.UnidadMedida.hasMany(db.ParametroCalidad, {
@@ -341,6 +352,23 @@ db.ParametroCalidad.belongsTo(db.UnidadMedida, {
 });
 db.TipoCampo.hasMany(db.ParametroCalidad, { foreignKey: 'tipoCampoId', as: 'parametros' });
 db.ParametroCalidad.belongsTo(db.TipoCampo, { foreignKey: 'tipoCampoId', as: 'tipoCampo' });
+
+db.ParametroCalidad.hasMany(db.ParametroCampoAccion, {
+  foreignKey: 'parametroCalidadId',
+  as: 'camposAccion',
+});
+db.ParametroCampoAccion.belongsTo(db.ParametroCalidad, {
+  foreignKey: 'parametroCalidadId',
+  as: 'parametro',
+});
+db.CampoAccionCorrectiva.hasMany(db.ParametroCampoAccion, {
+  foreignKey: 'campoAccionCorrectivaId',
+  as: 'parametrosAsignados',
+});
+db.ParametroCampoAccion.belongsTo(db.CampoAccionCorrectiva, {
+  foreignKey: 'campoAccionCorrectivaId',
+  as: 'campo',
+});
 
 db.FormatoCalidad.hasMany(db.VersionFormato, {
   foreignKey: 'formatoCalidadId',
@@ -467,7 +495,10 @@ db.ElementoChecklist.belongsTo(db.ElementoInspeccion, {
 db.CampoFormato.hasMany(db.ReglaCalidad, { foreignKey: 'campoFormatoId', as: 'reglas' });
 db.ReglaCalidad.belongsTo(db.CampoFormato, { foreignKey: 'campoFormatoId', as: 'campo' });
 db.ParametroCalidad.hasMany(db.ReglaCalidad, { foreignKey: 'parametroCalidadId', as: 'reglas' });
-db.ReglaCalidad.belongsTo(db.ParametroCalidad, { foreignKey: 'parametroCalidadId', as: 'parametro' });
+db.ReglaCalidad.belongsTo(db.ParametroCalidad, {
+  foreignKey: 'parametroCalidadId',
+  as: 'parametro',
+});
 db.NivelSeveridad.hasMany(db.ReglaCalidad, {
   foreignKey: 'nivelSeveridadId',
   as: 'reglas',
@@ -493,6 +524,14 @@ db.TipoAccion.hasMany(db.AccionRegla, { foreignKey: 'tipoAccionId', as: 'accione
 db.AccionRegla.belongsTo(db.TipoAccion, { foreignKey: 'tipoAccionId', as: 'tipoAccion' });
 
 // Ejecución de inspecciones
+db.CategoriaLugarInspeccion.hasMany(db.LugarInspeccion, {
+  foreignKey: 'categoriaLugarInspeccionId',
+  as: 'lugares',
+});
+db.LugarInspeccion.belongsTo(db.CategoriaLugarInspeccion, {
+  foreignKey: 'categoriaLugarInspeccionId',
+  as: 'categoria',
+});
 db.VersionFormato.hasMany(db.Inspeccion, { foreignKey: 'versionFormatoId', as: 'inspecciones' });
 db.Inspeccion.belongsTo(db.VersionFormato, { foreignKey: 'versionFormatoId', as: 'version' });
 db.LugarInspeccion.hasMany(db.Inspeccion, {
@@ -528,7 +567,10 @@ db.Usuario.hasMany(db.RespuestaInspeccion, {
   foreignKey: 'guardadoPor',
   as: 'respuestasGuardadas',
 });
-db.RespuestaInspeccion.belongsTo(db.Usuario, { foreignKey: 'guardadoPor', as: 'guardadoPorUsuario' });
+db.RespuestaInspeccion.belongsTo(db.Usuario, {
+  foreignKey: 'guardadoPor',
+  as: 'guardadoPorUsuario',
+});
 
 db.Inspeccion.hasMany(db.RespuestaElementoChecklist, {
   foreignKey: 'inspeccionId',
@@ -603,6 +645,30 @@ db.Desviacion.belongsTo(db.RespuestaInspeccion, {
   foreignKey: 'respuestaInspeccionId',
   as: 'respuesta',
 });
+db.CriterioInspeccion.hasMany(db.CriterioCampoAccion, {
+  foreignKey: 'criterioInspeccionId',
+  as: 'camposAccion',
+});
+db.CriterioCampoAccion.belongsTo(db.CriterioInspeccion, {
+  foreignKey: 'criterioInspeccionId',
+  as: 'criterio',
+});
+db.CampoAccionCorrectiva.hasMany(db.CriterioCampoAccion, {
+  foreignKey: 'campoAccionCorrectivaId',
+  as: 'criteriosAsignados',
+});
+db.CriterioCampoAccion.belongsTo(db.CampoAccionCorrectiva, {
+  foreignKey: 'campoAccionCorrectivaId',
+  as: 'campo',
+});
+db.RespuestaElementoChecklist.hasOne(db.Desviacion, {
+  foreignKey: 'respuestaElementoChecklistId',
+  as: 'desviacion',
+});
+db.Desviacion.belongsTo(db.RespuestaElementoChecklist, {
+  foreignKey: 'respuestaElementoChecklistId',
+  as: 'respuestaChecklist',
+});
 db.ReglaCalidad.hasMany(db.Desviacion, { foreignKey: 'reglaCalidadId', as: 'desviaciones' });
 db.Desviacion.belongsTo(db.ReglaCalidad, { foreignKey: 'reglaCalidadId', as: 'regla' });
 db.NivelSeveridad.hasMany(db.Desviacion, {
@@ -628,6 +694,22 @@ db.TipoAccion.hasMany(db.AccionCorrectiva, {
   as: 'accionesCorrectivas',
 });
 db.AccionCorrectiva.belongsTo(db.TipoAccion, { foreignKey: 'tipoAccionId', as: 'tipoAccion' });
+db.AccionCorrectiva.hasMany(db.CampoAccionInstancia, {
+  foreignKey: 'accionCorrectivaId',
+  as: 'camposAdicionales',
+});
+db.CampoAccionInstancia.belongsTo(db.AccionCorrectiva, {
+  foreignKey: 'accionCorrectivaId',
+  as: 'accionCorrectiva',
+});
+db.CampoAccionCorrectiva.hasMany(db.CampoAccionInstancia, {
+  foreignKey: 'campoAccionCorrectivaId',
+  as: 'instancias',
+});
+db.CampoAccionInstancia.belongsTo(db.CampoAccionCorrectiva, {
+  foreignKey: 'campoAccionCorrectivaId',
+  as: 'campoOrigen',
+});
 db.Usuario.hasMany(db.AccionCorrectiva, {
   foreignKey: 'responsableId',
   as: 'accionesCorrectivasAsignadas',
@@ -638,6 +720,31 @@ db.Usuario.hasMany(db.AccionCorrectiva, {
   as: 'accionesCorrectivasCerradas',
 });
 db.AccionCorrectiva.belongsTo(db.Usuario, { foreignKey: 'cerradaPor', as: 'cerrador' });
+db.Usuario.hasMany(db.AccionCorrectiva, {
+  foreignKey: 'enviadaAprobacionPor',
+  as: 'accionesCorrectivasEnviadasAprobacion',
+});
+db.AccionCorrectiva.belongsTo(db.Usuario, {
+  foreignKey: 'enviadaAprobacionPor',
+  as: 'remitenteAprobacion',
+});
+
+db.Usuario.hasOne(db.AprobadorAccionCorrectiva, {
+  foreignKey: 'usuarioId',
+  as: 'autorizacionAprobacionAcciones',
+});
+db.AprobadorAccionCorrectiva.belongsTo(db.Usuario, {
+  foreignKey: 'usuarioId',
+  as: 'usuario',
+});
+db.Usuario.hasMany(db.AprobadorAccionCorrectiva, {
+  foreignKey: 'agregadoPor',
+  as: 'aprobadoresAccionesRegistrados',
+});
+db.AprobadorAccionCorrectiva.belongsTo(db.Usuario, {
+  foreignKey: 'agregadoPor',
+  as: 'agregadoPorUsuario',
+});
 
 db.AccionCorrectiva.hasMany(db.SeguimientoAccionCorrectiva, {
   foreignKey: 'accionCorrectivaId',

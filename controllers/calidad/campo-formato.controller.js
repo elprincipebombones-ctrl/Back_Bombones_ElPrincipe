@@ -21,10 +21,12 @@ const heredarParametro = async (body) => {
     precisionDecimal: parametro.precisionDecimal,
     codigo: body.codigo || parametro.codigo,
     etiqueta: body.etiqueta || parametro.nombre,
-    esObligatorio: body.esObligatorio ?? parametro.esObligatorioDefault,
-    permiteObservacion: body.permiteObservacion ?? parametro.permiteObservacionDefault,
-    requiereEvidencia: body.requiereEvidencia ?? parametro.requiereEvidenciaDefault,
-    bloquearAlGuardar: body.bloquearAlGuardar ?? parametro.bloquearAlGuardarDefault,
+    // Estas columnas se conservan como snapshot para versiones históricas. En la
+    // ejecución, la fuente vigente es el parámetro y sus escenarios.
+    esObligatorio: parametro.esObligatorioDefault,
+    permiteObservacion: parametro.permiteObservacionDefault,
+    requiereEvidencia: parametro.requiereEvidenciaDefault,
+    bloquearAlGuardar: parametro.bloquearAlGuardarDefault,
   });
   return null;
 };

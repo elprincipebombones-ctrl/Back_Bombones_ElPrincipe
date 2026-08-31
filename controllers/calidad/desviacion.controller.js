@@ -4,6 +4,7 @@ const {
   ReglaCalidad,
   NivelSeveridad,
   RespuestaInspeccion,
+  RespuestaElementoChecklist,
   AccionCorrectiva,
   TipoAccion,
 } = require('../../models');
@@ -13,6 +14,7 @@ const include = [
   { model: ReglaCalidad, as: 'regla' },
   { model: NivelSeveridad, as: 'nivelSeveridad' },
   { model: RespuestaInspeccion, as: 'respuesta' },
+  { model: RespuestaElementoChecklist, as: 'respuestaChecklist' },
   {
     model: AccionCorrectiva,
     as: 'accionesCorrectivas',

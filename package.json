@@ -12,9 +12,18 @@
     "undo": "sequelize-cli db:seed:undo:all",
     "lint": "eslint .",
     "audit:calidad": "node scripts/auditar-calidad.js",
-    "test:checklists": "node scripts/probar-api-checklists.js"
+    "test:checklists": "node scripts/probar-api-checklists.js",
+    "test:calidad-fase": "node scripts/probar-fase-calidad.js",
+    "test:evidencia-http": "node scripts/probar-evidencia-http.js",
+    "test:campos-accion": "node scripts/probar-campos-accion-correctiva.js"
   },
-  "keywords": ["express", "sequelize", "postgresql", "jwt", "api"],
+  "keywords": [
+    "express",
+    "sequelize",
+    "postgresql",
+    "jwt",
+    "api"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -27,6 +36,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "multer": "^2.0.2",
     "pg": "^8.12.0",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.3",

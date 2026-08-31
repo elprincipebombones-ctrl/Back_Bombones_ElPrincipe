@@ -7,6 +7,8 @@ const {
   CondicionRegla,
   AccionRegla,
   TipoAccion,
+  ParametroCampoAccion,
+  CampoAccionCorrectiva,
 } = require('../../models');
 const crearCrud = require('./crearCrud');
 
@@ -25,6 +27,11 @@ module.exports = crearCrud({
         { model: CondicionRegla, as: 'condiciones' },
         { model: AccionRegla, as: 'acciones', include: [{ model: TipoAccion, as: 'tipoAccion' }] },
       ],
+    },
+    {
+      model: ParametroCampoAccion,
+      as: 'camposAccion',
+      include: [{ model: CampoAccionCorrectiva, as: 'campo' }],
     },
   ],
   relaciones: [

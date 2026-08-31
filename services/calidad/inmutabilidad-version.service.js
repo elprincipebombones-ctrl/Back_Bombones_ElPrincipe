@@ -6,12 +6,12 @@ const {
   ChecklistSeccion,
 } = require('../../models');
 
-const mensaje = 'No se puede modificar la estructura de una versión publicada';
+const mensaje = 'Solo se puede modificar la estructura de una versión en BORRADOR';
 
 const validarVersion = async (versionFormatoId, transaction) => {
   if (!versionFormatoId) return null;
   const version = await VersionFormato.findByPk(versionFormatoId, { transaction });
-  return version?.estadoVersion === 'PUBLICADO' ? mensaje : null;
+  return version && version.estadoVersion !== 'BORRADOR' ? mensaje : null;
 };
 
 const validarSeccion = async (seccionFormatoId, transaction) => {

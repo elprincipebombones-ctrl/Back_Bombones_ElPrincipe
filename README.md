@@ -101,6 +101,18 @@ Importa `postman/BackendAPI.postman_collection.json`. La colección incluye una 
 
 Ver `.env.example`.
 
+### Evidencias del módulo Calidad
+
+Los archivos JPG, JPEG, PNG y PDF se guardan fuera de PostgreSQL. Configuración opcional:
+
+```env
+CALIDAD_EVIDENCIAS_DIR=./storage/calidad/evidencias
+CALIDAD_EVIDENCIAS_MAX_MB=10
+```
+
+`CALIDAD_EVIDENCIAS_DIR` debe apuntar a un volumen persistente y escribible en producción. En la
+base de datos solo se conserva el nombre, tipo, URL, usuario y fecha de carga.
+
 ## Despliegue
 
 1. Configura variables de entorno en el servidor.

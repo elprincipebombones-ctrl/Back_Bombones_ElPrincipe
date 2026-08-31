@@ -44,7 +44,6 @@ const swaggerSpec = swaggerJSDoc({
     },
     security: [{ bearerAuth: [] }],
   },
-  apis: ['./routes/*.js', './routes/recepcion/*.js'],
   apis: ['./routes/*.js', './routes/**/*.js'],
 });
 
@@ -117,9 +116,8 @@ const operacionConEjemplo = (summary, ejemplo) => ({
 swaggerSpec.paths['/api/calidad/inspecciones'] = {
   get: operacion('Listar inspecciones'),
   post: operacionConEjemplo('Crear inspección', {
-    version_formato_id: 'uuid-version-publicada',
+    formato_calidad_id: 'uuid-formato',
     lugar_inspeccion_id: null,
-    fecha_inspeccion: '2026-08-15',
     observaciones: null,
   }),
 };
@@ -137,6 +135,13 @@ swaggerSpec.paths['/api/calidad/inspecciones/{id}/respuestas'] = {
   post: operacionConEjemplo('Guardar respuestas y evaluar reglas', {
     respuestas: [
       { campo_formato_id: 'uuid-campo', valor_numero: 6.8, observacion: null, opciones: [] },
+    ],
+  }),
+};
+swaggerSpec.paths['/api/calidad/inspecciones/{id}/respuestas-checklist'] = {
+  post: operacionConEjemplo('Guardar checklist y generar desviaciones', {
+    respuestas: [
+      { elementoChecklistId: 'uuid-elemento-versionado', resultado: 'NO_CUMPLE', observacion: 'Hallazgo' },
     ],
   }),
 };
@@ -174,12 +179,51 @@ swaggerSpec.paths['/api/calidad/acciones-correctivas/{id}/seguimientos'] = {
   }),
 };
 swaggerSpec.paths['/api/calidad/acciones-correctivas/{id}/evidencias'] = {
-  post: operacionConEjemplo('Registrar evidencia de acción correctiva', {
-    nombre_archivo: 'evidencia.jpg',
-    tipo_archivo: 'image/jpeg',
-    url_archivo: 'https://example.com/evidencias/evidencia.jpg',
-    descripcion: 'Evidencia posterior al ajuste',
+  post: {
+    ...operacion('Cargar evidencia JPG, PNG o PDF'),
+    requestBody: {
+      required: true,
+      content: {
+        'multipart/form-data': {
+          schema: {
+            type: 'object',
+            required: ['archivo'],
+            properties: {
+              archivo: { type: 'string', format: 'binary' },
+              descripcion: { type: 'string', nullable: true },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+swaggerSpec.paths['/api/calidad/formatos-operativos'] = {
+  get: operacion('Listar formatos con versión publicada'),
+};
+swaggerSpec.paths['/api/calidad/versiones-formato/{id}/publicar'] = {
+  post: operacion('Publicar versión y volver obsoleta la anterior'),
+};
+swaggerSpec.paths['/api/calidad/programaciones'] = {
+  get: operacion('Listar programaciones de formatos'),
+  post: operacionConEjemplo('Crear programación de formato', {
+    formatoCalidadId: 'uuid-formato',
+    fechaInicio: '2026-08-22',
+    fechaFin: null,
+    horaProgramada: '08:00',
+    dias: [1, 2, 3, 4, 5, 6],
+    activo: true,
   }),
+};
+swaggerSpec.paths['/api/calidad/programaciones/{id}'] = {
+  get: operacion('Obtener programación'),
+  put: operacion('Actualizar o activar programación', true),
+};
+swaggerSpec.paths['/api/calidad/programaciones/pendientes'] = {
+  get: {
+    ...operacion('Consultar formatos programados para una fecha'),
+    parameters: [{ in: 'query', name: 'fecha', required: true, schema: { type: 'string', format: 'date' } }],
+  },
 };
 swaggerSpec.paths['/api/calidad/desviaciones'] = { get: operacion('Listar desviaciones') };
 swaggerSpec.paths['/api/calidad/desviaciones/{id}'] = {

@@ -1,0 +1,78 @@
+{
+  "info": {
+    "name": "Calidad - Programación y ejecución diaria",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "token", "value": "" },
+    { "key": "formatoId", "value": "" },
+    { "key": "versionId", "value": "" },
+    { "key": "programacionId", "value": "" },
+    { "key": "inspeccionId", "value": "" },
+    { "key": "accionId", "value": "" }
+  ],
+  "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+  "item": [
+    {
+      "name": "Programación",
+      "item": [
+        {
+          "name": "Crear lunes a sábado",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"formatoCalidadId\": \"{{formatoId}}\",\n  \"fechaInicio\": \"2026-08-22\",\n  \"fechaFin\": null,\n  \"horaProgramada\": \"08:00\",\n  \"dias\": [1,2,3,4,5,6],\n  \"activo\": true\n}" },
+            "url": "{{baseUrl}}/calidad/programaciones"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('programacionId', pm.response.json().data.id);"] } }]
+        },
+        { "name": "Pendientes sábado", "request": { "method": "GET", "url": "{{baseUrl}}/calidad/programaciones/pendientes?fecha=2026-08-22" } },
+        { "name": "Pendientes domingo", "request": { "method": "GET", "url": "{{baseUrl}}/calidad/programaciones/pendientes?fecha=2026-08-23" } }
+      ]
+    },
+    {
+      "name": "Versionado",
+      "item": [
+        {
+          "name": "Nueva versión copiando publicada",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fechaVigenciaDesde\": \"2026-08-22\",\n  \"modo\": \"COPIAR_PUBLICADA\",\n  \"observaciones\": \"Nueva versión operativa\"\n}" },
+            "url": "{{baseUrl}}/calidad/formatos/{{formatoId}}/versiones"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('versionId', pm.response.json().data.id);", "pm.test('Queda en borrador', () => pm.expect(pm.response.json().data.estadoVersion).to.eql('BORRADOR'));"] } }]
+        },
+        { "name": "Publicar versión", "request": { "method": "POST", "url": "{{baseUrl}}/calidad/versiones-formato/{{versionId}}/publicar" } }
+      ]
+    },
+    {
+      "name": "Inspección",
+      "item": [
+        {
+          "name": "Iniciar con formato",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"formatoCalidadId\": \"{{formatoId}}\"\n}" }, "url": "{{baseUrl}}/calidad/inspecciones" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('inspeccionId', pm.response.json().data.id);"] } }]
+        },
+        { "name": "Obtener completa", "request": { "method": "GET", "url": "{{baseUrl}}/calidad/inspecciones/{{inspeccionId}}/completa" } },
+        { "name": "Cerrar", "request": { "method": "POST", "url": "{{baseUrl}}/calidad/inspecciones/{{inspeccionId}}/cerrar" } }
+      ]
+    },
+    {
+      "name": "Acciones y evidencia",
+      "item": [
+        { "name": "Iniciar acción", "request": { "method": "POST", "url": "{{baseUrl}}/calidad/acciones-correctivas/{{accionId}}/iniciar" } },
+        {
+          "name": "Nueva medición",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"tipoRegistro\": \"NUEVA_MEDICION\",\n  \"valorNumero\": 1.2,\n  \"resultadoCumple\": true\n}" }, "url": "{{baseUrl}}/calidad/acciones-correctivas/{{accionId}}/seguimientos" }
+        },
+        {
+          "name": "Subir evidencia real",
+          "request": { "method": "POST", "body": { "mode": "formdata", "formdata": [{ "key": "archivo", "type": "file", "src": [] }, { "key": "descripcion", "type": "text", "value": "Evidencia de cierre" }] }, "url": "{{baseUrl}}/calidad/acciones-correctivas/{{accionId}}/evidencias" }
+        },
+        { "name": "Cerrar acción", "request": { "method": "POST", "url": "{{baseUrl}}/calidad/acciones-correctivas/{{accionId}}/cerrar" } }
+      ]
+    }
+  ]
+}
