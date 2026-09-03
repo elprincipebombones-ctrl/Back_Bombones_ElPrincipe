@@ -2,6 +2,7 @@ const {
   sequelize,
   Inspeccion,
   CampoFormato,
+  ParametroCalidad,
   SeccionFormato,
   TipoCampo,
   OpcionCampo,
@@ -11,6 +12,7 @@ const {
 const { ok } = require('../../utils/response');
 const { ApiError } = require('../../utils/ApiError');
 const { evaluarRespuesta, esVacio } = require('../../services/calidad/evaluador-reglas.service');
+const { validarEditable } = require('../../services/calidad/bloqueo-diario.service');
 
 const dato = (body, camel, snake) => body[camel] ?? body[snake];
 
@@ -49,7 +51,10 @@ const validarTipoValor = (campo, respuesta) => {
     throw new ApiError(`El campo ${campo.etiqueta} solo permite una opción`, 422);
   }
   const esSeleccion = ['SELECCION_UNICA', 'SELECCION_MULTIPLE'].includes(tipo);
-  if (campo.esObligatorio && (esSeleccion ? !respuesta.opciones.length : esVacio(valorPorTipo[tipo]))) {
+  const esObligatorio = campo.parametro
+    ? campo.parametro.esObligatorioDefault
+    : campo.esObligatorio;
+  if (esObligatorio && (esSeleccion ? !respuesta.opciones.length : esVacio(valorPorTipo[tipo]))) {
     throw new ApiError(`El campo ${campo.etiqueta} es obligatorio`, 422);
   }
   if (!esSeleccion && !(tipo in valorPorTipo)) {
@@ -65,9 +70,7 @@ exports.guardarRespuestas = async (req, res, next) => {
       lock: transaction.LOCK.UPDATE,
     });
     if (!inspeccion) throw new ApiError('Inspección no encontrada', 404);
-    if (inspeccion.estado !== 'BORRADOR') {
-      throw new ApiError('Solo se pueden modificar respuestas de una inspección en BORRADOR', 409);
-    }
+    await validarEditable(inspeccion, transaction);
 
     const guardadas = [];
     for (const entrada of req.body.respuestas) {
@@ -76,6 +79,7 @@ exports.guardarRespuestas = async (req, res, next) => {
         where: { id: datos.campoFormatoId, estado: true },
         include: [
           { model: TipoCampo, as: 'tipoCampo', required: true },
+          { model: ParametroCalidad, as: 'parametro', required: false },
           {
             model: SeccionFormato,
             as: 'seccion',
@@ -105,9 +109,12 @@ exports.guardarRespuestas = async (req, res, next) => {
         transaction,
         lock: transaction.LOCK.UPDATE,
       });
-      if (respuesta?.bloqueada) {
+      const bloquearAlGuardar = campo.parametro
+        ? campo.parametro.bloquearAlGuardarDefault
+        : campo.bloquearAlGuardar;
+      if (respuesta && bloquearAlGuardar) {
         throw new ApiError(
-          'La respuesta corresponde a una medición bloqueada y no puede modificarse.',
+          `“${campo.etiqueta}” está configurado para bloquearse después del primer guardado y no puede modificarse.`,
           409,
         );
       }
@@ -122,6 +129,7 @@ exports.guardarRespuestas = async (req, res, next) => {
         observacion: datos.observacion,
         guardadoPor: req.usuario.id,
         fechaGuardado: new Date(),
+        bloqueada: bloquearAlGuardar,
       };
       if (respuesta) {
         await respuesta.update(valores, { transaction });
@@ -131,7 +139,8 @@ exports.guardarRespuestas = async (req, res, next) => {
             ...valores,
             inspeccionId: inspeccion.id,
             campoFormatoId: campo.id,
-            bloqueada: campo.bloquearAlGuardar,
+            // El bloqueo es una decisión explícita del parámetro y queda registrado
+            // también en la respuesta para conservar su trazabilidad.
           },
           { transaction },
         );
@@ -152,6 +161,10 @@ exports.guardarRespuestas = async (req, res, next) => {
         transaction,
       });
       guardadas.push(respuesta);
+    }
+
+    if (inspeccion.estado === 'BORRADOR') {
+      await inspeccion.update({ estado: 'EN_PROCESO' }, { transaction });
     }
 
     await transaction.commit();

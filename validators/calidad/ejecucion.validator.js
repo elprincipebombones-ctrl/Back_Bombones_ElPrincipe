@@ -5,7 +5,10 @@ const uuidEnBody = (camel, snake, opcional = false) =>
   body().custom((_, { req }) => {
     const dato = valor(req.body, camel, snake);
     if (opcional && (dato === null || dato === undefined)) return true;
-    if (typeof dato !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(dato)) {
+    if (
+      typeof dato !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(dato)
+    ) {
       throw new Error(`${snake} debe ser UUID válido`);
     }
     return true;
@@ -13,35 +16,27 @@ const uuidEnBody = (camel, snake, opcional = false) =>
 
 exports.idValidator = [param('id').isUUID()];
 exports.listarInspeccionesValidator = [
-  query('estado').optional().isIn(['BORRADOR', 'COMPLETADA', 'PENDIENTE_ACCION', 'CERRADA']),
+  query('estado')
+    .optional()
+    .isIn(['BORRADOR', 'EN_PROCESO', 'PENDIENTE_ACCION', 'CERRADA', 'CERRADA_INCOMPLETA']),
   query('fecha_desde').optional().isISO8601(),
   query('fecha_hasta').optional().isISO8601(),
 ];
 exports.crearInspeccionValidator = [
-  uuidEnBody('versionFormatoId', 'version_formato_id'),
-  uuidEnBody('lugarInspeccionId', 'lugar_inspeccion_id', true),
-  body().custom((_, { req }) => {
-    const fecha = valor(req.body, 'fechaInspeccion', 'fecha_inspeccion');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha || '')) throw new Error('fecha_inspeccion es requerida');
-    return true;
-  }),
+  uuidEnBody('formatoCalidadId', 'formato_calidad_id'),
+  uuidEnBody('lugarInspeccionId', 'lugar_inspeccion_id'),
   body('observaciones').optional({ nullable: true }).isString(),
 ];
 exports.actualizarInspeccionValidator = [
   param('id').isUUID(),
   uuidEnBody('lugarInspeccionId', 'lugar_inspeccion_id', true),
-  body().custom((_, { req }) => {
-    const fecha = valor(req.body, 'fechaInspeccion', 'fecha_inspeccion');
-    if (fecha !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-      throw new Error('fecha_inspeccion debe tener formato YYYY-MM-DD');
-    }
-    return true;
-  }),
   body('observaciones').optional({ nullable: true }).isString(),
 ];
 exports.guardarRespuestasValidator = [
   param('id').isUUID(),
-  body('respuestas').isArray({ min: 1 }).withMessage('respuestas debe contener al menos un elemento'),
+  body('respuestas')
+    .isArray({ min: 1 })
+    .withMessage('respuestas debe contener al menos un elemento'),
   body('respuestas.*').custom((respuesta) => {
     const campoId = valor(respuesta, 'campoFormatoId', 'campo_formato_id');
     if (typeof campoId !== 'string' || !/^[0-9a-f-]{36}$/i.test(campoId)) {
@@ -55,6 +50,13 @@ exports.guardarRespuestasValidator = [
     }
     return true;
   }),
+];
+exports.guardarChecklistValidator = [
+  param('id').isUUID(),
+  body('respuestas').isArray({ min: 1 }),
+  body('respuestas.*.elementoChecklistId').isUUID(),
+  body('respuestas.*.resultado').isIn(['CUMPLE', 'NO_CUMPLE']),
+  body('respuestas.*.observacion').optional({ nullable: true }).isString(),
 ];
 exports.actualizarAccionValidator = [
   param('id').isUUID(),
@@ -73,6 +75,7 @@ exports.cerrarAccionValidator = [
   body('observacion_cierre').optional({ nullable: true }).isString(),
   body('observacionCierre').optional({ nullable: true }).isString(),
 ];
+exports.crearAprobadorValidator = [uuidEnBody('usuarioId', 'usuario_id')];
 exports.crearSeguimientoValidator = [
   param('id').isUUID(),
   body().custom((_, { req }) => {
@@ -113,7 +116,8 @@ exports.crearEvidenciaValidator = [
   body('descripcion').optional({ nullable: true }).isString(),
 ];
 exports.listarAccionesValidator = [
-  query('estado').optional().isIn(['PENDIENTE', 'EN_PROCESO', 'CERRADA']),
+  query('estado').optional().isIn(['PENDIENTE', 'EN_PROCESO', 'PENDIENTE_APROBACION', 'CERRADA']),
+  query('solo_pendientes').optional().isBoolean(),
   query('responsable_id').optional().isUUID(),
 ];
 exports.listarDesviacionesValidator = [

@@ -18,6 +18,7 @@ exports.crearFormatoValidator = [
   body('nombre').trim().isLength({ min: 2, max: 100 }),
   body('descripcion').optional({ nullable: true }).isLength({ max: 255 }),
   id('tipoInspeccionId'),
+  id('programaId', true, true),
   body('estado').optional().isBoolean(),
   body('versionInicial').optional().isObject(),
   body('versionInicial.numeroVersion').optional().isInt({ min: 1 }),
@@ -29,11 +30,12 @@ exports.actualizarFormatoValidator = [
   body('nombre').optional().trim().isLength({ min: 2, max: 100 }),
   body('descripcion').optional({ nullable: true }).isLength({ max: 255 }),
   id('tipoInspeccionId', true),
+  id('programaId', true, true),
   body('estado').optional().isBoolean(),
 ];
 exports.crearVersionValidator = [
   id('formatoCalidadId'),
-  body('numeroVersion').isInt({ min: 1 }),
+  body('numeroVersion').optional().isInt({ min: 1 }),
   body('fechaVigenciaDesde').isISO8601(),
   body('fechaVigenciaHasta')
     .optional({ nullable: true })
@@ -44,11 +46,13 @@ exports.crearVersionValidator = [
       }
       return true;
     }),
-  body('estadoVersion').optional().isIn(['BORRADOR', 'PUBLICADO', 'OBSOLETO']),
+  body('estadoVersion').optional().equals('BORRADOR'),
+  body('modo').optional().isIn(['VACIA', 'COPIAR_PUBLICADA']),
   body('observaciones').optional({ nullable: true }).isString(),
   id('publicadoPor', true, true),
   body('fechaPublicacion').optional({ nullable: true }).isISO8601(),
 ];
+exports.publicarVersionValidator = [param('id').isUUID()];
 exports.actualizarVersionValidator = [
   param('id').isUUID(),
   id('formatoCalidadId', true),

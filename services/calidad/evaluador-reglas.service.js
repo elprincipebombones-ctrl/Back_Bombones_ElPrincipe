@@ -6,14 +6,8 @@ const {
   Desviacion,
   AccionCorrectiva,
 } = require('../../models');
-const CODIGOS_ACCION_OPERATIVA = new Set([
-  'GENERAR_ALERTA',
-  'EXIGIR_OBSERVACION',
-  'EXIGIR_EVIDENCIA',
-  'BLOQUEAR_CONTINUIDAD',
-  'SOLICITAR_ACCION_CORRECTIVA',
-  'VOLVER_A_MEDIR',
-]);
+const { ApiError } = require('../../utils/ApiError');
+const { crearSnapshot } = require('./campos-accion-correctiva.service');
 
 const valorRespuesta = (respuesta, opciones = []) => {
   if (opciones.length) return opciones.map((opcion) => opcion.valor);
@@ -95,14 +89,21 @@ const evaluarCondicion = (condicion, valor) => {
 };
 
 const reglaSeActiva = (regla, valor) => {
-  const resultados = regla.condiciones.filter((condicion) => condicion.estado).map((condicion) =>
-    evaluarCondicion(condicion, valor),
-  );
+  const resultados = regla.condiciones
+    .filter((condicion) => condicion.estado)
+    .map((condicion) => evaluarCondicion(condicion, valor));
   if (!resultados.length) return false;
   return regla.operadorLogico === 'OR' ? resultados.some(Boolean) : resultados.every(Boolean);
 };
 
-const evaluarRespuesta = async ({ inspeccion, respuesta, campo, opciones, usuarioId, transaction }) => {
+const evaluarRespuesta = async ({
+  inspeccion,
+  respuesta,
+  campo,
+  opciones,
+  usuarioId,
+  transaction,
+}) => {
   const propietario = campo.parametroCalidadId
     ? { parametroCalidadId: campo.parametroCalidadId }
     : { campoFormatoId: campo.id };
@@ -148,18 +149,37 @@ const evaluarRespuesta = async ({ inspeccion, respuesta, campo, opciones, usuari
       transaction,
     });
 
-    for (const accionRegla of regla.acciones) {
-      if (!CODIGOS_ACCION_OPERATIVA.has(accionRegla.tipoAccion.codigo)) continue;
-      await AccionCorrectiva.findOrCreate({
-        where: { desviacionId: desviacion.id, tipoAccionId: accionRegla.tipoAccionId },
+    const accionesPorCodigo = new Map(
+      regla.acciones.map((accion) => [accion.tipoAccion.codigo, accion]),
+    );
+    if (accionesPorCodigo.has('EXIGIR_OBSERVACION') && !respuesta.observacion?.trim()) {
+      throw new ApiError(
+        `“${campo.etiqueta}” no cumple la regla “${regla.nombre}”. Debes registrar una observación.`,
+        422,
+      );
+    }
+    const accionPrincipal = accionesPorCodigo.get('SOLICITAR_ACCION_CORRECTIVA');
+    if (accionPrincipal) {
+      const [accionCorrectiva, creada] = await AccionCorrectiva.findOrCreate({
+        where: { desviacionId: desviacion.id, tipoAccionId: accionPrincipal.tipoAccionId },
         defaults: {
-          descripcion: accionRegla.configuracion?.descripcion || regla.mensajeIncumplimiento,
-          responsableId: accionRegla.configuracion?.responsable_id || null,
+          descripcion: accionPrincipal.configuracion?.descripcion || regla.mensajeIncumplimiento,
+          responsableId: accionPrincipal.configuracion?.responsable_id || null,
           fechaAsignacion: new Date(),
-          fechaLimite: accionRegla.configuracion?.fecha_limite || null,
+          fechaLimite: accionPrincipal.configuracion?.fecha_limite || null,
         },
         transaction,
       });
+      if (creada) {
+        await crearSnapshot({
+          accionCorrectivaId: accionCorrectiva.id,
+          parametroCalidadId: campo.parametroCalidadId,
+          transaction,
+        });
+      }
+    }
+    if (accionesPorCodigo.has('BLOQUEAR_CONTINUIDAD')) {
+      await inspeccion.update({ estado: 'PENDIENTE_ACCION' }, { transaction });
     }
   }
 };

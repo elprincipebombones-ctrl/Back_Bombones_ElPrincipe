@@ -8,10 +8,15 @@ module.exports = definir(
     inspeccionId: { type: DataTypes.UUID, allowNull: false, field: 'inspeccion_id' },
     respuestaInspeccionId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       field: 'respuesta_inspeccion_id',
     },
-    reglaCalidadId: { type: DataTypes.UUID, allowNull: false, field: 'regla_calidad_id' },
+    respuestaElementoChecklistId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'respuesta_elemento_checklist_id',
+    },
+    reglaCalidadId: { type: DataTypes.UUID, allowNull: true, field: 'regla_calidad_id' },
     nivelSeveridadId: { type: DataTypes.UUID, allowNull: true, field: 'nivel_severidad_id' },
     descripcion: DataTypes.TEXT,
     mensaje: DataTypes.TEXT,
