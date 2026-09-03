@@ -31,6 +31,11 @@ const VerificacionRecepcion = require('./Recepcion/VerificacionRecepcion');
 const TemperaturaRecepcion = require('./Recepcion/TemperaturaRecepcion');
 const CondicionAmbientalRecepcion = require('./Recepcion/CondicionAmbientalRecepcion');
 const ResultadoRecepcion = require('./Recepcion/ResultadoRecepcion');
+const Bodega = require('./Inventario/Bodega');
+const Usuario = require('./Usuario');
+const UnidadMedida = require('./Recepcion/UnidadMedida');
+
+
 
 db.Proveedor = Proveedor;
 db.Producto = Producto;
@@ -45,6 +50,8 @@ db.CondicionAmbientalRecepcion = CondicionAmbientalRecepcion;
 db.ResultadoRecepcion = ResultadoRecepcion;
 db.DetalleRecepcion = DetalleRecepcion;
 db.Recepcion = Recepcion;
+db.Bodega = Bodega;
+db.UnidadMedida = UnidadMedida;
 // ==========================================
 // Usuario - Rol
 // ==========================================
@@ -120,18 +127,26 @@ db.Producto.belongsTo(db.CategoriaProducto, {
   foreignKey: 'categoriaProductoId',
   as: 'categoriaProducto',
 });
-// ==========================================
 
-db.MateriaPrima.hasMany(db.DetalleRecepcion, {
-  foreignKey: 'materiaPrimaId',
-  as: 'detallesRecepcion',
+db.Producto.belongsTo(UnidadMedida, {
+  foreignKey: 'unidadMedidaId',
+  as: 'unidadMedida'
 });
 
-db.DetalleRecepcion.belongsTo(db.MateriaPrima, {
-  foreignKey: 'materiaPrimaId',
-  as: 'materiaPrima',
+db.UnidadMedida.hasMany(db.Producto, {
+  foreignKey: 'unidadMedidaId',
+  as: 'productos'
 });
 
+db.UnidadMedida.hasMany(db.DetalleRecepcion, {
+  foreignKey: 'unidadMedidaId',
+  as: 'detallesRecepcion'
+});
+
+db.DetalleRecepcion.belongsTo(db.UnidadMedida, {
+  foreignKey: 'unidadMedidaId',
+  as: 'unidadMedida'
+});
 // ==========================================
 // Usuario - Recepción
 // ==========================================
@@ -791,6 +806,144 @@ db.Usuario.hasMany(db.EvidenciaAccionCorrectiva, {
   foreignKey: 'subidoPor',
   as: 'evidenciasSubidas',
 });
+
+// RECEPCIÓN
+Proveedor.hasMany(Recepcion, {
+  foreignKey: 'proveedorId',
+  as: 'recepciones'
+});
+
+Recepcion.belongsTo(Proveedor, {
+  foreignKey: 'proveedorId',
+  as: 'proveedor'
+});
+
+Bodega.hasMany(Recepcion, {
+  foreignKey: 'bodegaId',
+  as: 'recepciones'
+});
+
+Recepcion.belongsTo(Bodega, {
+  foreignKey: 'bodegaId',
+  as: 'bodega'
+});
+
+LugarArea.hasMany(Recepcion, {
+  foreignKey: 'lugarAreaId',
+  as: 'recepciones'
+});
+
+Recepcion.belongsTo(LugarArea, {
+  foreignKey: 'lugarAreaId',
+  as: 'lugarArea'
+});
+
+Usuario.hasMany(Recepcion, {
+  foreignKey: 'usuarioRecepcionId',
+  as: 'recepcionesRealizadas'
+});
+
+Recepcion.belongsTo(Usuario, {
+  foreignKey: 'usuarioRecepcionId',
+  as: 'usuarioRecepcion'
+});
+
+// DETALLES
+Recepcion.hasMany(DetalleRecepcion, {
+  foreignKey: 'recepcionId',
+  as: 'detalles'
+});
+
+DetalleRecepcion.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
+Producto.hasMany(DetalleRecepcion, {
+  foreignKey: 'productoId',
+  as: 'detallesRecepcion'
+});
+
+DetalleRecepcion.belongsTo(Producto, {
+  foreignKey: 'productoId',
+  as: 'producto'
+});
+
+// VEHÍCULO
+Recepcion.hasMany(RecepcionVehiculo, {
+  foreignKey: 'recepcionId',
+  as: 'vehiculos'
+});
+
+RecepcionVehiculo.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
+Vehiculo.hasMany(RecepcionVehiculo, {
+  foreignKey: 'vehiculoId',
+  as: 'recepcionesVehiculo'
+});
+
+RecepcionVehiculo.belongsTo(Vehiculo, {
+  foreignKey: 'vehiculoId',
+  as: 'vehiculo'
+});
+
+// VERIFICACIÓN
+Recepcion.hasOne(VerificacionRecepcion, {
+  foreignKey: 'recepcionId',
+  as: 'verificacion'
+});
+
+VerificacionRecepcion.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
+// TEMPERATURAS
+Recepcion.hasMany(TemperaturaRecepcion, {
+  foreignKey: 'recepcionId',
+  as: 'temperaturas'
+});
+
+TemperaturaRecepcion.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
+Producto.hasMany(TemperaturaRecepcion, {
+  foreignKey: 'productoId',
+  as: 'temperaturasRecepcion'
+});
+
+TemperaturaRecepcion.belongsTo(Producto, {
+  foreignKey: 'productoId',
+  as: 'producto'
+});
+
+// CONDICIÓN AMBIENTAL
+Recepcion.hasOne(CondicionAmbientalRecepcion, {
+  foreignKey: 'recepcionId',
+  as: 'condicionAmbiental'
+});
+
+CondicionAmbientalRecepcion.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
+// RESULTADO
+Recepcion.hasOne(ResultadoRecepcion, {
+  foreignKey: 'recepcionId',
+  as: 'resultado'
+});
+
+ResultadoRecepcion.belongsTo(Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion'
+});
+
 db.EvidenciaAccionCorrectiva.belongsTo(db.Usuario, { foreignKey: 'subidoPor', as: 'autor' });
 
 db.sequelize = sequelize;

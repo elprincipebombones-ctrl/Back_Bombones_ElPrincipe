@@ -924,3 +924,600 @@ exports.actualizarRecepcionValidator = [
     )
 ];
 
+exports.crearBodegaValidator = [
+    body('codigo')
+        .trim()
+        .notEmpty()
+        .withMessage('El código es obligatorio')
+        .isLength({ max: 50 })
+        .withMessage('El código no puede superar los 50 caracteres'),
+
+    body('nombre')
+        .trim()
+        .notEmpty()
+        .withMessage('El nombre es obligatorio')
+        .isLength({ max: 150 })
+        .withMessage('El nombre no puede superar los 150 caracteres'),
+
+    body('tipo')
+        .trim()
+        .notEmpty()
+        .withMessage('El tipo de bodega es obligatorio')
+        .isLength({ max: 50 })
+        .withMessage('El tipo no puede superar los 50 caracteres'),
+
+    body('descripcion')
+        .optional({ nullable: true })
+        .trim(),
+
+    body('direccion')
+        .optional({ nullable: true })
+        .trim()
+        .isLength({ max: 250 })
+        .withMessage('La dirección no puede superar los 250 caracteres'),
+
+    body('responsableId')
+        .optional({ nullable: true })
+        .isUUID()
+        .withMessage('El responsableId debe ser un UUID válido'),
+
+    body('estado')
+        .optional()
+        .isBoolean()
+        .withMessage('El estado debe ser booleano')
+];
+
+
+exports.actualizarBodegaValidator = [
+    body('codigo')
+        .optional()
+        .trim()
+        .notEmpty()
+        .withMessage('El código no puede estar vacío')
+        .isLength({ max: 50 })
+        .withMessage('El código no puede superar los 50 caracteres'),
+
+    body('nombre')
+        .optional()
+        .trim()
+        .notEmpty()
+        .withMessage('El nombre no puede estar vacío')
+        .isLength({ max: 150 })
+        .withMessage('El nombre no puede superar los 150 caracteres'),
+
+    body('tipo')
+        .optional()
+        .trim()
+        .notEmpty()
+        .withMessage('El tipo no puede estar vacío')
+        .isLength({ max: 50 })
+        .withMessage('El tipo no puede superar los 50 caracteres'),
+
+    body('descripcion')
+        .optional({ nullable: true })
+        .trim(),
+
+    body('direccion')
+        .optional({ nullable: true })
+        .trim()
+        .isLength({ max: 250 })
+        .withMessage('La dirección no puede superar los 250 caracteres'),
+
+    body('responsableId')
+        .optional({ nullable: true })
+        .isUUID()
+        .withMessage('El responsableId debe ser un UUID válido'),
+
+    body('estado')
+        .optional()
+        .isBoolean()
+        .withMessage('El estado debe ser booleano')
+];
+
+
+exports.idDetalleRecepcionValidator = [
+  param('id')
+    .isUUID()
+    .withMessage('El id del detalle de recepción debe ser un UUID válido')
+];
+
+
+exports.crearDetalleRecepcionValidator = [
+  body('productoId')
+    .notEmpty()
+    .withMessage('El producto es obligatorio')
+    .isUUID()
+    .withMessage('El productoId debe ser un UUID válido'),
+
+  body('unidadMedidaId')
+    .notEmpty()
+    .withMessage('La unidad de medida es obligatoria')
+    .isUUID()
+    .withMessage('El unidadMedidaId debe ser un UUID válido'),
+
+  body('cantidad')
+    .notEmpty()
+    .withMessage('La cantidad es obligatoria')
+    .isDecimal()
+    .withMessage('La cantidad debe ser un número decimal'),
+
+  body('lote')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('El lote no puede superar los 100 caracteres'),
+
+  body('fechaVencimiento')
+    .optional({ nullable: true })
+    .isISO8601()
+    .withMessage('La fecha de vencimiento debe tener un formato de fecha válido'),
+
+  body('observaciones')
+    .optional({ nullable: true })
+    .trim()
+];
+
+
+exports.actualizarDetalleRecepcionValidator = [
+  body('productoId')
+    .optional()
+    .isUUID()
+    .withMessage('El productoId debe ser un UUID válido'),
+
+  body('unidadMedidaId')
+    .optional()
+    .isUUID()
+    .withMessage('El unidadMedidaId debe ser un UUID válido'),
+
+  body('cantidad')
+    .optional()
+    .isDecimal()
+    .withMessage('La cantidad debe ser un número decimal'),
+
+  body('lote')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('El lote no puede superar los 100 caracteres'),
+
+  body('fechaVencimiento')
+    .optional({ nullable: true })
+    .isISO8601()
+    .withMessage('La fecha de vencimiento debe tener un formato de fecha válido'),
+
+  body('observaciones')
+    .optional({ nullable: true })
+    .trim()
+];
+
+exports.idRecepcionVehiculoValidator = [
+  param('id')
+    .isUUID()
+    .withMessage(
+      'El id del vehículo de recepción debe ser un UUID válido'
+    )
+];
+
+
+exports.crearRecepcionVehiculoValidator = [
+  body('vehiculoId')
+    .notEmpty()
+    .withMessage('El vehículo es obligatorio')
+    .isUUID()
+    .withMessage('El vehiculoId debe ser un UUID válido'),
+
+  body('temperatura')
+    .optional({ nullable: true })
+    .isDecimal()
+    .withMessage('La temperatura debe ser un número decimal'),
+
+  body('precinto')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage(
+      'El precinto no puede superar los 100 caracteres'
+    ),
+
+  body('guiaTransporte')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage(
+      'La guía de transporte no puede superar los 100 caracteres'
+    ),
+
+  body('hora')
+    .optional({ nullable: true })
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/)
+    .withMessage(
+      'La hora debe tener formato HH:mm o HH:mm:ss'
+    ),
+
+  body('vehiculoConductorOk')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage(
+      'vehiculoConductorOk debe ser booleano'
+    )
+];
+
+
+exports.actualizarRecepcionVehiculoValidator = [
+  body('vehiculoId')
+    .optional()
+    .isUUID()
+    .withMessage('El vehiculoId debe ser un UUID válido'),
+
+  body('temperatura')
+    .optional({ nullable: true })
+    .isDecimal()
+    .withMessage('La temperatura debe ser un número decimal'),
+
+  body('precinto')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage(
+      'El precinto no puede superar los 100 caracteres'
+    ),
+
+  body('guiaTransporte')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage(
+      'La guía de transporte no puede superar los 100 caracteres'
+    ),
+
+  body('hora')
+    .optional({ nullable: true })
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/)
+    .withMessage(
+      'La hora debe tener formato HH:mm o HH:mm:ss'
+    ),
+
+  body('vehiculoConductorOk')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage(
+      'vehiculoConductorOk debe ser booleano'
+    )
+];
+
+exports.crearVerificacionRecepcionValidator = [
+  body('certificadoCalidad')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('certificadoCalidad debe ser booleano'),
+
+  body('plagas')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('plagas debe ser booleano'),
+
+  body('rotuladoCorrecto')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('rotuladoCorrecto debe ser booleano'),
+
+  body('condicionesEmbalaje')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('condicionesEmbalaje debe ser booleano'),
+
+  body('aparienciaColorTextura')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('aparienciaColorTextura debe ser booleano'),
+
+  body('empaqueEmbalaje')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('empaqueEmbalaje debe ser booleano'),
+
+  body('olor')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('olor debe ser booleano')
+];
+
+
+exports.actualizarVerificacionRecepcionValidator = [
+  body('certificadoCalidad')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('certificadoCalidad debe ser booleano'),
+
+  body('plagas')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('plagas debe ser booleano'),
+
+  body('rotuladoCorrecto')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('rotuladoCorrecto debe ser booleano'),
+
+  body('condicionesEmbalaje')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('condicionesEmbalaje debe ser booleano'),
+
+  body('aparienciaColorTextura')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('aparienciaColorTextura debe ser booleano'),
+
+  body('empaqueEmbalaje')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('empaqueEmbalaje debe ser booleano'),
+
+  body('olor')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage('olor debe ser booleano')
+];
+
+exports.idTemperaturaRecepcionValidator = [
+  param('id')
+    .isUUID()
+    .withMessage(
+      'El id de la temperatura de recepción debe ser un UUID válido'
+    )
+];
+
+
+exports.crearTemperaturaRecepcionValidator = [
+  body('productoId')
+    .notEmpty()
+    .withMessage('El producto es obligatorio')
+    .isUUID()
+    .withMessage('El productoId debe ser un UUID válido'),
+
+  body('temperatura')
+    .notEmpty()
+    .withMessage('La temperatura es obligatoria')
+    .isDecimal()
+    .withMessage('La temperatura debe ser un número decimal'),
+
+  body('hora')
+    .optional({ nullable: true })
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/)
+    .withMessage(
+      'La hora debe tener formato HH:mm o HH:mm:ss'
+    ),
+
+  body('observaciones')
+    .optional({ nullable: true })
+    .trim()
+];
+
+
+exports.actualizarTemperaturaRecepcionValidator = [
+  body('productoId')
+    .optional()
+    .isUUID()
+    .withMessage('El productoId debe ser un UUID válido'),
+
+  body('temperatura')
+    .optional()
+    .isDecimal()
+    .withMessage('La temperatura debe ser un número decimal'),
+
+  body('hora')
+    .optional({ nullable: true })
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/)
+    .withMessage(
+      'La hora debe tener formato HH:mm o HH:mm:ss'
+    ),
+
+  body('observaciones')
+    .optional({ nullable: true })
+    .trim()
+];
+
+exports.crearCondicionAmbientalRecepcionValidator = [
+  body('temperatura')
+    .optional({ nullable: true })
+    .isDecimal()
+    .withMessage(
+      'La temperatura debe ser un número decimal'
+    ),
+
+  body('desinfeccionRealizada')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage(
+      'desinfeccionRealizada debe ser booleano'
+    ),
+
+  body('productoDesinfeccion')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 150 })
+    .withMessage(
+      'El producto de desinfección no puede superar los 150 caracteres'
+    ),
+
+  body('concentracionDesinfeccion')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage(
+      'La concentración de desinfección no puede superar los 50 caracteres'
+    ),
+
+  body('observaciones')
+    .optional({ nullable: true })
+    .trim()
+];
+
+
+exports.actualizarCondicionAmbientalRecepcionValidator = [
+  body('temperatura')
+    .optional({ nullable: true })
+    .isDecimal()
+    .withMessage(
+      'La temperatura debe ser un número decimal'
+    ),
+
+  body('desinfeccionRealizada')
+    .optional({ nullable: true })
+    .isBoolean()
+    .withMessage(
+      'desinfeccionRealizada debe ser booleano'
+    ),
+
+  body('productoDesinfeccion')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 150 })
+    .withMessage(
+      'El producto de desinfección no puede superar los 150 caracteres'
+    ),
+
+  body('concentracionDesinfeccion')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage(
+      'La concentración de desinfección no puede superar los 50 caracteres'
+    ),
+
+  body('observaciones')
+    .optional({ nullable: true })
+    .trim()
+];
+
+exports.crearResultadoRecepcionValidator = [
+  body('resultado')
+    .trim()
+    .notEmpty()
+    .withMessage('El resultado es obligatorio')
+    .isLength({ max: 30 })
+    .withMessage(
+      'El resultado no puede superar los 30 caracteres'
+    ),
+
+  body('observaciones')
+    .optional({ nullable: true })
+    .trim(),
+
+  body('fechaDecision')
+    .optional({ nullable: true })
+    .isISO8601()
+    .withMessage(
+      'La fecha de decisión debe ser una fecha válida'
+    )
+];
+
+
+exports.actualizarResultadoRecepcionValidator = [
+  body('resultado')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('El resultado no puede estar vacío')
+    .isLength({ max: 30 })
+    .withMessage(
+      'El resultado no puede superar los 30 caracteres'
+    ),
+
+  body('observaciones')
+    .optional({ nullable: true })
+    .trim(),
+
+  body('fechaDecision')
+    .optional({ nullable: true })
+    .isISO8601()
+    .withMessage(
+      'La fecha de decisión debe ser una fecha válida'
+    )
+];
+
+exports.idUnidadMedidaValidator = [
+  param('id')
+    .isUUID()
+    .withMessage('El ID de la unidad de medida no es válido')
+];
+
+exports.crearUnidadMedidaValidator = [
+  body('codigo')
+    .notEmpty()
+    .withMessage('El código de la unidad de medida es obligatorio')
+    .isString()
+    .withMessage('El código debe ser un texto')
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('El código no puede superar los 20 caracteres'),
+
+  body('nombre')
+    .notEmpty()
+    .withMessage('El nombre de la unidad de medida es obligatorio')
+    .isString()
+    .withMessage('El nombre debe ser un texto')
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('El nombre no puede superar los 100 caracteres'),
+
+  body('simbolo')
+    .notEmpty()
+    .withMessage('El símbolo de la unidad de medida es obligatorio')
+    .isString()
+    .withMessage('El símbolo debe ser un texto')
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('El símbolo no puede superar los 20 caracteres'),
+
+  body('descripcion')
+    .optional({ nullable: true })
+    .isString()
+    .withMessage('La descripción debe ser un texto'),
+
+  body('estado')
+    .optional()
+    .isBoolean()
+    .withMessage('El estado debe ser verdadero o falso')
+];
+
+exports.actualizarUnidadMedidaValidator = [
+  param('id')
+    .isUUID()
+    .withMessage('El ID de la unidad de medida no es válido'),
+
+  body('codigo')
+    .optional()
+    .isString()
+    .withMessage('El código debe ser un texto')
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('El código no puede superar los 20 caracteres'),
+
+  body('nombre')
+    .optional()
+    .isString()
+    .withMessage('El nombre debe ser un texto')
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('El nombre no puede superar los 100 caracteres'),
+
+  body('simbolo')
+    .optional()
+    .isString()
+    .withMessage('El símbolo debe ser un texto')
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('El símbolo no puede superar los 20 caracteres'),
+
+  body('descripcion')
+    .optional({ nullable: true })
+    .isString()
+    .withMessage('La descripción debe ser un texto'),
+
+  body('estado')
+    .optional()
+    .isBoolean()
+    .withMessage('El estado debe ser verdadero o falso')
+];

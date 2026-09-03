@@ -1,7 +1,7 @@
 const { Router } = require('express');
 
 const ctrl = require(
-  '../../controllers/recepcion/recepcion.controller'
+  '../../controllers/recepcion/resultadoRecepcion.controller'
 );
 
 const auth = require('../../middleware/auth');
@@ -10,8 +10,8 @@ const validar = require('../../middleware/validar');
 
 const {
   idRecepcionValidator,
-  crearRecepcionValidator,
-  actualizarRecepcionValidator
+  crearResultadoRecepcionValidator,
+  actualizarResultadoRecepcionValidator
 } = require('../../validators/maestro.validator');
 
 const router = Router();
@@ -26,63 +26,39 @@ router.use(auth);
 /**
  * @swagger
  * tags:
- *   name: Recepciones
- *   description: Gestión de recepción de productos y materias primas
+ *   name: Resultados de Recepción
+ *   description: Resultado final de la recepción
  */
 
 
 // =====================================================
-// LISTAR RECEPCIONES
+// OBTENER RESULTADO
 // =====================================================
 
 /**
  * @swagger
- * /api/recepciones:
+ * /api/recepciones/{recepcionId}/resultado:
  *   get:
- *     tags: [Recepciones]
- *     summary: Listar recepciones
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Lista de recepciones
- */
-
-router.get(
-  '/',
-  permiso('Recepcion.Ver'),
-  ctrl.listar
-);
-
-
-// =====================================================
-// OBTENER RECEPCIÓN
-// =====================================================
-
-/**
- * @swagger
- * /api/recepciones/{id}:
- *   get:
- *     tags: [Recepciones]
- *     summary: Obtener una recepción por ID
+ *     tags: [Resultados de Recepción]
+ *     summary: Obtener el resultado de una recepción
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: recepcionId
  *         required: true
  *         schema:
  *           type: string
  *           format: uuid
  *     responses:
  *       200:
- *         description: Recepción encontrada
+ *         description: Resultado encontrado
  *       404:
- *         description: Recepción no encontrada
+ *         description: Resultado no encontrado
  */
 
 router.get(
-  '/:id',
+  '/:recepcionId/resultado',
   permiso('Recepcion.Ver'),
   idRecepcionValidator,
   validar,
@@ -91,17 +67,24 @@ router.get(
 
 
 // =====================================================
-// CREAR RECEPCIÓN
+// CREAR RESULTADO
 // =====================================================
 
 /**
  * @swagger
- * /api/recepciones:
+ * /api/recepciones/{recepcionId}/resultado:
  *   post:
- *     tags: [Recepciones]
- *     summary: Crear una recepción
+ *     tags: [Resultados de Recepción]
+ *     summary: Registrar el resultado de una recepción
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: recepcionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
  *     requestBody:
  *       required: true
  *       content:
@@ -109,64 +92,49 @@ router.get(
  *           schema:
  *             type: object
  *             required:
- *               - numero
- *               - fechaRecepcion
- *               - proveedorId
+ *               - resultado
  *             properties:
- *               numero:
+ *               resultado:
  *                 type: string
- *                 example: REC-000001
- *               fechaRecepcion:
- *                 type: string
- *                 format: date-time
- *                 example: 2026-08-24T08:30:00
- *               proveedorId:
- *                 type: string
- *                 format: uuid
- *               bodegaId:
- *                 type: string
- *                 format: uuid
- *               lugarAreaId:
- *                 type: string
- *                 format: uuid
- *               estado:
- *                 type: string
- *                 example: PENDIENTE
+ *                 example: APROBADO
  *               observaciones:
  *                 type: string
+ *                 example: Recepción aceptada correctamente
+ *               fechaDecision:
+ *                 type: string
+ *                 format: date-time
  *     responses:
  *       201:
- *         description: Recepción creada
- *       400:
- *         description: Datos inválidos
+ *         description: Resultado creado
  *       409:
- *         description: Ya existe una recepción con ese número
+ *         description: La recepción ya tiene un resultado
  */
 
 router.post(
-  '/',
+  '/:recepcionId/resultado',
   permiso('Recepcion.Crear'),
-  crearRecepcionValidator,
+  idRecepcionValidator,
+  crearResultadoRecepcionValidator,
   validar,
   ctrl.crear
 );
 
 
 // =====================================================
-// ACTUALIZAR RECEPCIÓN
+// ACTUALIZAR RESULTADO
 // =====================================================
 
 /**
  * @swagger
- * /api/recepciones/{id}:
+ * /api/recepciones/{recepcionId}/resultado:
  *   put:
- *     tags: [Recepciones]
- *     summary: Actualizar una recepción
+ *     tags: [Resultados de Recepción]
+ *     summary: Actualizar el resultado de una recepción
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: recepcionId
  *         required: true
  *         schema:
  *           type: string
@@ -177,51 +145,60 @@ router.post(
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               resultado:
+ *                 type: string
+ *                 example: APROBADO
+ *               observaciones:
+ *                 type: string
+ *               fechaDecision:
+ *                 type: string
+ *                 format: date-time
  *     responses:
  *       200:
- *         description: Recepción actualizada
+ *         description: Resultado actualizado
  *       404:
- *         description: Recepción no encontrada
+ *         description: Resultado no encontrado
  */
 
 router.put(
-  '/:id',
+  '/:recepcionId/resultado',
   permiso('Recepcion.Editar'),
   idRecepcionValidator,
-  actualizarRecepcionValidator,
+  actualizarResultadoRecepcionValidator,
   validar,
   ctrl.actualizar
 );
 
 
 // =====================================================
-// ELIMINAR RECEPCIÓN
+// ELIMINAR RESULTADO
 // =====================================================
 
 /**
  * @swagger
- * /api/recepciones/{id}:
+ * /api/recepciones/{recepcionId}/resultado:
  *   delete:
- *     tags: [Recepciones]
- *     summary: Eliminar una recepción
+ *     tags: [Resultados de Recepción]
+ *     summary: Eliminar el resultado de una recepción
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: recepcionId
  *         required: true
  *         schema:
  *           type: string
  *           format: uuid
  *     responses:
  *       200:
- *         description: Recepción eliminada
+ *         description: Resultado eliminado
  *       404:
- *         description: Recepción no encontrada
+ *         description: Resultado no encontrado
  */
 
 router.delete(
-  '/:id',
+  '/:recepcionId/resultado',
   permiso('Recepcion.Eliminar'),
   idRecepcionValidator,
   validar,

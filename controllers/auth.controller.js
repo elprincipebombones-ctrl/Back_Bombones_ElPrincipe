@@ -158,7 +158,7 @@ exports.login = async (req, res, next) => {
     return next(err);
   }
 };
-exports.refresh = async (req, res, _next) => {
+exports.refresh = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
     const decoded = verificarRefreshToken(refreshToken);

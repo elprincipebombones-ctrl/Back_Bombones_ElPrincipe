@@ -12,67 +12,41 @@ const DetalleRecepcion = sequelize.define(
 
     recepcionId: {
       type: DataTypes.UUID,
-      allowNull: false,
-      field: 'recepcion_id',
-      references: {
-        model: 'recepciones',
-        key: 'id'
-      }
+      allowNull: false
     },
 
     productoId: {
       type: DataTypes.UUID,
-      allowNull: true,
-      field: 'producto_id',
-      references: {
-        model: 'productos',
-        key: 'id'
-      }
+      allowNull: false
     },
 
-    materiaPrimaId: {
+    unidadMedidaId: {
       type: DataTypes.UUID,
-      allowNull: true,
-      field: 'materia_prima_id',
-      references: {
-        model: 'materias_primas',
-        key: 'id'
-      }
+      allowNull: false
     },
 
-    unidadMedida: {
-      type: DataTypes.STRING(30),
-      allowNull: false,
-      field: 'unidad_medida'
-    },
-
-    cantidadSolicitada: {
-      type: DataTypes.DECIMAL(12, 3),
-      allowNull: true,
-      field: 'cantidad_solicitada'
-    },
-
-    cantidadRecibida: {
-      type: DataTypes.DECIMAL(12, 3),
-      allowNull: false,
-      field: 'cantidad_recibida'
-    },
-
-    fechaVencimiento: {
-      type: DataTypes.DATEONLY,
-      allowNull: true,
-      field: 'fecha_vencimiento'
+    cantidad: {
+      type: DataTypes.DECIMAL(15, 3),
+      allowNull: false
     },
 
     lote: {
       type: DataTypes.STRING(100),
       allowNull: true
     },
-
     loteProveedor: {
       type: DataTypes.STRING(100),
       allowNull: true,
       field: 'lote_proveedor'
+    },
+    fechaVencimiento: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
+
+    observaciones: {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   },
   {

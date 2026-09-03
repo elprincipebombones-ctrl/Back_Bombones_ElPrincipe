@@ -2,8 +2,8 @@ const { DataTypes } = require('sequelize');
 
 const sequelize = require('../../database/database');
 
-const Producto = sequelize.define(
-  'Producto',
+const Bodega = sequelize.define(
+  'Bodega',
   {
     id: {
       type: DataTypes.UUID,
@@ -22,31 +22,29 @@ const Producto = sequelize.define(
       allowNull: false
     },
 
+    tipo: {
+      type: DataTypes.STRING(50),
+      allowNull: false
+    },
+
     descripcion: {
       type: DataTypes.TEXT,
       allowNull: true
     },
 
-    categoriaProductoId: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: {
-        model: 'categorias_productos',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'RESTRICT'
+    direccion: {
+      type: DataTypes.STRING(250),
+      allowNull: true
     },
 
-    unidadMedidaId: {
+    responsableId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
+      field: 'responsable_id',
       references: {
-        model: 'unidades_medida',
+        model: 'usuarios',
         key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'RESTRICT'
+      }
     },
 
     estado: {
@@ -56,10 +54,10 @@ const Producto = sequelize.define(
     }
   },
   {
-    tableName: 'productos',
+    tableName: 'bodegas',
     timestamps: true,
     underscored: true
   }
 );
 
-module.exports = Producto;
+module.exports = Bodega;
