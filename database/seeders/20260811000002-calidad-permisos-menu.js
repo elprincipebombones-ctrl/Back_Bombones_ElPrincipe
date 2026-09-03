@@ -6,8 +6,14 @@ module.exports = {
   async up(queryInterface) {
     const ahora = new Date();
     const nombresPermiso = [
-      'calidad.ver', 'calidad.crear', 'calidad.editar', 'calidad.eliminar',
-      'reglas.ver', 'reglas.crear', 'reglas.editar', 'reglas.eliminar',
+      'calidad.ver',
+      'calidad.crear',
+      'calidad.editar',
+      'calidad.eliminar',
+      'reglas.ver',
+      'reglas.crear',
+      'reglas.editar',
+      'reglas.eliminar',
     ];
     const [existentes] = await queryInterface.sequelize.query(
       `SELECT id, nombre FROM permissions WHERE nombre IN (${nombresPermiso.map(() => '?').join(',')})`,
@@ -43,7 +49,8 @@ module.exports = {
     const relacionesPermiso = [...mapaPermisos.values()]
       .filter((id) => !asignadosIds.has(id))
       .map((id) => ({ rol_id: administrador.id, permiso_id: id }));
-    if (relacionesPermiso.length) await queryInterface.bulkInsert('role_permissions', relacionesPermiso);
+    if (relacionesPermiso.length)
+      await queryInterface.bulkInsert('role_permissions', relacionesPermiso);
 
     const menusDef = [
       { nombre: 'Calidad', ruta: '/calidad', icono: 'verified', orden: 20 },
@@ -77,8 +84,14 @@ module.exports = {
 
   async down(queryInterface) {
     const nombresPermiso = [
-      'calidad.ver', 'calidad.crear', 'calidad.editar', 'calidad.eliminar',
-      'reglas.ver', 'reglas.crear', 'reglas.editar', 'reglas.eliminar',
+      'calidad.ver',
+      'calidad.crear',
+      'calidad.editar',
+      'calidad.eliminar',
+      'reglas.ver',
+      'reglas.crear',
+      'reglas.editar',
+      'reglas.eliminar',
     ];
     const [permisos] = await queryInterface.sequelize.query(
       `SELECT id FROM permissions WHERE nombre IN (${nombresPermiso.map(() => '?').join(',')})`,
@@ -90,9 +103,12 @@ module.exports = {
       { replacements: rutas },
     );
     if (permisos.length) {
-      await queryInterface.bulkDelete('role_permissions', { permiso_id: permisos.map((p) => p.id) });
+      await queryInterface.bulkDelete('role_permissions', {
+        permiso_id: permisos.map((p) => p.id),
+      });
     }
-    if (menus.length) await queryInterface.bulkDelete('role_menus', { menu_id: menus.map((m) => m.id) });
+    if (menus.length)
+      await queryInterface.bulkDelete('role_menus', { menu_id: menus.map((m) => m.id) });
     await queryInterface.bulkDelete('menus', { ruta: rutas });
     await queryInterface.bulkDelete('permissions', { nombre: nombresPermiso });
   },

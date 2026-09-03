@@ -7,7 +7,10 @@ const { QueryTypes } = require('sequelize');
 process.env.PORT = process.env.TEST_PORT || '3020';
 
 const db = require('../models');
-const { rutaDesdeUrl, eliminarSilencioso } = require('../services/calidad/almacenamiento-evidencias.service');
+const {
+  rutaDesdeUrl,
+  eliminarSilencioso,
+} = require('../services/calidad/almacenamiento-evidencias.service');
 require('../app');
 
 const baseUrl = `http://localhost:${process.env.PORT}/api`;
@@ -139,11 +142,12 @@ const main = async () => {
     const accion = await crearEscenario();
     const headers = { authorization: `Bearer ${token}` };
 
-    const guardar = (respuestas) => fetch(`${baseUrl}/calidad/inspecciones/${inspeccion.id}/respuestas`, {
-      method: 'POST',
-      headers: { ...headers, 'content-type': 'application/json' },
-      body: JSON.stringify({ respuestas }),
-    });
+    const guardar = (respuestas) =>
+      fetch(`${baseUrl}/calidad/inspecciones/${inspeccion.id}/respuestas`, {
+        method: 'POST',
+        headers: { ...headers, 'content-type': 'application/json' },
+        body: JSON.stringify({ respuestas }),
+      });
     const primeraCaptura = await guardar([
       { campoFormatoId: campoObligatorio.id, valorNumero: 18 },
       { campoFormatoId: campoInformativo.id, valorNumero: 19 },
@@ -160,16 +164,22 @@ const main = async () => {
     assert.equal(cambioInformativo.status, 200);
     console.log('✓ Edición de respuestas: obligatorio bloqueado e informativo editable');
 
-    const bandeja = await fetch(`${baseUrl}/calidad/acciones-correctivas?solo_pendientes=true`, { headers });
+    const bandeja = await fetch(`${baseUrl}/calidad/acciones-correctivas?solo_pendientes=true`, {
+      headers,
+    });
     assert.equal(bandeja.status, 200);
     const accionEnBandeja = (await bandeja.json()).data.find((item) => item.id === accion.id);
     assert.equal(accionEnBandeja.desviacion.inspeccion.id, inspeccion.id);
     assert.equal(accionEnBandeja.desviacion.inspeccion.version.formato.id, formato.id);
     console.log('✓ Bandeja correctiva: acción abierta agrupable con formato e inspección');
 
-    const cierreSinArchivo = await fetch(`${baseUrl}/calidad/acciones-correctivas/${accion.id}/cerrar`, {
-      method: 'POST', headers,
-    });
+    const cierreSinArchivo = await fetch(
+      `${baseUrl}/calidad/acciones-correctivas/${accion.id}/cerrar`,
+      {
+        method: 'POST',
+        headers,
+      },
+    );
     assert.equal(cierreSinArchivo.status, 409);
 
     const formulario = new FormData();
@@ -179,24 +189,38 @@ const main = async () => {
       'evidencia-prueba.pdf',
     );
     const carga = await fetch(`${baseUrl}/calidad/acciones-correctivas/${accion.id}/evidencias`, {
-      method: 'POST', headers, body: formulario,
+      method: 'POST',
+      headers,
+      body: formulario,
     });
     if (carga.status !== 201) throw new Error(`Carga HTTP ${carga.status}: ${await carga.text()}`);
     evidencia = (await carga.json()).data;
     assert.equal(evidencia.tipoArchivo, 'application/pdf');
 
-    const descarga = await fetch(`http://localhost:${process.env.PORT}${evidencia.urlArchivo}`, { headers });
+    const descarga = await fetch(`http://localhost:${process.env.PORT}${evidencia.urlArchivo}`, {
+      headers,
+    });
     assert.equal(descarga.status, 200);
     assert.equal(descarga.headers.get('content-type'), 'application/pdf');
 
-    const cierreConArchivo = await fetch(`${baseUrl}/calidad/acciones-correctivas/${accion.id}/cerrar`, {
-      method: 'POST', headers,
-    });
+    const cierreConArchivo = await fetch(
+      `${baseUrl}/calidad/acciones-correctivas/${accion.id}/cerrar`,
+      {
+        method: 'POST',
+        headers,
+      },
+    );
     if (cierreConArchivo.status !== 200) {
       throw new Error(`Cierre HTTP ${cierreConArchivo.status}: ${await cierreConArchivo.text()}`);
     }
-    const bandejaFinal = await fetch(`${baseUrl}/calidad/acciones-correctivas?solo_pendientes=true`, { headers });
-    assert.equal((await bandejaFinal.json()).data.some((item) => item.id === accion.id), false);
+    const bandejaFinal = await fetch(
+      `${baseUrl}/calidad/acciones-correctivas?solo_pendientes=true`,
+      { headers },
+    );
+    assert.equal(
+      (await bandejaFinal.json()).data.some((item) => item.id === accion.id),
+      false,
+    );
     console.log('✓ Evidencia HTTP: sin PDF no cierra; carga, descarga y cierre correctos');
   } finally {
     if (evidencia?.urlArchivo) eliminarSilencioso(rutaDesdeUrl(evidencia.urlArchivo));
@@ -208,4 +232,7 @@ const main = async () => {
 
 main()
   .then(() => process.exit(0))
-  .catch((error) => { console.error(error); process.exit(1); });
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

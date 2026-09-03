@@ -43,7 +43,12 @@ module.exports = {
       observaciones: { type: Sequelize.TEXT, allowNull: true },
       ...timestamps(Sequelize),
     });
-    for (const columna of ['version_formato_id', 'lugar_inspeccion_id', 'iniciada_por', 'cerrada_por']) {
+    for (const columna of [
+      'version_formato_id',
+      'lugar_inspeccion_id',
+      'iniciada_por',
+      'cerrada_por',
+    ]) {
       await queryInterface.addIndex('inspecciones', [columna]);
     }
     await queryInterface.addIndex('inspecciones', ['fecha_inspeccion', 'estado']);
@@ -113,8 +118,12 @@ module.exports = {
       name: 'uq_desviaciones_respuesta_regla',
     });
     for (const columna of [
-      'inspeccion_id', 'respuesta_inspeccion_id', 'regla_calidad_id', 'nivel_severidad_id',
-      'detectada_por', 'cerrada_por',
+      'inspeccion_id',
+      'respuesta_inspeccion_id',
+      'regla_calidad_id',
+      'nivel_severidad_id',
+      'detectada_por',
+      'cerrada_por',
     ]) {
       await queryInterface.addIndex('desviaciones', [columna]);
     }
@@ -186,7 +195,9 @@ module.exports = {
       ...timestamps(Sequelize),
     });
     for (const columna of [
-      'accion_correctiva_id', 'seguimiento_accion_correctiva_id', 'subido_por',
+      'accion_correctiva_id',
+      'seguimiento_accion_correctiva_id',
+      'subido_por',
     ]) {
       await queryInterface.addIndex('evidencias_accion_correctiva', [columna]);
     }

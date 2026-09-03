@@ -37,14 +37,34 @@ module.exports = {
     ]);
     await insertarFaltantes(queryInterface, 'tipos_campo', [
       { codigo: 'TEXTO', nombre: 'Texto', permite_opciones: false, permite_unidad: false },
-      { codigo: 'TEXTO_LARGO', nombre: 'Texto largo', permite_opciones: false, permite_unidad: false },
+      {
+        codigo: 'TEXTO_LARGO',
+        nombre: 'Texto largo',
+        permite_opciones: false,
+        permite_unidad: false,
+      },
       { codigo: 'NUMERO', nombre: 'Número', permite_opciones: false, permite_unidad: true },
       { codigo: 'SI_NO', nombre: 'Sí/No', permite_opciones: false, permite_unidad: false },
-      { codigo: 'SELECCION_UNICA', nombre: 'Selección única', permite_opciones: true, permite_unidad: false },
-      { codigo: 'SELECCION_MULTIPLE', nombre: 'Selección múltiple', permite_opciones: true, permite_unidad: false },
+      {
+        codigo: 'SELECCION_UNICA',
+        nombre: 'Selección única',
+        permite_opciones: true,
+        permite_unidad: false,
+      },
+      {
+        codigo: 'SELECCION_MULTIPLE',
+        nombre: 'Selección múltiple',
+        permite_opciones: true,
+        permite_unidad: false,
+      },
       { codigo: 'FECHA', nombre: 'Fecha', permite_opciones: false, permite_unidad: false },
       { codigo: 'HORA', nombre: 'Hora', permite_opciones: false, permite_unidad: false },
-      { codigo: 'FECHA_HORA', nombre: 'Fecha y hora', permite_opciones: false, permite_unidad: false },
+      {
+        codigo: 'FECHA_HORA',
+        nombre: 'Fecha y hora',
+        permite_opciones: false,
+        permite_unidad: false,
+      },
       { codigo: 'ARCHIVO', nombre: 'Archivo', permite_opciones: false, permite_unidad: false },
     ]);
     await insertarFaltantes(queryInterface, 'niveles_severidad', [
@@ -92,18 +112,34 @@ module.exports = {
     });
     await queryInterface.bulkDelete('tipos_accion', {
       codigo: [
-        'MARCAR_NO_CUMPLE', 'GENERAR_ALERTA', 'EXIGIR_OBSERVACION', 'EXIGIR_EVIDENCIA',
-        'BLOQUEAR_CONTINUIDAD', 'SOLICITAR_ACCION_CORRECTIVA',
+        'MARCAR_NO_CUMPLE',
+        'GENERAR_ALERTA',
+        'EXIGIR_OBSERVACION',
+        'EXIGIR_EVIDENCIA',
+        'BLOQUEAR_CONTINUIDAD',
+        'SOLICITAR_ACCION_CORRECTIVA',
       ],
     });
-    await queryInterface.bulkDelete('niveles_severidad', { codigo: ['BAJA', 'MEDIA', 'ALTA', 'CRITICA'] });
+    await queryInterface.bulkDelete('niveles_severidad', {
+      codigo: ['BAJA', 'MEDIA', 'ALTA', 'CRITICA'],
+    });
     await queryInterface.bulkDelete('tipos_campo', {
       codigo: [
-        'TEXTO', 'TEXTO_LARGO', 'NUMERO', 'SI_NO', 'SELECCION_UNICA', 'SELECCION_MULTIPLE',
-        'FECHA', 'HORA', 'FECHA_HORA', 'ARCHIVO',
+        'TEXTO',
+        'TEXTO_LARGO',
+        'NUMERO',
+        'SI_NO',
+        'SELECCION_UNICA',
+        'SELECCION_MULTIPLE',
+        'FECHA',
+        'HORA',
+        'FECHA_HORA',
+        'ARCHIVO',
       ],
     });
-    await queryInterface.bulkDelete('unidades_medida', { codigo: ['CELSIUS', 'PH', 'PORCENTAJE', 'PPM'] });
+    await queryInterface.bulkDelete('unidades_medida', {
+      codigo: ['CELSIUS', 'PH', 'PORCENTAJE', 'PPM'],
+    });
     await queryInterface.bulkDelete('tipos_inspeccion', {
       codigo: ['RECEPCION', 'PROCESO', 'ALMACENAMIENTO', 'LOCATIVA', 'DESPACHO', 'LABORATORIO'],
     });

@@ -3,7 +3,10 @@ const { body, param } = require('express-validator');
 const codigo = (opcional = false) => {
   let regla = body('codigo');
   if (opcional) regla = regla.optional();
-  return regla.trim().isLength({ min: 2, max: 30 }).matches(/^[A-Z0-9_-]+$/);
+  return regla
+    .trim()
+    .isLength({ min: 2, max: 30 })
+    .matches(/^[A-Z0-9_-]+$/);
 };
 const id = (campo, opcional = false, nullable = false) => {
   let regla = body(campo);

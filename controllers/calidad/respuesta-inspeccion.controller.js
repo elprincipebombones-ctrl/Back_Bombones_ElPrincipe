@@ -41,10 +41,18 @@ const validarTipoValor = (campo, respuesta) => {
     HORA: respuesta.valorHora,
     FECHA_HORA: respuesta.valorFechaHora,
   };
-  if (tipo === 'NUMERO' && respuesta.valorNumero !== undefined && !Number.isFinite(Number(respuesta.valorNumero))) {
+  if (
+    tipo === 'NUMERO' &&
+    respuesta.valorNumero !== undefined &&
+    !Number.isFinite(Number(respuesta.valorNumero))
+  ) {
     throw new ApiError(`El campo ${campo.etiqueta} requiere un valor numérico`, 422);
   }
-  if (tipo === 'SI_NO' && respuesta.valorBooleano !== undefined && typeof respuesta.valorBooleano !== 'boolean') {
+  if (
+    tipo === 'SI_NO' &&
+    respuesta.valorBooleano !== undefined &&
+    typeof respuesta.valorBooleano !== 'boolean'
+  ) {
     throw new ApiError(`El campo ${campo.etiqueta} requiere un valor booleano`, 422);
   }
   if (tipo === 'SELECCION_UNICA' && respuesta.opciones.length > 1) {
@@ -145,10 +153,16 @@ exports.guardarRespuestas = async (req, res, next) => {
           { transaction },
         );
       }
-      await RespuestaOpcion.destroy({ where: { respuestaInspeccionId: respuesta.id }, transaction });
+      await RespuestaOpcion.destroy({
+        where: { respuestaInspeccionId: respuesta.id },
+        transaction,
+      });
       if (opciones.length) {
         await RespuestaOpcion.bulkCreate(
-          opciones.map((opcion) => ({ respuestaInspeccionId: respuesta.id, opcionCampoId: opcion.id })),
+          opciones.map((opcion) => ({
+            respuestaInspeccionId: respuesta.id,
+            opcionCampoId: opcion.id,
+          })),
           { transaction },
         );
       }

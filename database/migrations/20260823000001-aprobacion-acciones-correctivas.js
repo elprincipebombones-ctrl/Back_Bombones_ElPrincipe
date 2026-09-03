@@ -41,14 +41,18 @@ module.exports = {
         fkUsuario(Sequelize, true),
         options,
       );
-      await queryInterface.createTable('aprobadores_acciones_correctivas', {
-        id: pk(Sequelize),
-        usuario_id: fkUsuario(Sequelize),
-        agregado_por: fkUsuario(Sequelize, true),
-        estado: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
-        created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
-        updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
-      }, options);
+      await queryInterface.createTable(
+        'aprobadores_acciones_correctivas',
+        {
+          id: pk(Sequelize),
+          usuario_id: fkUsuario(Sequelize),
+          agregado_por: fkUsuario(Sequelize, true),
+          estado: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
+          created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+          updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+        },
+        options,
+      );
       await queryInterface.addConstraint('aprobadores_acciones_correctivas', {
         fields: ['usuario_id'],
         type: 'unique',

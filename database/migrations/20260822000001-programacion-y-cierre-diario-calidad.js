@@ -24,15 +24,19 @@ module.exports = {
     await queryInterface.sequelize.transaction(async (transaction) => {
       const options = { transaction };
 
-      await queryInterface.createTable('programaciones_formato', {
-        id: pk(Sequelize),
-        formato_calidad_id: fk(Sequelize, 'formatos_calidad', false, 'CASCADE'),
-        hora_programada: { type: Sequelize.TIME, allowNull: true },
-        fecha_inicio: { type: Sequelize.DATEONLY, allowNull: false },
-        fecha_fin: { type: Sequelize.DATEONLY, allowNull: true },
-        activo: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
-        ...timestamps(Sequelize),
-      }, options);
+      await queryInterface.createTable(
+        'programaciones_formato',
+        {
+          id: pk(Sequelize),
+          formato_calidad_id: fk(Sequelize, 'formatos_calidad', false, 'CASCADE'),
+          hora_programada: { type: Sequelize.TIME, allowNull: true },
+          fecha_inicio: { type: Sequelize.DATEONLY, allowNull: false },
+          fecha_fin: { type: Sequelize.DATEONLY, allowNull: true },
+          activo: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
+          ...timestamps(Sequelize),
+        },
+        options,
+      );
       await queryInterface.addIndex('programaciones_formato', ['formato_calidad_id'], options);
       await queryInterface.addIndex(
         'programaciones_formato',
@@ -40,12 +44,16 @@ module.exports = {
         options,
       );
 
-      await queryInterface.createTable('dias_programacion', {
-        id: pk(Sequelize),
-        programacion_formato_id: fk(Sequelize, 'programaciones_formato', false, 'CASCADE'),
-        dia_semana: { type: Sequelize.INTEGER, allowNull: false },
-        ...timestamps(Sequelize),
-      }, options);
+      await queryInterface.createTable(
+        'dias_programacion',
+        {
+          id: pk(Sequelize),
+          programacion_formato_id: fk(Sequelize, 'programaciones_formato', false, 'CASCADE'),
+          dia_semana: { type: Sequelize.INTEGER, allowNull: false },
+          ...timestamps(Sequelize),
+        },
+        options,
+      );
       await queryInterface.addConstraint('dias_programacion', {
         fields: ['programacion_formato_id', 'dia_semana'],
         type: 'unique',
@@ -78,23 +86,29 @@ module.exports = {
         options,
       );
 
-      await queryInterface.changeColumn('desviaciones', 'respuesta_inspeccion_id', {
-        ...fk(Sequelize, 'respuestas_inspeccion', true, 'CASCADE'),
-      }, options);
-      await queryInterface.changeColumn('desviaciones', 'regla_calidad_id', {
-        ...fk(Sequelize, 'reglas_calidad', true, 'RESTRICT'),
-      }, options);
+      await queryInterface.changeColumn(
+        'desviaciones',
+        'respuesta_inspeccion_id',
+        {
+          ...fk(Sequelize, 'respuestas_inspeccion', true, 'CASCADE'),
+        },
+        options,
+      );
+      await queryInterface.changeColumn(
+        'desviaciones',
+        'regla_calidad_id',
+        {
+          ...fk(Sequelize, 'reglas_calidad', true, 'RESTRICT'),
+        },
+        options,
+      );
       await queryInterface.addColumn(
         'desviaciones',
         'respuesta_elemento_checklist_id',
         fk(Sequelize, 'respuestas_elemento_checklist', true, 'CASCADE'),
         options,
       );
-      await queryInterface.addIndex(
-        'desviaciones',
-        ['respuesta_elemento_checklist_id'],
-        options,
-      );
+      await queryInterface.addIndex('desviaciones', ['respuesta_elemento_checklist_id'], options);
       await queryInterface.sequelize.query(
         `CREATE UNIQUE INDEX uq_desviaciones_respuesta_checklist
          ON desviaciones (respuesta_elemento_checklist_id)
@@ -112,15 +126,32 @@ module.exports = {
   async down(queryInterface, Sequelize) {
     await queryInterface.sequelize.transaction(async (transaction) => {
       const options = { transaction };
-      await queryInterface.removeConstraint('desviaciones', 'ck_desviaciones_origen_respuesta', options);
-      await queryInterface.sequelize.query('DROP INDEX IF EXISTS uq_desviaciones_respuesta_checklist', options);
+      await queryInterface.removeConstraint(
+        'desviaciones',
+        'ck_desviaciones_origen_respuesta',
+        options,
+      );
+      await queryInterface.sequelize.query(
+        'DROP INDEX IF EXISTS uq_desviaciones_respuesta_checklist',
+        options,
+      );
       await queryInterface.removeColumn('desviaciones', 'respuesta_elemento_checklist_id', options);
-      await queryInterface.changeColumn('desviaciones', 'respuesta_inspeccion_id', {
-        ...fk(Sequelize, 'respuestas_inspeccion', false, 'CASCADE'),
-      }, options);
-      await queryInterface.changeColumn('desviaciones', 'regla_calidad_id', {
-        ...fk(Sequelize, 'reglas_calidad', false, 'RESTRICT'),
-      }, options);
+      await queryInterface.changeColumn(
+        'desviaciones',
+        'respuesta_inspeccion_id',
+        {
+          ...fk(Sequelize, 'respuestas_inspeccion', false, 'CASCADE'),
+        },
+        options,
+      );
+      await queryInterface.changeColumn(
+        'desviaciones',
+        'regla_calidad_id',
+        {
+          ...fk(Sequelize, 'reglas_calidad', false, 'RESTRICT'),
+        },
+        options,
+      );
       await queryInterface.sequelize.query(
         `ALTER TYPE enum_inspecciones_estado RENAME TO enum_inspecciones_estado_nuevo;
          CREATE TYPE enum_inspecciones_estado AS ENUM
@@ -136,7 +167,10 @@ module.exports = {
          DROP TYPE enum_inspecciones_estado_nuevo;`,
         options,
       );
-      await queryInterface.sequelize.query('DROP INDEX IF EXISTS uq_versiones_formato_publicada', options);
+      await queryInterface.sequelize.query(
+        'DROP INDEX IF EXISTS uq_versiones_formato_publicada',
+        options,
+      );
       await queryInterface.dropTable('dias_programacion', options);
       await queryInterface.dropTable('programaciones_formato', options);
     });

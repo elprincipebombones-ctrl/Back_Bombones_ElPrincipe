@@ -7,7 +7,11 @@ module.exports = crearCrud({
   nombre: 'Sección de formato',
   order: [['orden', 'ASC']],
   relaciones: [
-    { campo: 'versionFormatoId', modelo: VersionFormato, mensaje: 'Versión de formato no encontrada' },
+    {
+      campo: 'versionFormatoId',
+      modelo: VersionFormato,
+      mensaje: 'Versión de formato no encontrada',
+    },
   ],
   antesDeCrear: (body) => validarVersion(body.versionFormatoId),
   antesDeActualizar: async (seccion, body) => {

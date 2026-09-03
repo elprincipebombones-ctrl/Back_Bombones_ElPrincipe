@@ -7,10 +7,17 @@ const crud = crearCrud({
   nombre: 'Elemento de inspección',
   campoUnico: 'codigo',
   include: [{ model: CategoriaElemento, as: 'categoria' }],
-  order: [['orden', 'ASC'], ['nombre', 'ASC']],
-  relaciones: [{
-    campo: 'categoriaElementoId', modelo: CategoriaElemento, mensaje: 'Categoría no encontrada',
-  }],
+  order: [
+    ['orden', 'ASC'],
+    ['nombre', 'ASC'],
+  ],
+  relaciones: [
+    {
+      campo: 'categoriaElementoId',
+      modelo: CategoriaElemento,
+      mensaje: 'Categoría no encontrada',
+    },
+  ],
 });
 
 exports.listar = async (req, res, next) => {
@@ -18,11 +25,17 @@ exports.listar = async (req, res, next) => {
     const where = {};
     if (req.query.categoria_id) where.categoriaElementoId = req.query.categoria_id;
     if (req.query.estado !== undefined) where.estado = req.query.estado === 'true';
-    return ok(res, await ElementoInspeccion.findAll({
-      where,
-      include: [{ model: CategoriaElemento, as: 'categoria' }],
-      order: [['orden', 'ASC'], ['nombre', 'ASC']],
-    }));
+    return ok(
+      res,
+      await ElementoInspeccion.findAll({
+        where,
+        include: [{ model: CategoriaElemento, as: 'categoria' }],
+        order: [
+          ['orden', 'ASC'],
+          ['nombre', 'ASC'],
+        ],
+      }),
+    );
   } catch (error) {
     return next(error);
   }

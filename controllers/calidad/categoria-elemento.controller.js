@@ -7,7 +7,10 @@ const crud = crearCrud({
   nombre: 'Categoría de elementos',
   campoUnico: 'codigo',
   include: [{ model: ElementoInspeccion, as: 'elementos', required: false }],
-  order: [['orden', 'ASC'], ['nombre', 'ASC']],
+  order: [
+    ['orden', 'ASC'],
+    ['nombre', 'ASC'],
+  ],
 });
 
 exports.listar = crud.listar;
@@ -19,10 +22,16 @@ exports.listarElementos = async (req, res, next) => {
   try {
     const categoria = await CategoriaElemento.findByPk(req.params.id);
     if (!categoria) return fail(res, 'Categoría de elementos no encontrada', 404);
-    return ok(res, await ElementoInspeccion.findAll({
-      where: { categoriaElementoId: categoria.id },
-      order: [['orden', 'ASC'], ['nombre', 'ASC']],
-    }));
+    return ok(
+      res,
+      await ElementoInspeccion.findAll({
+        where: { categoriaElementoId: categoria.id },
+        order: [
+          ['orden', 'ASC'],
+          ['nombre', 'ASC'],
+        ],
+      }),
+    );
   } catch (error) {
     return next(error);
   }

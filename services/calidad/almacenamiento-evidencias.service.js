@@ -10,7 +10,8 @@ const TIPOS_PERMITIDOS = new Map([
   ['application/pdf', '.pdf'],
 ]);
 const directorio = path.resolve(
-  process.env.CALIDAD_EVIDENCIAS_DIR || path.join(process.cwd(), 'storage', 'calidad', 'evidencias'),
+  process.env.CALIDAD_EVIDENCIAS_DIR ||
+    path.join(process.cwd(), 'storage', 'calidad', 'evidencias'),
 );
 const maximoMb = Number(process.env.CALIDAD_EVIDENCIAS_MAX_MB || 10);
 const directorioProgramas = path.resolve(

@@ -89,8 +89,12 @@ module.exports = {
     await queryInterface.dropTable('acciones_regla');
     await queryInterface.dropTable('condiciones_regla');
     await queryInterface.dropTable('reglas_calidad');
-    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_reglas_calidad_operador_logico";');
-    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_condiciones_regla_tipo_condicion";');
+    await queryInterface.sequelize.query(
+      'DROP TYPE IF EXISTS "enum_reglas_calidad_operador_logico";',
+    );
+    await queryInterface.sequelize.query(
+      'DROP TYPE IF EXISTS "enum_condiciones_regla_tipo_condicion";',
+    );
     await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_condiciones_regla_operador";');
   },
 };

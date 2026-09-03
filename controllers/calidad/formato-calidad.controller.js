@@ -1,4 +1,10 @@
-const { FormatoCalidad, TipoInspeccion, ProgramaCalidad, VersionFormato, sequelize } = require('../../models');
+const {
+  FormatoCalidad,
+  TipoInspeccion,
+  ProgramaCalidad,
+  VersionFormato,
+  sequelize,
+} = require('../../models');
 const { ok, created, fail } = require('../../utils/response');
 
 const include = [
@@ -11,7 +17,8 @@ const validarPrograma = async (programaId, programaActualId = null) => {
   if (programaId === undefined || programaId === null) return null;
   const programa = await ProgramaCalidad.findByPk(programaId);
   if (!programa) return 'Programa no encontrado';
-  if (!programa.estado && programa.id !== programaActualId) return 'El programa seleccionado está inactivo';
+  if (!programa.estado && programa.id !== programaActualId)
+    return 'El programa seleccionado está inactivo';
   return null;
 };
 
@@ -25,20 +32,23 @@ exports.listar = async (_req, res, next) => {
 
 exports.listarOperativos = async (_req, res, next) => {
   try {
-    return ok(res, await FormatoCalidad.findAll({
-      where: { estado: true },
-      include: [
-        { model: TipoInspeccion, as: 'tipoInspeccion' },
-        { model: ProgramaCalidad, as: 'programa' },
-        {
-          model: VersionFormato,
-          as: 'versiones',
-          where: { estadoVersion: 'PUBLICADO' },
-          required: true,
-        },
-      ],
-      order: [['nombre', 'ASC']],
-    }));
+    return ok(
+      res,
+      await FormatoCalidad.findAll({
+        where: { estado: true },
+        include: [
+          { model: TipoInspeccion, as: 'tipoInspeccion' },
+          { model: ProgramaCalidad, as: 'programa' },
+          {
+            model: VersionFormato,
+            as: 'versiones',
+            where: { estadoVersion: 'PUBLICADO' },
+            required: true,
+          },
+        ],
+        order: [['nombre', 'ASC']],
+      }),
+    );
   } catch (error) {
     return next(error);
   }
@@ -102,7 +112,11 @@ exports.actualizar = async (req, res, next) => {
     const errorPrograma = await validarPrograma(req.body.programaId, formato.programaId);
     if (errorPrograma) return fail(res, errorPrograma, 422);
     await formato.update(req.body);
-    return ok(res, await FormatoCalidad.findByPk(formato.id, { include }), 'Formato de calidad actualizado');
+    return ok(
+      res,
+      await FormatoCalidad.findByPk(formato.id, { include }),
+      'Formato de calidad actualizado',
+    );
   } catch (error) {
     return next(error);
   }

@@ -46,7 +46,8 @@ module.exports = crearCrud({
     { campo: 'tipoCampoId', modelo: TipoCampo, mensaje: 'Tipo de campo no encontrado' },
     { campo: 'unidadMedidaId', modelo: UnidadMedida, mensaje: 'Unidad de medida no encontrada' },
   ],
-  antesDeCrear: async (body) => (await validarSeccion(body.seccionFormatoId)) || heredarParametro(body),
+  antesDeCrear: async (body) =>
+    (await validarSeccion(body.seccionFormatoId)) || heredarParametro(body),
   antesDeActualizar: async (campo, body) => {
     const errorDestino = await validarSeccion(body.seccionFormatoId);
     if (errorDestino) return errorDestino;

@@ -122,6 +122,8 @@ module.exports = {
     await queryInterface.dropTable('secciones_formato');
     await queryInterface.dropTable('versiones_formato');
     await queryInterface.dropTable('formatos_calidad');
-    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_versiones_formato_estado_version";');
+    await queryInterface.sequelize.query(
+      'DROP TYPE IF EXISTS "enum_versiones_formato_estado_version";',
+    );
   },
 };

@@ -17,8 +17,16 @@ module.exports = definir(
     fechaAsignacion: { type: DataTypes.DATE, allowNull: false, field: 'fecha_asignacion' },
     fechaLimite: { type: DataTypes.DATE, allowNull: true, field: 'fecha_limite' },
     fechaInicio: { type: DataTypes.DATE, allowNull: true, field: 'fecha_inicio' },
-    fechaEnvioAprobacion: { type: DataTypes.DATE, allowNull: true, field: 'fecha_envio_aprobacion' },
-    enviadaAprobacionPor: { type: DataTypes.UUID, allowNull: true, field: 'enviada_aprobacion_por' },
+    fechaEnvioAprobacion: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'fecha_envio_aprobacion',
+    },
+    enviadaAprobacionPor: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'enviada_aprobacion_por',
+    },
     fechaCierre: { type: DataTypes.DATE, allowNull: true, field: 'fecha_cierre' },
     cerradaPor: { type: DataTypes.UUID, allowNull: true, field: 'cerrada_por' },
     observacionCierre: { type: DataTypes.TEXT, field: 'observacion_cierre' },

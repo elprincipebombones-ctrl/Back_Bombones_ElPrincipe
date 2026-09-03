@@ -48,7 +48,8 @@ module.exports = ({
       }
       if (campoUnico && req.body[campoUnico]) {
         const existe = await modelo.findOne({ where: { [campoUnico]: req.body[campoUnico] } });
-        if (existe) return fail(res, `Ya existe ${nombre.toLowerCase()} con ese ${campoUnico}`, 409);
+        if (existe)
+          return fail(res, `Ya existe ${nombre.toLowerCase()} con ese ${campoUnico}`, 409);
       }
       const errorRelacion = await comprobarRelaciones(req.body);
       if (errorRelacion) return fail(res, errorRelacion, 422);
@@ -70,7 +71,8 @@ module.exports = ({
         const existe = await modelo.findOne({
           where: { [campoUnico]: req.body[campoUnico], id: { [Op.ne]: registro.id } },
         });
-        if (existe) return fail(res, `Ya existe ${nombre.toLowerCase()} con ese ${campoUnico}`, 409);
+        if (existe)
+          return fail(res, `Ya existe ${nombre.toLowerCase()} con ese ${campoUnico}`, 409);
       }
       const errorRelacion = await comprobarRelaciones(req.body);
       if (errorRelacion) return fail(res, errorRelacion, 422);

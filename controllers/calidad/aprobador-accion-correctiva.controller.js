@@ -70,7 +70,11 @@ exports.eliminar = async (req, res, next) => {
     if (!registro) return fail(res, 'Aprobador no encontrado', 404);
     const totalActivos = await AprobadorAccionCorrectiva.count({ where: { estado: true } });
     if (registro.estado && totalActivos <= 1) {
-      return fail(res, 'Debe existir al menos un aprobador. Agrega otro usuario antes de retirar este.', 409);
+      return fail(
+        res,
+        'Debe existir al menos un aprobador. Agrega otro usuario antes de retirar este.',
+        409,
+      );
     }
     await registro.destroy();
     return ok(res, null, 'Autorización retirada');

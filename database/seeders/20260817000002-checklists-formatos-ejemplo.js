@@ -4,7 +4,8 @@ const { QueryTypes } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 
 const obtenerUno = (queryInterface, sql, replacements, transaction) =>
-  queryInterface.sequelize.query(sql, { replacements, type: QueryTypes.SELECT, transaction })
+  queryInterface.sequelize
+    .query(sql, { replacements, type: QueryTypes.SELECT, transaction })
     .then(([fila]) => fila);
 
 const asegurarFormato = async (queryInterface, datos, tipoInspeccionId, transaction) => {
@@ -42,8 +43,11 @@ const asegurarFormato = async (queryInterface, datos, tipoInspeccionId, transact
        VALUES (:id, :formatoId, 1, :fecha, 'BORRADOR', :observaciones, :ahora, :ahora)
        RETURNING id`,
       {
-        id: uuidv4(), formatoId: formato.id, fecha: '2026-08-17',
-        observaciones: 'Ejemplo inicial de checklist reutilizable', ahora,
+        id: uuidv4(),
+        formatoId: formato.id,
+        fecha: '2026-08-17',
+        observaciones: 'Ejemplo inicial de checklist reutilizable',
+        ahora,
       },
       transaction,
     );
@@ -70,7 +74,13 @@ const asegurarFormato = async (queryInterface, datos, tipoInspeccionId, transact
 };
 
 const asegurarChecklist = async (
-  queryInterface, seccionId, nombre, criterioId, categorias, excluidos, transaction,
+  queryInterface,
+  seccionId,
+  nombre,
+  criterioId,
+  categorias,
+  excluidos,
+  transaction,
 ) => {
   const existente = await obtenerUno(
     queryInterface,
@@ -115,17 +125,21 @@ const asegurarChecklist = async (
     },
   );
   if (elementos.length) {
-    await queryInterface.bulkInsert('elementos_checklist', elementos.map((elemento, indice) => ({
-      id: uuidv4(),
-      checklist_seccion_id: checklist.id,
-      elemento_inspeccion_id: elemento.id,
-      codigo_snapshot: elemento.codigo,
-      nombre_snapshot: elemento.nombre,
-      orden: indice + 1,
-      estado: true,
-      created_at: ahora,
-      updated_at: ahora,
-    })), { transaction });
+    await queryInterface.bulkInsert(
+      'elementos_checklist',
+      elementos.map((elemento, indice) => ({
+        id: uuidv4(),
+        checklist_seccion_id: checklist.id,
+        elemento_inspeccion_id: elemento.id,
+        codigo_snapshot: elemento.codigo,
+        nombre_snapshot: elemento.nombre,
+        orden: indice + 1,
+        estado: true,
+        created_at: ahora,
+        updated_at: ahora,
+      })),
+      { transaction },
+    );
   }
 };
 
@@ -146,12 +160,17 @@ module.exports = {
       );
       if (!tipo || !criterio) throw new Error('Faltan LOCATIVA o LIMPIO_DESINFECTADO');
 
-      const seccionEquipos = await asegurarFormato(queryInterface, {
-        codigo: 'VERIF_DIARIA_LYD',
-        nombre: 'LISTADO DE VERIFICACIÓN DIARIA LYD',
-        descripcion: 'Ejemplo de checklist reutilizable para limpieza y desinfección diaria',
-        seccion: 'Equipos',
-      }, tipo.id, transaction);
+      const seccionEquipos = await asegurarFormato(
+        queryInterface,
+        {
+          codigo: 'VERIF_DIARIA_LYD',
+          nombre: 'LISTADO DE VERIFICACIÓN DIARIA LYD',
+          descripcion: 'Ejemplo de checklist reutilizable para limpieza y desinfección diaria',
+          seccion: 'Equipos',
+        },
+        tipo.id,
+        transaction,
+      );
       await asegurarChecklist(
         queryInterface,
         seccionEquipos,

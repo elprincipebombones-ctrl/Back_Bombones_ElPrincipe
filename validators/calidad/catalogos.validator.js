@@ -45,9 +45,13 @@ exports.crearParametroValidator = [
   body('requiereEvidenciaDefault').optional().isBoolean(),
   body('bloquearAlGuardarDefault').optional().isBoolean(),
   body().custom((valor) => {
-    if (valor.valorMinimo !== null && valor.valorMinimo !== undefined &&
-      valor.valorMaximo !== null && valor.valorMaximo !== undefined &&
-      Number(valor.valorMinimo) > Number(valor.valorMaximo)) {
+    if (
+      valor.valorMinimo !== null &&
+      valor.valorMinimo !== undefined &&
+      valor.valorMaximo !== null &&
+      valor.valorMaximo !== undefined &&
+      Number(valor.valorMinimo) > Number(valor.valorMaximo)
+    ) {
       throw new Error('valorMinimo debe ser menor o igual que valorMaximo');
     }
     return true;
@@ -66,9 +70,13 @@ exports.actualizarParametroValidator = [
   body('requiereEvidenciaDefault').optional().isBoolean(),
   body('bloquearAlGuardarDefault').optional().isBoolean(),
   body().custom((valor) => {
-    if (valor.valorMinimo !== null && valor.valorMinimo !== undefined &&
-      valor.valorMaximo !== null && valor.valorMaximo !== undefined &&
-      Number(valor.valorMinimo) > Number(valor.valorMaximo)) {
+    if (
+      valor.valorMinimo !== null &&
+      valor.valorMinimo !== undefined &&
+      valor.valorMaximo !== null &&
+      valor.valorMaximo !== undefined &&
+      Number(valor.valorMinimo) > Number(valor.valorMaximo)
+    ) {
       throw new Error('valorMinimo debe ser menor o igual que valorMaximo');
     }
     return true;

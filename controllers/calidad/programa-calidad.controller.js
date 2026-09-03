@@ -32,12 +32,8 @@ exports.validarConArchivo = (req, res, next) => {
 
 const datosDesdeBody = (body) => ({
   ...(body.nombre !== undefined ? { nombre: body.nombre.trim() } : {}),
-  ...(body.descripcion !== undefined
-    ? { descripcion: body.descripcion?.trim() || null }
-    : {}),
-  ...(body.estado !== undefined
-    ? { estado: body.estado === true || body.estado === 'true' }
-    : {}),
+  ...(body.descripcion !== undefined ? { descripcion: body.descripcion?.trim() || null } : {}),
+  ...(body.estado !== undefined ? { estado: body.estado === true || body.estado === 'true' } : {}),
 });
 
 exports.listar = async (_req, res, next) => {

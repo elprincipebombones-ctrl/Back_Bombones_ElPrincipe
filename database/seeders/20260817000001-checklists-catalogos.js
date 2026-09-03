@@ -12,32 +12,51 @@ const categorias = [
 
 const elementos = {
   EQUIPOS: [
-    ['BALANZAS', 'Balanzas'], ['BASCULAS', 'Básculas'], ['CLIPADORA', 'Clipadora'],
-    ['DESHUESADORA', 'Deshuesadora'], ['DESPRESADORA_POLLO', 'Despresadora de pollo'],
-    ['DOSIFICADOR_SALSAS', 'Dosificador de salsas'], ['EMBUTIDORA', 'Embutidora'],
-    ['EMPACADORA_BANDEJAS', 'Empacadora de bandejas'], ['HORNO', 'Horno'],
-    ['LICUADORA_SALSA_1', 'Licuadora salsa #1'], ['LICUADORA_SALSA_2', 'Licuadora salsa #2'],
-    ['LICUADORA_BATIDO', 'Licuadora batido'], ['MEZCLADOR_1_MOLIDA', 'Mezclador #1 Molida'],
-    ['MEZCLADOR_1_ADOBO', 'Mezclador #1 Adobo'], ['TERMOMETRO', 'Termómetro'],
+    ['BALANZAS', 'Balanzas'],
+    ['BASCULAS', 'Básculas'],
+    ['CLIPADORA', 'Clipadora'],
+    ['DESHUESADORA', 'Deshuesadora'],
+    ['DESPRESADORA_POLLO', 'Despresadora de pollo'],
+    ['DOSIFICADOR_SALSAS', 'Dosificador de salsas'],
+    ['EMBUTIDORA', 'Embutidora'],
+    ['EMPACADORA_BANDEJAS', 'Empacadora de bandejas'],
+    ['HORNO', 'Horno'],
+    ['LICUADORA_SALSA_1', 'Licuadora salsa #1'],
+    ['LICUADORA_SALSA_2', 'Licuadora salsa #2'],
+    ['LICUADORA_BATIDO', 'Licuadora batido'],
+    ['MEZCLADOR_1_MOLIDA', 'Mezclador #1 Molida'],
+    ['MEZCLADOR_1_ADOBO', 'Mezclador #1 Adobo'],
+    ['TERMOMETRO', 'Termómetro'],
   ],
   UTENSILIOS: [
-    ['GUANTES', 'Guantes'], ['CUCHILLOS', 'Cuchillos'], ['TABLAS', 'Tablas'],
-    ['RECIPIENTES', 'Recipientes'], ['BALDES', 'Baldes'], ['CANASTAS', 'Canastas'],
+    ['GUANTES', 'Guantes'],
+    ['CUCHILLOS', 'Cuchillos'],
+    ['TABLAS', 'Tablas'],
+    ['RECIPIENTES', 'Recipientes'],
+    ['BALDES', 'Baldes'],
+    ['CANASTAS', 'Canastas'],
     ['MESAS', 'Mesas'],
   ],
   AREAS_SUPERFICIES: [
-    ['PISOS', 'Pisos'], ['PAREDES', 'Paredes'], ['PUERTAS_DIVISORES', 'Puertas y divisores'],
-    ['ESPEJOS', 'Espejos'], ['LOCKERS', 'Lockers'],
+    ['PISOS', 'Pisos'],
+    ['PAREDES', 'Paredes'],
+    ['PUERTAS_DIVISORES', 'Puertas y divisores'],
+    ['ESPEJOS', 'Espejos'],
+    ['LOCKERS', 'Lockers'],
     ['INTERRUPTORES_ILUMINACION', 'Interruptores de iluminación'],
-    ['TOMACORRIENTES', 'Tomas corrientes'], ['LAMPARAS', 'Lámparas'],
-    ['SANITARIOS', 'Sanitarios'], ['LAVAMANOS', 'Lavamanos'],
+    ['TOMACORRIENTES', 'Tomas corrientes'],
+    ['LAMPARAS', 'Lámparas'],
+    ['SANITARIOS', 'Sanitarios'],
+    ['LAVAMANOS', 'Lavamanos'],
     ['CANECAS_BASURA', 'Canecas de basura'],
   ],
   SURTIDO: [
     ['DISPENSADOR_JABON_MANOS', 'Dispensador de jabón de manos'],
     ['DISPENSADOR_DESINFECTANTE', 'Dispensador de desinfectante'],
-    ['SECADOR_MANOS', 'Secador de manos'], ['JABON_MANOS', 'Jabón para manos'],
-    ['DESINFECTANTE', 'Desinfectante'], ['PAPEL_HIGIENICO', 'Papel higiénico'],
+    ['SECADOR_MANOS', 'Secador de manos'],
+    ['JABON_MANOS', 'Jabón para manos'],
+    ['DESINFECTANTE', 'Desinfectante'],
+    ['PAPEL_HIGIENICO', 'Papel higiénico'],
   ],
 };
 
@@ -64,36 +83,51 @@ module.exports = {
       const ahora = new Date();
       const categoriaIds = {};
       for (const categoria of categorias) {
-        categoriaIds[categoria.codigo] = await upsertCodigo(queryInterface, 'categorias_elemento', {
-          id: uuidv4(), descripcion: null, estado: true, created_at: ahora, updated_at: ahora, ...categoria,
-        }, transaction);
+        categoriaIds[categoria.codigo] = await upsertCodigo(
+          queryInterface,
+          'categorias_elemento',
+          {
+            id: uuidv4(),
+            descripcion: null,
+            estado: true,
+            created_at: ahora,
+            updated_at: ahora,
+            ...categoria,
+          },
+          transaction,
+        );
       }
 
       for (const [codigoCategoria, lista] of Object.entries(elementos)) {
         for (const [indice, [codigo, nombre]] of lista.entries()) {
-          await upsertCodigo(queryInterface, 'elementos_inspeccion', {
-            id: uuidv4(),
-            categoria_elemento_id: categoriaIds[codigoCategoria],
-            codigo,
-            nombre,
-            descripcion: null,
-            orden: indice + 1,
-            estado: true,
-            created_at: ahora,
-            updated_at: ahora,
-          }, transaction);
+          await upsertCodigo(
+            queryInterface,
+            'elementos_inspeccion',
+            {
+              id: uuidv4(),
+              categoria_elemento_id: categoriaIds[codigoCategoria],
+              codigo,
+              nombre,
+              descripcion: null,
+              orden: indice + 1,
+              estado: true,
+              created_at: ahora,
+              updated_at: ahora,
+            },
+            transaction,
+          );
         }
       }
 
       const [[tipoSiNo], [severidadAlta]] = await Promise.all([
-        queryInterface.sequelize.query(
-          `SELECT id FROM tipos_campo WHERE codigo = 'SI_NO'`,
-          { type: QueryTypes.SELECT, transaction },
-        ),
-        queryInterface.sequelize.query(
-          `SELECT id FROM niveles_severidad WHERE codigo = 'ALTA'`,
-          { type: QueryTypes.SELECT, transaction },
-        ),
+        queryInterface.sequelize.query(`SELECT id FROM tipos_campo WHERE codigo = 'SI_NO'`, {
+          type: QueryTypes.SELECT,
+          transaction,
+        }),
+        queryInterface.sequelize.query(`SELECT id FROM niveles_severidad WHERE codigo = 'ALTA'`, {
+          type: QueryTypes.SELECT,
+          transaction,
+        }),
       ]);
       if (!tipoSiNo || !severidadAlta) {
         throw new Error('Faltan los catálogos SI_NO o severidad ALTA para crear los criterios.');
@@ -115,18 +149,25 @@ module.exports = {
       ];
       const criterioIds = [];
       for (const criterio of criterios) {
-        criterioIds.push(await upsertCodigo(queryInterface, 'criterios_inspeccion', {
-          id: uuidv4(),
-          tipo_campo_id: tipoSiNo.id,
-          resultado_esperado: 'CUMPLE',
-          permite_observacion: true,
-          requiere_evidencia: false,
-          nivel_severidad_id: severidadAlta.id,
-          estado: true,
-          created_at: ahora,
-          updated_at: ahora,
-          ...criterio,
-        }, transaction));
+        criterioIds.push(
+          await upsertCodigo(
+            queryInterface,
+            'criterios_inspeccion',
+            {
+              id: uuidv4(),
+              tipo_campo_id: tipoSiNo.id,
+              resultado_esperado: 'CUMPLE',
+              permite_observacion: true,
+              requiere_evidencia: false,
+              nivel_severidad_id: severidadAlta.id,
+              estado: true,
+              created_at: ahora,
+              updated_at: ahora,
+              ...criterio,
+            },
+            transaction,
+          ),
+        );
       }
 
       const acciones = await queryInterface.sequelize.query(
@@ -135,7 +176,9 @@ module.exports = {
         { type: QueryTypes.SELECT, transaction },
       );
       const ordenAccion = new Map([
-        ['GENERAR_ALERTA', 1], ['EXIGIR_OBSERVACION', 2], ['SOLICITAR_ACCION_CORRECTIVA', 3],
+        ['GENERAR_ALERTA', 1],
+        ['EXIGIR_OBSERVACION', 2],
+        ['SOLICITAR_ACCION_CORRECTIVA', 3],
       ]);
       for (const criterioId of criterioIds) {
         for (const accion of acciones) {
@@ -147,8 +190,11 @@ module.exports = {
              DO UPDATE SET orden = EXCLUDED.orden, estado = true, updated_at = EXCLUDED.updated_at`,
             {
               replacements: {
-                id: uuidv4(), criterioId, tipoAccionId: accion.id,
-                orden: ordenAccion.get(accion.codigo), ahora,
+                id: uuidv4(),
+                criterioId,
+                tipoAccionId: accion.id,
+                orden: ordenAccion.get(accion.codigo),
+                ahora,
               },
               transaction,
             },
@@ -165,15 +211,29 @@ module.exports = {
           (SELECT id FROM criterios_inspeccion WHERE codigo IN ('LIMPIO_DESINFECTADO', 'CUMPLE_CONDICION'))`,
         { transaction },
       );
-      await queryInterface.bulkDelete('criterios_inspeccion', {
-        codigo: ['LIMPIO_DESINFECTADO', 'CUMPLE_CONDICION'],
-      }, { transaction });
-      await queryInterface.bulkDelete('elementos_inspeccion', {
-        codigo: Object.values(elementos).flat().map(([codigo]) => codigo),
-      }, { transaction });
-      await queryInterface.bulkDelete('categorias_elemento', {
-        codigo: categorias.map(({ codigo }) => codigo),
-      }, { transaction });
+      await queryInterface.bulkDelete(
+        'criterios_inspeccion',
+        {
+          codigo: ['LIMPIO_DESINFECTADO', 'CUMPLE_CONDICION'],
+        },
+        { transaction },
+      );
+      await queryInterface.bulkDelete(
+        'elementos_inspeccion',
+        {
+          codigo: Object.values(elementos)
+            .flat()
+            .map(([codigo]) => codigo),
+        },
+        { transaction },
+      );
+      await queryInterface.bulkDelete(
+        'categorias_elemento',
+        {
+          codigo: categorias.map(({ codigo }) => codigo),
+        },
+        { transaction },
+      );
     });
   },
 };

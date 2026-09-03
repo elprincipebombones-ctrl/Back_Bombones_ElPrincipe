@@ -165,7 +165,11 @@ exports.obtenerCompleta = async (req, res, next) => {
                       include: [
                         { model: NivelSeveridad, as: 'nivelSeveridad' },
                         { model: CondicionRegla, as: 'condiciones' },
-                        { model: AccionRegla, as: 'acciones', include: [{ model: TipoAccion, as: 'tipoAccion' }] },
+                        {
+                          model: AccionRegla,
+                          as: 'acciones',
+                          include: [{ model: TipoAccion, as: 'tipoAccion' }],
+                        },
                       ],
                     },
                   ],
@@ -179,7 +183,11 @@ exports.obtenerCompleta = async (req, res, next) => {
                   include: [
                     { model: NivelSeveridad, as: 'nivelSeveridad' },
                     { model: CondicionRegla, as: 'condiciones' },
-                    { model: AccionRegla, as: 'acciones', include: [{ model: TipoAccion, as: 'tipoAccion' }] },
+                    {
+                      model: AccionRegla,
+                      as: 'acciones',
+                      include: [{ model: TipoAccion, as: 'tipoAccion' }],
+                    },
                   ],
                 },
               ],
@@ -204,11 +212,13 @@ exports.obtenerCompleta = async (req, res, next) => {
                 {
                   model: ElementoChecklist,
                   as: 'elementos',
-                  include: [{
-                    model: ElementoInspeccion,
-                    as: 'elemento',
-                    include: [{ model: CategoriaElemento, as: 'categoria' }],
-                  }],
+                  include: [
+                    {
+                      model: ElementoInspeccion,
+                      as: 'elemento',
+                      include: [{ model: CategoriaElemento, as: 'categoria' }],
+                    },
+                  ],
                 },
               ],
             },
@@ -217,8 +227,18 @@ exports.obtenerCompleta = async (req, res, next) => {
       ],
       order: [
         [{ model: SeccionFormato, as: 'secciones' }, 'orden', 'ASC'],
-        [{ model: SeccionFormato, as: 'secciones' }, { model: CampoFormato, as: 'campos' }, 'orden', 'ASC'],
-        [{ model: SeccionFormato, as: 'secciones' }, { model: ChecklistSeccion, as: 'checklists' }, 'orden', 'ASC'],
+        [
+          { model: SeccionFormato, as: 'secciones' },
+          { model: CampoFormato, as: 'campos' },
+          'orden',
+          'ASC',
+        ],
+        [
+          { model: SeccionFormato, as: 'secciones' },
+          { model: ChecklistSeccion, as: 'checklists' },
+          'orden',
+          'ASC',
+        ],
         [
           { model: SeccionFormato, as: 'secciones' },
           { model: ChecklistSeccion, as: 'checklists' },

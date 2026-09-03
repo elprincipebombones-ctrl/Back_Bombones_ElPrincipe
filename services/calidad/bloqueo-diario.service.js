@@ -20,13 +20,15 @@ const estadoCierreVencida = async (inspeccionId, transaction) => {
   });
   const accionesAbiertas = await AccionCorrectiva.count({
     where: { estado: { [Op.ne]: 'CERRADA' } },
-    include: [{
-      model: Desviacion,
-      as: 'desviacion',
-      where: { inspeccionId },
-      attributes: [],
-      required: true,
-    }],
+    include: [
+      {
+        model: Desviacion,
+        as: 'desviacion',
+        where: { inspeccionId },
+        attributes: [],
+        required: true,
+      },
+    ],
     transaction,
   });
   return desviacionesAbiertas || accionesAbiertas ? 'PENDIENTE_ACCION' : 'CERRADA_INCOMPLETA';

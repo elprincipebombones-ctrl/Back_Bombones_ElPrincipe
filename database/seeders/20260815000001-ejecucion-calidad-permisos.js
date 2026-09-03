@@ -73,7 +73,12 @@ module.exports = {
     if (!version) throw new Error('No existe la versión 1 del formato TEMP-CAVA');
     await queryInterface.bulkUpdate(
       'versiones_formato',
-      { estado_version: 'PUBLICADO', publicado_por: usuarioAdmin.id, fecha_publicacion: ahora, updated_at: ahora },
+      {
+        estado_version: 'PUBLICADO',
+        publicado_por: usuarioAdmin.id,
+        fecha_publicacion: ahora,
+        updated_at: ahora,
+      },
       { id: version.id },
     );
 
@@ -129,16 +134,25 @@ module.exports = {
 
   async down(queryInterface) {
     const nombresPermiso = [
-      'inspecciones.ver', 'inspecciones.crear', 'inspecciones.editar', 'inspecciones.cerrar',
-      'acciones_correctivas.ver', 'acciones_correctivas.editar', 'acciones_correctivas.cerrar',
-      'desviaciones.ver', 'desviaciones.editar', 'desviaciones.cerrar',
+      'inspecciones.ver',
+      'inspecciones.crear',
+      'inspecciones.editar',
+      'inspecciones.cerrar',
+      'acciones_correctivas.ver',
+      'acciones_correctivas.editar',
+      'acciones_correctivas.cerrar',
+      'desviaciones.ver',
+      'desviaciones.editar',
+      'desviaciones.cerrar',
     ];
     const [permisos] = await queryInterface.sequelize.query(
       `SELECT id FROM permissions WHERE nombre IN (${nombresPermiso.map(() => '?').join(',')})`,
       { replacements: nombresPermiso },
     );
     if (permisos.length) {
-      await queryInterface.bulkDelete('role_permissions', { permiso_id: permisos.map((p) => p.id) });
+      await queryInterface.bulkDelete('role_permissions', {
+        permiso_id: permisos.map((p) => p.id),
+      });
     }
     await queryInterface.bulkDelete('permissions', { nombre: nombresPermiso });
   },

@@ -3,7 +3,10 @@ const { body, param, query } = require('express-validator');
 const codigo = (opcional = false) => {
   let regla = body('codigo');
   if (opcional) regla = regla.optional();
-  return regla.trim().isLength({ min: 2, max: 80 }).matches(/^[A-Z0-9_-]+$/)
+  return regla
+    .trim()
+    .isLength({ min: 2, max: 80 })
+    .matches(/^[A-Z0-9_-]+$/)
     .withMessage('El código debe usar mayúsculas, números, guion o guion bajo');
 };
 const uuidBody = (campo, opcional = false) => {
@@ -31,21 +34,25 @@ exports.crearCategoriaValidator = [
   body('estado').optional().isBoolean(),
 ];
 exports.actualizarCategoriaValidator = [
-  param('id').isUUID(), codigo(true),
+  param('id').isUUID(),
+  codigo(true),
   body('nombre').optional().trim().isLength({ min: 2, max: 150 }),
   body('descripcion').optional({ nullable: true }).isString(),
   body('orden').optional().isInt({ min: 0 }),
   body('estado').optional().isBoolean(),
 ];
 exports.crearElementoValidator = [
-  uuidBody('categoriaElementoId'), codigo(),
+  uuidBody('categoriaElementoId'),
+  codigo(),
   body('nombre').trim().isLength({ min: 2, max: 200 }),
   body('descripcion').optional({ nullable: true }).isString(),
   body('orden').optional().isInt({ min: 0 }),
   body('estado').optional().isBoolean(),
 ];
 exports.actualizarElementoValidator = [
-  param('id').isUUID(), uuidBody('categoriaElementoId', true), codigo(true),
+  param('id').isUUID(),
+  uuidBody('categoriaElementoId', true),
+  codigo(true),
   body('nombre').optional().trim().isLength({ min: 2, max: 200 }),
   body('descripcion').optional({ nullable: true }).isString(),
   body('orden').optional().isInt({ min: 0 }),
@@ -59,15 +66,20 @@ const criterio = (opcional = false) => [
   body('resultadoEsperado').optional().trim().isLength({ min: 1, max: 50 }),
   body('permiteObservacion').optional().isBoolean(),
   body('requiereEvidencia').optional().isBoolean(),
-  body('nivelSeveridadId').optional({ nullable: true }).isUUID().withMessage('nivelSeveridadId debe ser un UUID válido'),
+  body('nivelSeveridadId')
+    .optional({ nullable: true })
+    .isUUID()
+    .withMessage('nivelSeveridadId debe ser un UUID válido'),
   body('mensajeIncumplimiento').optional({ nullable: true }).isString(),
   body('estado').optional().isBoolean(),
   body('tipoAccionIds').optional().isArray(),
   body('tipoAccionIds.*').isUUID().withMessage('Cada acción debe ser un UUID válido'),
-  body('tipoAccionIds').optional().custom((ids) => {
-    if (new Set(ids).size !== ids.length) throw new Error('No se permiten acciones duplicadas');
-    return true;
-  }),
+  body('tipoAccionIds')
+    .optional()
+    .custom((ids) => {
+      if (new Set(ids).size !== ids.length) throw new Error('No se permiten acciones duplicadas');
+      return true;
+    }),
 ];
 exports.crearCriterioValidator = criterio(false);
 exports.actualizarCriterioValidator = [param('id').isUUID(), ...criterio(true)];
@@ -79,21 +91,31 @@ const checklist = (opcional = false) => [
   body('orden').optional().isInt({ min: 0 }),
   body('estado').optional().isBoolean(),
   opcional
-    ? body('elementoIds').optional().isArray({ min: 1 }).withMessage('Selecciona por lo menos un elemento')
+    ? body('elementoIds')
+        .optional()
+        .isArray({ min: 1 })
+        .withMessage('Selecciona por lo menos un elemento')
     : body('elementoIds').isArray({ min: 1 }).withMessage('Selecciona por lo menos un elemento'),
   body('elementoIds.*').isUUID().withMessage('Cada elemento debe ser un UUID válido'),
-  body('elementoIds').optional().custom((ids) => {
-    if (new Set(ids).size !== ids.length) throw new Error('No se permiten elementos duplicados');
-    return true;
-  }),
+  body('elementoIds')
+    .optional()
+    .custom((ids) => {
+      if (new Set(ids).size !== ids.length) throw new Error('No se permiten elementos duplicados');
+      return true;
+    }),
 ];
 exports.crearChecklistValidator = checklist(false);
 exports.actualizarChecklistValidator = [param('id').isUUID(), ...checklist(true)];
 exports.crearAccionCriterioValidator = [
-  uuidBody('criterioInspeccionId'), uuidBody('tipoAccionId'),
-  body('orden').optional().isInt({ min: 0 }), body('estado').optional().isBoolean(),
+  uuidBody('criterioInspeccionId'),
+  uuidBody('tipoAccionId'),
+  body('orden').optional().isInt({ min: 0 }),
+  body('estado').optional().isBoolean(),
 ];
 exports.actualizarAccionCriterioValidator = [
-  param('id').isUUID(), uuidBody('criterioInspeccionId', true), uuidBody('tipoAccionId', true),
-  body('orden').optional().isInt({ min: 0 }), body('estado').optional().isBoolean(),
+  param('id').isUUID(),
+  uuidBody('criterioInspeccionId', true),
+  uuidBody('tipoAccionId', true),
+  body('orden').optional().isInt({ min: 0 }),
+  body('estado').optional().isBoolean(),
 ];

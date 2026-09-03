@@ -12,18 +12,30 @@ const { reglaSeActiva } = require('../../services/calidad/evaluador-reglas.servi
 exports.crearSeguimiento = async (req, res, next) => {
   try {
     const accion = await AccionCorrectiva.findByPk(req.params.id, {
-      include: [{
-        model: Desviacion,
-        as: 'desviacion',
-        include: [{
-          model: ReglaCalidad,
-          as: 'regla',
-          include: [{ model: CondicionRegla, as: 'condiciones', where: { estado: true }, required: false }],
-        }],
-      }],
+      include: [
+        {
+          model: Desviacion,
+          as: 'desviacion',
+          include: [
+            {
+              model: ReglaCalidad,
+              as: 'regla',
+              include: [
+                {
+                  model: CondicionRegla,
+                  as: 'condiciones',
+                  where: { estado: true },
+                  required: false,
+                },
+              ],
+            },
+          ],
+        },
+      ],
     });
     if (!accion) return fail(res, 'Acción correctiva no encontrada', 404);
-    if (accion.estado === 'CERRADA') return fail(res, 'No se puede agregar seguimiento a una acción cerrada', 409);
+    if (accion.estado === 'CERRADA')
+      return fail(res, 'No se puede agregar seguimiento a una acción cerrada', 409);
     const unidadMedidaId = req.body.unidadMedidaId ?? req.body.unidad_medida_id ?? null;
     if (unidadMedidaId && !(await UnidadMedida.findByPk(unidadMedidaId))) {
       return fail(res, 'Unidad de medida no encontrada', 422);
@@ -32,7 +44,8 @@ exports.crearSeguimiento = async (req, res, next) => {
     const valorNumero = req.body.valorNumero ?? req.body.valor_numero ?? null;
     let resultadoCumple = req.body.resultadoCumple ?? req.body.resultado_cumple ?? null;
     if (tipoRegistro === 'NUEVA_MEDICION') {
-      if (valorNumero === null) return fail(res, 'Debes ingresar el valor de la nueva medición', 422);
+      if (valorNumero === null)
+        return fail(res, 'Debes ingresar el valor de la nueva medición', 422);
       const regla = accion.desviacion?.regla;
       if (regla) {
         const activa = reglaSeActiva(regla, valorNumero);

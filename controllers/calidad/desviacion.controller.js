@@ -27,7 +27,10 @@ exports.listar = async (req, res, next) => {
     const where = {};
     if (req.query.estado) where.estado = req.query.estado;
     if (req.query.inspeccion_id) where.inspeccionId = req.query.inspeccion_id;
-    return ok(res, await Desviacion.findAll({ where, include, order: [['fechaDeteccion', 'DESC']] }));
+    return ok(
+      res,
+      await Desviacion.findAll({ where, include, order: [['fechaDeteccion', 'DESC']] }),
+    );
   } catch (error) {
     return next(error);
   }
@@ -47,7 +50,8 @@ exports.actualizar = async (req, res, next) => {
   try {
     const desviacion = await Desviacion.findByPk(req.params.id);
     if (!desviacion) return fail(res, 'Desviación no encontrada', 404);
-    if (desviacion.estado === 'CERRADA') return fail(res, 'No se puede editar una desviación cerrada', 409);
+    if (desviacion.estado === 'CERRADA')
+      return fail(res, 'No se puede editar una desviación cerrada', 409);
     await desviacion.update({
       ...(req.body.descripcion !== undefined ? { descripcion: req.body.descripcion } : {}),
       ...(req.body.estado === 'EN_TRATAMIENTO' ? { estado: 'EN_TRATAMIENTO' } : {}),
@@ -66,8 +70,13 @@ exports.cerrar = async (req, res, next) => {
     const abiertas = await AccionCorrectiva.count({
       where: { desviacionId: desviacion.id, estado: { [Op.ne]: 'CERRADA' } },
     });
-    if (abiertas) return fail(res, 'Existen acciones correctivas pendientes por cerrar', 409, { abiertas });
-    await desviacion.update({ estado: 'CERRADA', fechaCierre: new Date(), cerradaPor: req.usuario.id });
+    if (abiertas)
+      return fail(res, 'Existen acciones correctivas pendientes por cerrar', 409, { abiertas });
+    await desviacion.update({
+      estado: 'CERRADA',
+      fechaCierre: new Date(),
+      cerradaPor: req.usuario.id,
+    });
     return ok(res, desviacion, 'Desviación cerrada');
   } catch (error) {
     return next(error);

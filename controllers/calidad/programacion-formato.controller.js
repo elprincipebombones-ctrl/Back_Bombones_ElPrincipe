@@ -20,7 +20,8 @@ const normalizarDias = (dias) => [...new Set((dias || []).map(Number))].sort((a,
 const sincronizarDias = async (programacionId, dias, transaction) => {
   const valores = normalizarDias(dias);
   if (!valores.length) throw new ApiError('Debes seleccionar al menos un día', 422);
-  if (valores.some((dia) => dia < 1 || dia > 7)) throw new ApiError('Día de programación inválido', 422);
+  if (valores.some((dia) => dia < 1 || dia > 7))
+    throw new ApiError('Día de programación inválido', 422);
   await DiaProgramacion.destroy({ where: { programacionFormatoId: programacionId }, transaction });
   await DiaProgramacion.bulkCreate(
     valores.map((diaSemana) => ({ programacionFormatoId: programacionId, diaSemana })),
@@ -31,7 +32,10 @@ const sincronizarDias = async (programacionId, dias, transaction) => {
 exports.listar = async (req, res, next) => {
   try {
     const where = req.query.formato_id ? { formatoCalidadId: req.query.formato_id } : {};
-    return ok(res, await ProgramacionFormato.findAll({ where, include, order: [['fechaInicio', 'DESC']] }));
+    return ok(
+      res,
+      await ProgramacionFormato.findAll({ where, include, order: [['fechaInicio', 'DESC']] }),
+    );
   } catch (error) {
     return next(error);
   }
@@ -51,13 +55,16 @@ exports.crear = async (req, res, next) => {
   try {
     const formato = await FormatoCalidad.findByPk(req.body.formatoCalidadId, { transaction });
     if (!formato) throw new ApiError('Formato no encontrado', 422);
-    const programacion = await ProgramacionFormato.create({
-      formatoCalidadId: formato.id,
-      fechaInicio: req.body.fechaInicio,
-      fechaFin: req.body.fechaFin || null,
-      horaProgramada: req.body.horaProgramada || null,
-      activo: req.body.activo ?? true,
-    }, { transaction });
+    const programacion = await ProgramacionFormato.create(
+      {
+        formatoCalidadId: formato.id,
+        fechaInicio: req.body.fechaInicio,
+        fechaFin: req.body.fechaFin || null,
+        horaProgramada: req.body.horaProgramada || null,
+        activo: req.body.activo ?? true,
+      },
+      { transaction },
+    );
     await sincronizarDias(programacion.id, req.body.dias, transaction);
     await transaction.commit();
     return created(
@@ -80,14 +87,21 @@ exports.actualizar = async (req, res, next) => {
     });
     if (!programacion) throw new ApiError('Programación no encontrada', 404);
     const fechaInicio = req.body.fechaInicio ?? programacion.fechaInicio;
-    const fechaFin = req.body.fechaFin === undefined ? programacion.fechaFin : req.body.fechaFin || null;
-    if (fechaFin && fechaFin < fechaInicio) throw new ApiError('La fecha fin no puede ser anterior al inicio', 422);
-    await programacion.update({
-      ...(req.body.fechaInicio !== undefined ? { fechaInicio: req.body.fechaInicio } : {}),
-      ...(req.body.fechaFin !== undefined ? { fechaFin: req.body.fechaFin || null } : {}),
-      ...(req.body.horaProgramada !== undefined ? { horaProgramada: req.body.horaProgramada || null } : {}),
-      ...(req.body.activo !== undefined ? { activo: req.body.activo } : {}),
-    }, { transaction });
+    const fechaFin =
+      req.body.fechaFin === undefined ? programacion.fechaFin : req.body.fechaFin || null;
+    if (fechaFin && fechaFin < fechaInicio)
+      throw new ApiError('La fecha fin no puede ser anterior al inicio', 422);
+    await programacion.update(
+      {
+        ...(req.body.fechaInicio !== undefined ? { fechaInicio: req.body.fechaInicio } : {}),
+        ...(req.body.fechaFin !== undefined ? { fechaFin: req.body.fechaFin || null } : {}),
+        ...(req.body.horaProgramada !== undefined
+          ? { horaProgramada: req.body.horaProgramada || null }
+          : {}),
+        ...(req.body.activo !== undefined ? { activo: req.body.activo } : {}),
+      },
+      { transaction },
+    );
     if (req.body.dias) await sincronizarDias(programacion.id, req.body.dias, transaction);
     await transaction.commit();
     return ok(
@@ -119,26 +133,37 @@ exports.pendientes = async (req, res, next) => {
           as: 'formato',
           where: { estado: true },
           required: true,
-          include: [{
-            model: VersionFormato,
-            as: 'versiones',
-            where: { estadoVersion: 'PUBLICADO' },
-            required: true,
-          }],
+          include: [
+            {
+              model: VersionFormato,
+              as: 'versiones',
+              where: { estadoVersion: 'PUBLICADO' },
+              required: true,
+            },
+          ],
         },
       ],
       order: [['horaProgramada', 'ASC']],
     });
     const versionIds = programaciones.map((item) => item.formato.versiones[0].id);
     const inspecciones = versionIds.length
-      ? await Inspeccion.findAll({ where: { versionFormatoId: versionIds, fechaInspeccion: fecha } })
+      ? await Inspeccion.findAll({
+          where: { versionFormatoId: versionIds, fechaInspeccion: fecha },
+        })
       : [];
     const porVersion = new Map(inspecciones.map((item) => [item.versionFormatoId, item]));
-    return ok(res, programaciones.map((item) => {
-      const data = item.toJSON();
-      const version = data.formato.versiones[0];
-      return { ...data, versionPublicada: version, inspeccion: porVersion.get(version.id) || null };
-    }));
+    return ok(
+      res,
+      programaciones.map((item) => {
+        const data = item.toJSON();
+        const version = data.formato.versiones[0];
+        return {
+          ...data,
+          versionPublicada: version,
+          inspeccion: porVersion.get(version.id) || null,
+        };
+      }),
+    );
   } catch (error) {
     return next(error);
   }

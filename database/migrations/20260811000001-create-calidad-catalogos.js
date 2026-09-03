@@ -37,7 +37,9 @@ module.exports = {
     );
     await queryInterface.createTable(
       'niveles_severidad',
-      catalogo(Sequelize, { orden: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 } }),
+      catalogo(Sequelize, {
+        orden: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
+      }),
     );
     await queryInterface.createTable('tipos_accion', catalogo(Sequelize));
     await queryInterface.createTable('lugares_inspeccion', catalogo(Sequelize));
