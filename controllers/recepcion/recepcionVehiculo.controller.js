@@ -1,324 +1,95 @@
-const {
-  RecepcionVehiculo,
-  Recepcion,
-  Vehiculo
-} = require('../../models');
-
+const { Recepcion, RecepcionVehiculo, Vehiculo } = require('../../models');
 const { ok, created, fail } = require('../../utils/response');
 
+const include = [{ model: Vehiculo, as: 'vehiculo' }];
+const buscar = (recepcionId, id) =>
+  RecepcionVehiculo.findOne({ where: { id, recepcionId }, include });
 
-// =====================================================
-// LISTAR VEHÍCULOS DE UNA RECEPCIÓN
-// =====================================================
+const editable = async (recepcionId) => {
+  const recepcion = await Recepcion.findByPk(recepcionId);
+  if (!recepcion) return { error: 'Recepción no encontrada', status: 404 };
+  if (recepcion.estado === 'TERMINADA') {
+    return { error: 'Una recepción terminada es de solo lectura', status: 409 };
+  }
+  return { recepcion };
+};
 
 exports.listar = async (req, res, next) => {
   try {
-    const { recepcionId } = req.params;
-
-    const recepcion = await Recepcion.findByPk(recepcionId);
-
-    if (!recepcion) {
-      return fail(
-        res,
-        'Recepción no encontrada',
-        404
-      );
-    }
-
-    const vehiculos = await RecepcionVehiculo.findAll({
-      where: {
-        recepcionId
-      },
-      include: [
-        {
-          model: Vehiculo,
-          as: 'vehiculo'
-        }
-      ],
-      order: [['createdAt', 'ASC']]
-    });
-
-    return ok(res, vehiculos);
-
+    const recepcion = await Recepcion.findByPk(req.params.recepcionId);
+    if (!recepcion) return fail(res, 'Recepción no encontrada', 404);
+    return ok(
+      res,
+      await RecepcionVehiculo.findAll({
+        where: { recepcionId: recepcion.id },
+        include,
+        order: [['createdAt', 'ASC']],
+      }),
+    );
   } catch (err) {
     return next(err);
   }
 };
-
-
-// =====================================================
-// OBTENER REGISTRO VEHÍCULO
-// =====================================================
 
 exports.obtener = async (req, res, next) => {
   try {
-    const registro = await RecepcionVehiculo.findByPk(
-      req.params.id,
-      {
-        include: [
-          {
-            model: Recepcion,
-            as: 'recepcion'
-          },
-          {
-            model: Vehiculo,
-            as: 'vehiculo'
-          }
-        ]
-      }
-    );
-
-    if (!registro) {
-      return fail(
-        res,
-        'Registro de vehículo de recepción no encontrado',
-        404
-      );
-    }
-
-    return ok(res, registro);
-
+    const registro = await buscar(req.params.recepcionId, req.params.id);
+    return registro ? ok(res, registro) : fail(res, 'Vehículo no encontrado en la recepción', 404);
   } catch (err) {
     return next(err);
   }
 };
 
-
-// =====================================================
-// CREAR REGISTRO VEHÍCULO
-// =====================================================
+const validarVehiculo = async (vehiculoId) => {
+  const vehiculo = await Vehiculo.findByPk(vehiculoId);
+  return vehiculo && vehiculo.estado;
+};
 
 exports.crear = async (req, res, next) => {
   try {
-    const { recepcionId } = req.params;
-
-    const {
-      vehiculoId,
-      temperatura,
-      precinto,
-      guiaTransporte,
-      hora,
-      vehiculoConductorOk
-    } = req.body;
-
-
-    // ---------------------------------------------
-    // VALIDAR RECEPCIÓN
-    // ---------------------------------------------
-
-    const recepcion = await Recepcion.findByPk(
-      recepcionId
-    );
-
-    if (!recepcion) {
-      return fail(
-        res,
-        'Recepción no encontrada',
-        404
-      );
+    const estado = await editable(req.params.recepcionId);
+    if (estado.error) return fail(res, estado.error, estado.status);
+    if (!(await validarVehiculo(req.body.vehiculoId))) {
+      return fail(res, 'El vehículo no existe o está inactivo', 422);
     }
-
-
-    // ---------------------------------------------
-    // VALIDAR VEHÍCULO
-    // ---------------------------------------------
-
-    if (!vehiculoId) {
-      return fail(
-        res,
-        'Falta el vehículo',
-        400
-      );
-    }
-
-    const vehiculo = await Vehiculo.findByPk(
-      vehiculoId
-    );
-
-    if (!vehiculo) {
-      return fail(
-        res,
-        'Vehículo no encontrado',
-        404
-      );
-    }
-
-
-    // ---------------------------------------------
-    // EVITAR DUPLICAR EL MISMO VEHÍCULO
-    // ---------------------------------------------
-
-    const registroExistente =
-      await RecepcionVehiculo.findOne({
-        where: {
-          recepcionId,
-          vehiculoId
-        }
-      });
-
-    if (registroExistente) {
-      return fail(
-        res,
-        'El vehículo ya está registrado en esta recepción',
-        409
-      );
-    }
-
-
-    // ---------------------------------------------
-    // CREAR
-    // ---------------------------------------------
-
-    const registro = await RecepcionVehiculo.create({
-      recepcionId,
-      vehiculoId,
-      temperatura,
-      precinto,
-      guiaTransporte,
-      hora,
-      vehiculoConductorOk
+    const repetido = await RecepcionVehiculo.findOne({
+      where: { recepcionId: req.params.recepcionId, vehiculoId: req.body.vehiculoId },
     });
-
-
-    // ---------------------------------------------
-    // DEVOLVER CON VEHÍCULO
-    // ---------------------------------------------
-
-    const registroCreado =
-      await RecepcionVehiculo.findByPk(
-        registro.id,
-        {
-          include: [
-            {
-              model: Vehiculo,
-              as: 'vehiculo'
-            }
-          ]
-        }
-      );
-
-    return created(
-      res,
-      registroCreado
-    );
-
+    if (repetido) return fail(res, 'El vehículo ya está asociado a la recepción', 409);
+    const registro = await RecepcionVehiculo.create({
+      ...req.body,
+      recepcionId: req.params.recepcionId,
+    });
+    return created(res, await buscar(req.params.recepcionId, registro.id));
   } catch (err) {
     return next(err);
   }
 };
-
-
-// =====================================================
-// ACTUALIZAR REGISTRO VEHÍCULO
-// =====================================================
 
 exports.actualizar = async (req, res, next) => {
   try {
-    const registro =
-      await RecepcionVehiculo.findByPk(
-        req.params.id
-      );
-
-    if (!registro) {
-      return fail(
-        res,
-        'Registro de vehículo de recepción no encontrado',
-        404
-      );
+    const estado = await editable(req.params.recepcionId);
+    if (estado.error) return fail(res, estado.error, estado.status);
+    const registro = await buscar(req.params.recepcionId, req.params.id);
+    if (!registro) return fail(res, 'Vehículo no encontrado en la recepción', 404);
+    if (req.body.vehiculoId && !(await validarVehiculo(req.body.vehiculoId))) {
+      return fail(res, 'El vehículo no existe o está inactivo', 422);
     }
-
-
-    // ---------------------------------------------
-    // VALIDAR VEHÍCULO SI CAMBIA
-    // ---------------------------------------------
-
-    if (
-      req.body.vehiculoId &&
-      req.body.vehiculoId !== registro.vehiculoId
-    ) {
-      const vehiculo = await Vehiculo.findByPk(
-        req.body.vehiculoId
-      );
-
-      if (!vehiculo) {
-        return fail(
-          res,
-          'Vehículo no encontrado',
-          404
-        );
-      }
-
-
-      // -------------------------------------------
-      // EVITAR DUPLICADO
-      // -------------------------------------------
-
-      const existente =
-        await RecepcionVehiculo.findOne({
-          where: {
-            recepcionId: registro.recepcionId,
-            vehiculoId: req.body.vehiculoId
-          }
-        });
-
-      if (
-        existente &&
-        existente.id !== registro.id
-      ) {
-        return fail(
-          res,
-          'El vehículo ya está registrado en esta recepción',
-          409
-        );
-      }
-    }
-
-
-    // ---------------------------------------------
-    // ACTUALIZAR
-    // ---------------------------------------------
-
     await registro.update(req.body);
-
-    return ok(
-      res,
-      registro,
-      'Registro de vehículo actualizado'
-    );
-
+    return ok(res, await buscar(req.params.recepcionId, registro.id), 'Vehículo actualizado');
   } catch (err) {
     return next(err);
   }
 };
 
-
-// =====================================================
-// ELIMINAR REGISTRO VEHÍCULO
-// =====================================================
-
 exports.eliminar = async (req, res, next) => {
   try {
-    const registro =
-      await RecepcionVehiculo.findByPk(
-        req.params.id
-      );
-
-    if (!registro) {
-      return fail(
-        res,
-        'Registro de vehículo de recepción no encontrado',
-        404
-      );
-    }
-
+    const estado = await editable(req.params.recepcionId);
+    if (estado.error) return fail(res, estado.error, estado.status);
+    const registro = await buscar(req.params.recepcionId, req.params.id);
+    if (!registro) return fail(res, 'Vehículo no encontrado en la recepción', 404);
     await registro.destroy();
-
-    return ok(
-      res,
-      null,
-      'Registro de vehículo eliminado'
-    );
-
+    return ok(res, null, 'Vehículo retirado de la recepción');
   } catch (err) {
     return next(err);
   }

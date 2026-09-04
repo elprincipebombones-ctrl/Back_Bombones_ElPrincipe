@@ -1,24 +1,21 @@
 const { Router } = require('express');
 
-const ctrl = require(
-  '../../controllers/recepcion/temperaturaRecepcion.controller'
-);
+const ctrl = require('../../controllers/recepcion/temperaturaRecepcion.controller');
 
 const auth = require('../../middleware/auth');
 const permiso = require('../../middleware/permiso');
 const validar = require('../../middleware/validar');
 
 const {
-  idRecepcionValidator,
+  recepcionIdValidator,
   idTemperaturaRecepcionValidator,
   crearTemperaturaRecepcionValidator,
-  actualizarTemperaturaRecepcionValidator
-} = require('../../validators/maestro.validator');
+  actualizarTemperaturaRecepcionValidator,
+} = require('../../validators/recepcion.validator');
 
 const router = Router();
 
 router.use(auth);
-
 
 // =====================================================
 // SWAGGER
@@ -30,7 +27,6 @@ router.use(auth);
  *   name: Temperaturas de Recepción
  *   description: Registro de temperaturas de los productos recibidos
  */
-
 
 // =====================================================
 // LISTAR TEMPERATURAS
@@ -61,11 +57,10 @@ router.use(auth);
 router.get(
   '/:recepcionId/temperaturas',
   permiso('Recepcion.Ver'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   validar,
-  ctrl.listar
+  ctrl.listar,
 );
-
 
 // =====================================================
 // OBTENER TEMPERATURA
@@ -102,12 +97,11 @@ router.get(
 router.get(
   '/:recepcionId/temperaturas/:id',
   permiso('Recepcion.Ver'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   idTemperaturaRecepcionValidator,
   validar,
-  ctrl.obtener
+  ctrl.obtener,
 );
-
 
 // =====================================================
 // CREAR TEMPERATURA
@@ -159,12 +153,11 @@ router.get(
 router.post(
   '/:recepcionId/temperaturas',
   permiso('Recepcion.Crear'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   crearTemperaturaRecepcionValidator,
   validar,
-  ctrl.crear
+  ctrl.crear,
 );
-
 
 // =====================================================
 // ACTUALIZAR TEMPERATURA
@@ -217,13 +210,12 @@ router.post(
 router.put(
   '/:recepcionId/temperaturas/:id',
   permiso('Recepcion.Editar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   idTemperaturaRecepcionValidator,
   actualizarTemperaturaRecepcionValidator,
   validar,
-  ctrl.actualizar
+  ctrl.actualizar,
 );
-
 
 // =====================================================
 // ELIMINAR TEMPERATURA
@@ -260,11 +252,10 @@ router.put(
 router.delete(
   '/:recepcionId/temperaturas/:id',
   permiso('Recepcion.Eliminar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   idTemperaturaRecepcionValidator,
   validar,
-  ctrl.eliminar
+  ctrl.eliminar,
 );
-
 
 module.exports = router;

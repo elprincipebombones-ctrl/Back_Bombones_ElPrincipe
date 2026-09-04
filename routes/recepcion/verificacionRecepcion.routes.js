@@ -1,23 +1,20 @@
 const { Router } = require('express');
 
-const ctrl = require(
-  '../../controllers/recepcion/verificacionRecepcion.controller'
-);
+const ctrl = require('../../controllers/recepcion/verificacionRecepcion.controller');
 
 const auth = require('../../middleware/auth');
 const permiso = require('../../middleware/permiso');
 const validar = require('../../middleware/validar');
 
 const {
-  idRecepcionValidator,
+  recepcionIdValidator,
   crearVerificacionRecepcionValidator,
-  actualizarVerificacionRecepcionValidator
-} = require('../../validators/maestro.validator');
+  actualizarVerificacionRecepcionValidator,
+} = require('../../validators/recepcion.validator');
 
 const router = Router();
 
 router.use(auth);
-
 
 // =====================================================
 // SWAGGER
@@ -29,7 +26,6 @@ router.use(auth);
  *   name: Verificación de Recepción
  *   description: Verificación de las condiciones del producto recibido
  */
-
 
 // =====================================================
 // OBTENER VERIFICACIÓN
@@ -60,11 +56,10 @@ router.use(auth);
 router.get(
   '/:recepcionId/verificacion',
   permiso('Recepcion.Ver'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   validar,
-  ctrl.obtener
+  ctrl.obtener,
 );
-
 
 // =====================================================
 // CREAR VERIFICACIÓN
@@ -123,12 +118,11 @@ router.get(
 router.post(
   '/:recepcionId/verificacion',
   permiso('Recepcion.Crear'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   crearVerificacionRecepcionValidator,
   validar,
-  ctrl.crear
+  ctrl.crear,
 );
-
 
 // =====================================================
 // ACTUALIZAR VERIFICACIÓN
@@ -180,12 +174,11 @@ router.post(
 router.put(
   '/:recepcionId/verificacion',
   permiso('Recepcion.Editar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   actualizarVerificacionRecepcionValidator,
   validar,
-  ctrl.actualizar
+  ctrl.actualizar,
 );
-
 
 // =====================================================
 // ELIMINAR VERIFICACIÓN
@@ -216,10 +209,9 @@ router.put(
 router.delete(
   '/:recepcionId/verificacion',
   permiso('Recepcion.Eliminar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   validar,
-  ctrl.eliminar
+  ctrl.eliminar,
 );
-
 
 module.exports = router;

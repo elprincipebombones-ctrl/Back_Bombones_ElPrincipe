@@ -7,36 +7,45 @@ const CategoriaProducto = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     codigo: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      unique: true
+      unique: true,
     },
 
     nombre: {
       type: DataTypes.STRING(150),
-      allowNull: false
+      allowNull: false,
     },
 
     descripcion: {
       type: DataTypes.TEXT,
-      allowNull: true
+      allowNull: true,
+    },
+
+    clasificacionMp: {
+      type: DataTypes.STRING(30),
+      allowNull: false,
+      field: 'clasificacion_mp',
+      validate: {
+        isIn: [['PERECEDERA', 'NO_PERECEDERA']],
+      },
     },
 
     estado: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: true
-    }
+      defaultValue: true,
+    },
   },
   {
     tableName: 'categorias_productos',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = CategoriaProducto;

@@ -41,6 +41,14 @@ exports.crearProductoValidator = [
     .withMessage('La descripción debe ser texto')
     .trim(),
 
+  body('categoriaProductoId')
+    .isUUID()
+    .withMessage('La categoría de producto es obligatoria'),
+
+  body('unidadMedidaId')
+    .isUUID()
+    .withMessage('La unidad de medida es obligatoria'),
+
   body('estado')
     .optional()
     .isBoolean()
@@ -74,6 +82,16 @@ exports.actualizarProductoValidator = [
     .isString()
     .withMessage('La descripción debe ser texto')
     .trim(),
+
+  body('categoriaProductoId')
+    .optional()
+    .isUUID()
+    .withMessage('La categoría de producto no es válida'),
+
+  body('unidadMedidaId')
+    .optional()
+    .isUUID()
+    .withMessage('La unidad de medida no es válida'),
 
   body('estado')
     .optional()
@@ -510,6 +528,10 @@ exports.crearCategoriaProductoValidator = [
     .isString()
     .withMessage('La descripción debe ser un texto'),
 
+  body('clasificacionMp')
+    .isIn(['PERECEDERA', 'NO_PERECEDERA'])
+    .withMessage('La clasificación debe ser PERECEDERA o NO_PERECEDERA'),
+
   body('estado')
     .optional()
     .isBoolean()
@@ -547,6 +569,11 @@ exports.actualizarCategoriaProductoValidator = [
     })
     .isString()
     .withMessage('La descripción debe ser un texto'),
+
+  body('clasificacionMp')
+    .optional()
+    .isIn(['PERECEDERA', 'NO_PERECEDERA'])
+    .withMessage('La clasificación debe ser PERECEDERA o NO_PERECEDERA'),
 
   body('estado')
     .optional()

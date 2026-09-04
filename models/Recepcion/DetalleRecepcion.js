@@ -7,53 +7,56 @@ const DetalleRecepcion = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     recepcionId: {
       type: DataTypes.UUID,
-      allowNull: false
+      allowNull: false,
     },
 
     productoId: {
       type: DataTypes.UUID,
-      allowNull: false
+      allowNull: false,
     },
 
     unidadMedidaId: {
       type: DataTypes.UUID,
-      allowNull: false
+      allowNull: false,
     },
 
-    cantidad: {
+    cantidadSolicitada: {
       type: DataTypes.DECIMAL(15, 3),
-      allowNull: false
+      allowNull: true,
+      field: 'cantidad_solicitada',
     },
 
-    lote: {
-      type: DataTypes.STRING(100),
-      allowNull: true
+    cantidadRecibida: {
+      type: DataTypes.DECIMAL(15, 3),
+      allowNull: false,
+      field: 'cantidad_recibida',
     },
+
     loteProveedor: {
       type: DataTypes.STRING(100),
       allowNull: true,
-      field: 'lote_proveedor'
+      field: 'lote_proveedor',
     },
     fechaVencimiento: {
       type: DataTypes.DATEONLY,
-      allowNull: true
+      allowNull: true,
     },
 
     observaciones: {
       type: DataTypes.TEXT,
-      allowNull: true
-    }
+      allowNull: true,
+    },
   },
   {
     tableName: 'detalles_recepcion',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = DetalleRecepcion;

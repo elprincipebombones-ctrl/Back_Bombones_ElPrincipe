@@ -4,7 +4,7 @@ const { ok, created, fail } = require('../../utils/response');
 exports.listar = async (req, res, next) => {
   try {
     const categoriasProductos = await CategoriaProducto.findAll({
-      order: [['nombre', 'ASC']]
+      order: [['nombre', 'ASC']],
     });
 
     return ok(res, categoriasProductos);
@@ -29,12 +29,7 @@ exports.obtener = async (req, res, next) => {
 
 exports.crear = async (req, res, next) => {
   try {
-    const {
-      nombre,
-      codigo,
-      descripcion,
-      estado
-    } = req.body;
+    const { nombre, codigo, descripcion, clasificacionMp, estado } = req.body;
 
     if (!nombre) {
       return fail(res, 'Falta el nombre', 400);
@@ -46,8 +41,8 @@ exports.crear = async (req, res, next) => {
 
     const categoriaExistente = await CategoriaProducto.findOne({
       where: {
-        codigo
-      }
+        codigo,
+      },
     });
 
     if (categoriaExistente) {
@@ -58,7 +53,8 @@ exports.crear = async (req, res, next) => {
       nombre,
       codigo,
       descripcion,
-      estado: estado !== undefined ? estado : true
+      clasificacionMp,
+      estado: estado !== undefined ? estado : true,
     });
 
     return created(res, categoriaProducto);
@@ -75,35 +71,21 @@ exports.actualizar = async (req, res, next) => {
       return fail(res, 'Categoría de producto no encontrada', 404);
     }
 
-    if (
-      req.body.codigo &&
-      req.body.codigo !== categoriaProducto.codigo
-    ) {
+    if (req.body.codigo && req.body.codigo !== categoriaProducto.codigo) {
       const categoriaExistente = await CategoriaProducto.findOne({
         where: {
-          codigo: req.body.codigo
-        }
+          codigo: req.body.codigo,
+        },
       });
 
-      if (
-        categoriaExistente &&
-        categoriaExistente.id !== categoriaProducto.id
-      ) {
-        return fail(
-          res,
-          'Ya existe una categoría de producto con ese código',
-          409
-        );
+      if (categoriaExistente && categoriaExistente.id !== categoriaProducto.id) {
+        return fail(res, 'Ya existe una categoría de producto con ese código', 409);
       }
     }
 
     await categoriaProducto.update(req.body);
 
-    return ok(
-      res,
-      categoriaProducto,
-      'Categoría de producto actualizada'
-    );
+    return ok(res, categoriaProducto, 'Categoría de producto actualizada');
   } catch (err) {
     return next(err);
   }
@@ -119,11 +101,7 @@ exports.eliminar = async (req, res, next) => {
 
     await categoriaProducto.destroy();
 
-    return ok(
-      res,
-      null,
-      'Categoría de producto eliminada'
-    );
+    return ok(res, null, 'Categoría de producto eliminada');
   } catch (err) {
     return next(err);
   }

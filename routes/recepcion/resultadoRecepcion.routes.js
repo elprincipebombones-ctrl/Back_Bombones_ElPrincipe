@@ -1,23 +1,20 @@
 const { Router } = require('express');
 
-const ctrl = require(
-  '../../controllers/recepcion/resultadoRecepcion.controller'
-);
+const ctrl = require('../../controllers/recepcion/resultadoRecepcion.controller');
 
 const auth = require('../../middleware/auth');
 const permiso = require('../../middleware/permiso');
 const validar = require('../../middleware/validar');
 
 const {
-  idRecepcionValidator,
+  recepcionIdValidator,
   crearResultadoRecepcionValidator,
-  actualizarResultadoRecepcionValidator
-} = require('../../validators/maestro.validator');
+  actualizarResultadoRecepcionValidator,
+} = require('../../validators/recepcion.validator');
 
 const router = Router();
 
 router.use(auth);
-
 
 // =====================================================
 // SWAGGER
@@ -29,7 +26,6 @@ router.use(auth);
  *   name: Resultados de Recepción
  *   description: Resultado final de la recepción
  */
-
 
 // =====================================================
 // OBTENER RESULTADO
@@ -60,11 +56,10 @@ router.use(auth);
 router.get(
   '/:recepcionId/resultado',
   permiso('Recepcion.Ver'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   validar,
-  ctrl.obtener
+  ctrl.obtener,
 );
-
 
 // =====================================================
 // CREAR RESULTADO
@@ -113,12 +108,11 @@ router.get(
 router.post(
   '/:recepcionId/resultado',
   permiso('Recepcion.Crear'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   crearResultadoRecepcionValidator,
   validar,
-  ctrl.crear
+  ctrl.crear,
 );
-
 
 // =====================================================
 // ACTUALIZAR RESULTADO
@@ -164,12 +158,11 @@ router.post(
 router.put(
   '/:recepcionId/resultado',
   permiso('Recepcion.Editar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   actualizarResultadoRecepcionValidator,
   validar,
-  ctrl.actualizar
+  ctrl.actualizar,
 );
-
 
 // =====================================================
 // ELIMINAR RESULTADO
@@ -200,10 +193,9 @@ router.put(
 router.delete(
   '/:recepcionId/resultado',
   permiso('Recepcion.Eliminar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   validar,
-  ctrl.eliminar
+  ctrl.eliminar,
 );
-
 
 module.exports = router;

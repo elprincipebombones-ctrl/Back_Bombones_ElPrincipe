@@ -1,373 +1,116 @@
 const {
-  DetalleRecepcion,
   Recepcion,
+  DetalleRecepcion,
   Producto,
-  UnidadMedida
+  CategoriaProducto,
+  UnidadMedida,
 } = require('../../models');
-
 const { ok, created, fail } = require('../../utils/response');
+const { validarDetalles } = require('../../services/recepcion/recepcion.service');
 
+const include = [
+  {
+    model: Producto,
+    as: 'producto',
+    include: [{ model: CategoriaProducto, as: 'categoriaProducto' }],
+  },
+  { model: UnidadMedida, as: 'unidadMedida' },
+];
 
-// =====================================================
-// LISTAR DETALLES DE UNA RECEPCIÓN
-// =====================================================
+const recepcionEditable = async (recepcionId) => {
+  const recepcion = await Recepcion.findByPk(recepcionId);
+  if (!recepcion) return { error: 'Recepción no encontrada', status: 404 };
+  if (recepcion.estado === 'TERMINADA') {
+    return { error: 'Una recepción terminada es de solo lectura', status: 409 };
+  }
+  return { recepcion };
+};
+
+const buscarDetalle = (recepcionId, id) =>
+  DetalleRecepcion.findOne({ where: { id, recepcionId }, include });
 
 exports.listar = async (req, res, next) => {
   try {
-    const { recepcionId } = req.params;
-
-    const recepcion = await Recepcion.findByPk(recepcionId);
-
-    if (!recepcion) {
-      return fail(
-        res,
-        'Recepción no encontrada',
-        404
-      );
-    }
-
+    const recepcion = await Recepcion.findByPk(req.params.recepcionId);
+    if (!recepcion) return fail(res, 'Recepción no encontrada', 404);
     const detalles = await DetalleRecepcion.findAll({
-      where: {
-        recepcionId
-      },
-      include: [
-        {
-          model: Producto,
-          as: 'producto'
-        },
-        {
-          model: UnidadMedida,
-          as: 'unidadMedida'
-        }
-      ],
-      order: [['createdAt', 'ASC']]
+      where: { recepcionId: req.params.recepcionId },
+      include,
+      order: [['createdAt', 'ASC']],
     });
-
     return ok(res, detalles);
-
   } catch (err) {
     return next(err);
   }
 };
-
-
-// =====================================================
-// OBTENER UN DETALLE
-// =====================================================
 
 exports.obtener = async (req, res, next) => {
   try {
-    const detalle = await DetalleRecepcion.findByPk(
-      req.params.id,
-      {
-        include: [
-          {
-            model: Producto,
-            as: 'producto'
-          },
-          {
-            model: UnidadMedida,
-            as: 'unidadMedida'
-          },
-          {
-            model: Recepcion,
-            as: 'recepcion'
-          }
-        ]
-      }
-    );
-
-    if (!detalle) {
-      return fail(
-        res,
-        'Detalle de recepción no encontrado',
-        404
-      );
-    }
-
-    return ok(res, detalle);
-
+    const detalle = await buscarDetalle(req.params.recepcionId, req.params.id);
+    return detalle ? ok(res, detalle) : fail(res, 'Detalle no encontrado en la recepción', 404);
   } catch (err) {
     return next(err);
   }
 };
-
-
-// =====================================================
-// CREAR DETALLE
-// =====================================================
 
 exports.crear = async (req, res, next) => {
   try {
-    const { recepcionId } = req.params;
-
-    const {
-      productoId,
-      unidadMedidaId,
-      cantidad,
-      lote,
-      fechaVencimiento,
-      observaciones
-    } = req.body;
-
-
-    // ---------------------------------------------
-    // VALIDAR RECEPCIÓN
-    // ---------------------------------------------
-
-    const recepcion = await Recepcion.findByPk(
-      recepcionId
-    );
-
-    if (!recepcion) {
-      return fail(
-        res,
-        'Recepción no encontrada',
-        404
-      );
-    }
-
-
-    // ---------------------------------------------
-    // VALIDACIONES
-    // ---------------------------------------------
-
-    if (!productoId) {
-      return fail(
-        res,
-        'Falta el producto',
-        400
-      );
-    }
-
-    if (!unidadMedidaId) {
-      return fail(
-        res,
-        'Falta la unidad de medida',
-        400
-      );
-    }
-
-    if (
-      cantidad === undefined ||
-      cantidad === null ||
-      cantidad === ''
-    ) {
-      return fail(
-        res,
-        'Falta la cantidad',
-        400
-      );
-    }
-
-    if (Number(cantidad) <= 0) {
-      return fail(
-        res,
-        'La cantidad debe ser mayor que cero',
-        400
-      );
-    }
-
-
-    // ---------------------------------------------
-    // VALIDAR PRODUCTO
-    // ---------------------------------------------
-
-    const producto = await Producto.findByPk(
-      productoId
-    );
-
-    if (!producto) {
-      return fail(
-        res,
-        'Producto no encontrado',
-        404
-      );
-    }
-
-
-    // ---------------------------------------------
-    // VALIDAR UNIDAD DE MEDIDA
-    // ---------------------------------------------
-
-    const unidadMedida = await UnidadMedida.findByPk(
-      unidadMedidaId
-    );
-
-    if (!unidadMedida) {
-      return fail(
-        res,
-        'Unidad de medida no encontrada',
-        404
-      );
-    }
-
-
-    // ---------------------------------------------
-    // CREAR DETALLE
-    // ---------------------------------------------
-
+    const estado = await recepcionEditable(req.params.recepcionId);
+    if (estado.error) return fail(res, estado.error, estado.status);
+    const [datos] = await validarDetalles([req.body]);
     const detalle = await DetalleRecepcion.create({
-      recepcionId,
-      productoId,
-      unidadMedidaId,
-      cantidad,
-      lote,
-      fechaVencimiento,
-      observaciones
+      ...datos,
+      recepcionId: req.params.recepcionId,
     });
-
-
-    // ---------------------------------------------
-    // DEVOLVER CON RELACIONES
-    // ---------------------------------------------
-
-    const detalleCreado =
-      await DetalleRecepcion.findByPk(
-        detalle.id,
-        {
-          include: [
-            {
-              model: Producto,
-              as: 'producto'
-            },
-            {
-              model: UnidadMedida,
-              as: 'unidadMedida'
-            }
-          ]
-        }
-      );
-
-    return created(
-      res,
-      detalleCreado
-    );
-
+    return created(res, await buscarDetalle(req.params.recepcionId, detalle.id));
   } catch (err) {
     return next(err);
   }
 };
-
-
-// =====================================================
-// ACTUALIZAR DETALLE
-// =====================================================
 
 exports.actualizar = async (req, res, next) => {
   try {
-    const detalle = await DetalleRecepcion.findByPk(
-      req.params.id
-    );
-
-    if (!detalle) {
-      return fail(
-        res,
-        'Detalle de recepción no encontrado',
-        404
-      );
-    }
-
-
-    // ---------------------------------------------
-    // VALIDAR CANTIDAD
-    // ---------------------------------------------
-
-    if (
-      req.body.cantidad !== undefined &&
-      Number(req.body.cantidad) <= 0
-    ) {
-      return fail(
-        res,
-        'La cantidad debe ser mayor que cero',
-        400
-      );
-    }
-
-
-    // ---------------------------------------------
-    // VALIDAR PRODUCTO
-    // ---------------------------------------------
-
-    if (req.body.productoId) {
-      const producto = await Producto.findByPk(
-        req.body.productoId
-      );
-
-      if (!producto) {
-        return fail(
-          res,
-          'Producto no encontrado',
-          404
-        );
-      }
-    }
-
-
-    // ---------------------------------------------
-    // VALIDAR UNIDAD
-    // ---------------------------------------------
-
-    if (req.body.unidadMedidaId) {
-      const unidadMedida =
-        await UnidadMedida.findByPk(
-          req.body.unidadMedidaId
-        );
-
-      if (!unidadMedida) {
-        return fail(
-          res,
-          'Unidad de medida no encontrada',
-          404
-        );
-      }
-    }
-
-
-    // ---------------------------------------------
-    // ACTUALIZAR
-    // ---------------------------------------------
-
-    await detalle.update(req.body);
-
+    const estado = await recepcionEditable(req.params.recepcionId);
+    if (estado.error) return fail(res, estado.error, estado.status);
+    const detalle = await buscarDetalle(req.params.recepcionId, req.params.id);
+    if (!detalle) return fail(res, 'Detalle no encontrado en la recepción', 404);
+    const candidato = {
+      productoId: req.body.productoId ?? detalle.productoId,
+      unidadMedidaId: req.body.unidadMedidaId ?? detalle.unidadMedidaId,
+      cantidadSolicitada:
+        req.body.cantidadSolicitada === undefined
+          ? detalle.cantidadSolicitada
+          : req.body.cantidadSolicitada,
+      cantidadRecibida: req.body.cantidadRecibida ?? detalle.cantidadRecibida,
+      loteProveedor:
+        req.body.loteProveedor === undefined ? detalle.loteProveedor : req.body.loteProveedor,
+      fechaVencimiento:
+        req.body.fechaVencimiento === undefined
+          ? detalle.fechaVencimiento
+          : req.body.fechaVencimiento,
+      observaciones:
+        req.body.observaciones === undefined ? detalle.observaciones : req.body.observaciones,
+    };
+    const [datos] = await validarDetalles([candidato]);
+    await detalle.update(datos);
     return ok(
       res,
-      detalle,
-      'Detalle de recepción actualizado'
+      await buscarDetalle(req.params.recepcionId, detalle.id),
+      'Producto de recepción actualizado',
     );
-
   } catch (err) {
     return next(err);
   }
 };
 
-
-// =====================================================
-// ELIMINAR DETALLE
-// =====================================================
-
 exports.eliminar = async (req, res, next) => {
   try {
-    const detalle = await DetalleRecepcion.findByPk(
-      req.params.id
-    );
-
-    if (!detalle) {
-      return fail(
-        res,
-        'Detalle de recepción no encontrado',
-        404
-      );
-    }
-
+    const estado = await recepcionEditable(req.params.recepcionId);
+    if (estado.error) return fail(res, estado.error, estado.status);
+    const detalle = await buscarDetalle(req.params.recepcionId, req.params.id);
+    if (!detalle) return fail(res, 'Detalle no encontrado en la recepción', 404);
     await detalle.destroy();
-
-    return ok(
-      res,
-      null,
-      'Detalle de recepción eliminado'
-    );
-
+    return ok(res, null, 'Producto retirado de la recepción');
   } catch (err) {
     return next(err);
   }

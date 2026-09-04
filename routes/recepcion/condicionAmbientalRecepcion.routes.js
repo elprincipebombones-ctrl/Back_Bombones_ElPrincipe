@@ -1,23 +1,20 @@
 const { Router } = require('express');
 
-const ctrl = require(
-  '../../controllers/recepcion/condicionAmbientalRecepcion.controller'
-);
+const ctrl = require('../../controllers/recepcion/condicionAmbientalRecepcion.controller');
 
 const auth = require('../../middleware/auth');
 const permiso = require('../../middleware/permiso');
 const validar = require('../../middleware/validar');
 
 const {
-  idRecepcionValidator,
+  recepcionIdValidator,
   crearCondicionAmbientalRecepcionValidator,
-  actualizarCondicionAmbientalRecepcionValidator
-} = require('../../validators/maestro.validator');
+  actualizarCondicionAmbientalRecepcionValidator,
+} = require('../../validators/recepcion.validator');
 
 const router = Router();
 
 router.use(auth);
-
 
 // =====================================================
 // SWAGGER
@@ -29,7 +26,6 @@ router.use(auth);
  *   name: Condiciones Ambientales de Recepción
  *   description: Registro de las condiciones ambientales durante la recepción
  */
-
 
 // =====================================================
 // OBTENER CONDICIÓN AMBIENTAL
@@ -60,11 +56,10 @@ router.use(auth);
 router.get(
   '/:recepcionId/condicion-ambiental',
   permiso('Recepcion.Ver'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   validar,
-  ctrl.obtener
+  ctrl.obtener,
 );
-
 
 // =====================================================
 // CREAR CONDICIÓN AMBIENTAL
@@ -116,12 +111,11 @@ router.get(
 router.post(
   '/:recepcionId/condicion-ambiental',
   permiso('Recepcion.Crear'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   crearCondicionAmbientalRecepcionValidator,
   validar,
-  ctrl.crear
+  ctrl.crear,
 );
-
 
 // =====================================================
 // ACTUALIZAR CONDICIÓN AMBIENTAL
@@ -169,12 +163,11 @@ router.post(
 router.put(
   '/:recepcionId/condicion-ambiental',
   permiso('Recepcion.Editar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   actualizarCondicionAmbientalRecepcionValidator,
   validar,
-  ctrl.actualizar
+  ctrl.actualizar,
 );
-
 
 // =====================================================
 // ELIMINAR CONDICIÓN AMBIENTAL
@@ -205,10 +198,9 @@ router.put(
 router.delete(
   '/:recepcionId/condicion-ambiental',
   permiso('Recepcion.Eliminar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   validar,
-  ctrl.eliminar
+  ctrl.eliminar,
 );
-
 
 module.exports = router;

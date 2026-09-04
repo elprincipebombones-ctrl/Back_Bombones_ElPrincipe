@@ -7,18 +7,18 @@ const Recepcion = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     numero: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      unique: true
+      unique: true,
     },
 
     fechaRecepcion: {
       type: DataTypes.DATE,
-      allowNull: false
+      allowNull: false,
     },
 
     proveedorId: {
@@ -27,43 +27,46 @@ const Recepcion = sequelize.define(
       field: 'proveedor_id',
       references: {
         model: 'proveedores',
-        key: 'id'
+        key: 'id',
       },
       onUpdate: 'CASCADE',
-      onDelete: 'RESTRICT'
+      onDelete: 'RESTRICT',
     },
 
     bodegaId: {
       type: DataTypes.UUID,
-      allowNull: true
+      allowNull: false,
     },
 
     lugarAreaId: {
       type: DataTypes.UUID,
-      allowNull: true
+      allowNull: true,
     },
 
     estado: {
       type: DataTypes.STRING(30),
       allowNull: false,
-      defaultValue: 'PENDIENTE'
+      defaultValue: 'EN_PROCESO',
+      validate: {
+        isIn: [['EN_PROCESO', 'TERMINADA']],
+      },
     },
 
     observaciones: {
       type: DataTypes.TEXT,
-      allowNull: true
+      allowNull: true,
     },
 
     usuarioRecepcionId: {
       type: DataTypes.UUID,
-      allowNull: true
-    }
+      allowNull: true,
+    },
   },
   {
     tableName: 'recepciones',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = Recepcion;

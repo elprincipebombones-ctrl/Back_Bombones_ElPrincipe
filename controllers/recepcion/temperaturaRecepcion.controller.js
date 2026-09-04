@@ -1,291 +1,92 @@
-const {
-  TemperaturaRecepcion,
-  Recepcion,
-  Producto
-} = require('../../models');
-
+const { Recepcion, DetalleRecepcion, TemperaturaRecepcion, Producto } = require('../../models');
 const { ok, created, fail } = require('../../utils/response');
 
+const include = [{ model: Producto, as: 'producto' }];
+const buscar = (recepcionId, id) =>
+  TemperaturaRecepcion.findOne({ where: { id, recepcionId }, include });
 
-// =====================================================
-// LISTAR TEMPERATURAS DE UNA RECEPCIÓN
-// =====================================================
+const editable = async (recepcionId) => {
+  const recepcion = await Recepcion.findByPk(recepcionId);
+  if (!recepcion) return { error: 'Recepción no encontrada', status: 404 };
+  if (recepcion.estado === 'TERMINADA') {
+    return { error: 'Una recepción terminada es de solo lectura', status: 409 };
+  }
+  return { recepcion };
+};
+
+const productoPertenece = (recepcionId, productoId) =>
+  DetalleRecepcion.findOne({ where: { recepcionId, productoId } });
 
 exports.listar = async (req, res, next) => {
   try {
-    const { recepcionId } = req.params;
-
-    const recepcion = await Recepcion.findByPk(recepcionId);
-
-    if (!recepcion) {
-      return fail(
-        res,
-        'Recepción no encontrada',
-        404
-      );
-    }
-
-    const temperaturas =
+    const recepcion = await Recepcion.findByPk(req.params.recepcionId);
+    if (!recepcion) return fail(res, 'Recepción no encontrada', 404);
+    return ok(
+      res,
       await TemperaturaRecepcion.findAll({
-        where: {
-          recepcionId
-        },
-        include: [
-          {
-            model: Producto,
-            as: 'producto'
-          }
-        ],
-        order: [['createdAt', 'ASC']]
-      });
-
-    return ok(res, temperaturas);
-
+        where: { recepcionId: recepcion.id },
+        include,
+        order: [['createdAt', 'ASC']],
+      }),
+    );
   } catch (err) {
     return next(err);
   }
 };
-
-
-// =====================================================
-// OBTENER TEMPERATURA POR ID
-// =====================================================
 
 exports.obtener = async (req, res, next) => {
   try {
-    const temperatura =
-      await TemperaturaRecepcion.findByPk(
-        req.params.id,
-        {
-          include: [
-            {
-              model: Recepcion,
-              as: 'recepcion'
-            },
-            {
-              model: Producto,
-              as: 'producto'
-            }
-          ]
-        }
-      );
-
-    if (!temperatura) {
-      return fail(
-        res,
-        'Registro de temperatura no encontrado',
-        404
-      );
-    }
-
-    return ok(res, temperatura);
-
+    const registro = await buscar(req.params.recepcionId, req.params.id);
+    return registro ? ok(res, registro) : fail(res, 'Temperatura no encontrada', 404);
   } catch (err) {
     return next(err);
   }
 };
-
-
-// =====================================================
-// CREAR TEMPERATURA
-// =====================================================
 
 exports.crear = async (req, res, next) => {
   try {
-    const { recepcionId } = req.params;
-
-    const {
-      productoId,
-      temperatura,
-      hora,
-      observaciones
-    } = req.body;
-
-
-    // ---------------------------------------------
-    // VALIDAR RECEPCIÓN
-    // ---------------------------------------------
-
-    const recepcion = await Recepcion.findByPk(
-      recepcionId
-    );
-
-    if (!recepcion) {
-      return fail(
-        res,
-        'Recepción no encontrada',
-        404
-      );
+    const estado = await editable(req.params.recepcionId);
+    if (estado.error) return fail(res, estado.error, estado.status);
+    if (!(await productoPertenece(req.params.recepcionId, req.body.productoId))) {
+      return fail(res, 'El producto no pertenece a la recepción', 422);
     }
-
-
-    // ---------------------------------------------
-    // VALIDAR PRODUCTO
-    // ---------------------------------------------
-
-    if (!productoId) {
-      return fail(
-        res,
-        'Falta el producto',
-        400
-      );
-    }
-
-    const producto = await Producto.findByPk(
-      productoId
-    );
-
-    if (!producto) {
-      return fail(
-        res,
-        'Producto no encontrado',
-        404
-      );
-    }
-
-
-    // ---------------------------------------------
-    // VALIDAR TEMPERATURA
-    // ---------------------------------------------
-
-    if (temperatura === undefined || temperatura === null) {
-      return fail(
-        res,
-        'Falta la temperatura',
-        400
-      );
-    }
-
-
-    // ---------------------------------------------
-    // CREAR
-    // ---------------------------------------------
-
-    const registro =
-      await TemperaturaRecepcion.create({
-        recepcionId,
-        productoId,
-        temperatura,
-        hora,
-        observaciones
-      });
-
-
-    // ---------------------------------------------
-    // DEVOLVER CON PRODUCTO
-    // ---------------------------------------------
-
-    const registroCreado =
-      await TemperaturaRecepcion.findByPk(
-        registro.id,
-        {
-          include: [
-            {
-              model: Producto,
-              as: 'producto'
-            }
-          ]
-        }
-      );
-
-    return created(
-      res,
-      registroCreado
-    );
-
+    const registro = await TemperaturaRecepcion.create({
+      ...req.body,
+      recepcionId: req.params.recepcionId,
+    });
+    return created(res, await buscar(req.params.recepcionId, registro.id));
   } catch (err) {
     return next(err);
   }
 };
-
-
-// =====================================================
-// ACTUALIZAR TEMPERATURA
-// =====================================================
 
 exports.actualizar = async (req, res, next) => {
   try {
-    const registro =
-      await TemperaturaRecepcion.findByPk(
-        req.params.id
-      );
-
-    if (!registro) {
-      return fail(
-        res,
-        'Registro de temperatura no encontrado',
-        404
-      );
-    }
-
-
-    // ---------------------------------------------
-    // VALIDAR PRODUCTO SI CAMBIA
-    // ---------------------------------------------
-
+    const estado = await editable(req.params.recepcionId);
+    if (estado.error) return fail(res, estado.error, estado.status);
+    const registro = await buscar(req.params.recepcionId, req.params.id);
+    if (!registro) return fail(res, 'Temperatura no encontrada', 404);
     if (
       req.body.productoId &&
-      req.body.productoId !== registro.productoId
+      !(await productoPertenece(req.params.recepcionId, req.body.productoId))
     ) {
-      const producto = await Producto.findByPk(
-        req.body.productoId
-      );
-
-      if (!producto) {
-        return fail(
-          res,
-          'Producto no encontrado',
-          404
-        );
-      }
+      return fail(res, 'El producto no pertenece a la recepción', 422);
     }
-
-
-    // ---------------------------------------------
-    // ACTUALIZAR
-    // ---------------------------------------------
-
     await registro.update(req.body);
-
-    return ok(
-      res,
-      registro,
-      'Registro de temperatura actualizado'
-    );
-
+    return ok(res, await buscar(req.params.recepcionId, registro.id), 'Temperatura actualizada');
   } catch (err) {
     return next(err);
   }
 };
 
-
-// =====================================================
-// ELIMINAR TEMPERATURA
-// =====================================================
-
 exports.eliminar = async (req, res, next) => {
   try {
-    const registro =
-      await TemperaturaRecepcion.findByPk(
-        req.params.id
-      );
-
-    if (!registro) {
-      return fail(
-        res,
-        'Registro de temperatura no encontrado',
-        404
-      );
-    }
-
+    const estado = await editable(req.params.recepcionId);
+    if (estado.error) return fail(res, estado.error, estado.status);
+    const registro = await buscar(req.params.recepcionId, req.params.id);
+    if (!registro) return fail(res, 'Temperatura no encontrada', 404);
     await registro.destroy();
-
-    return ok(
-      res,
-      null,
-      'Registro de temperatura eliminado'
-    );
-
+    return ok(res, null, 'Temperatura eliminada');
   } catch (err) {
     return next(err);
   }

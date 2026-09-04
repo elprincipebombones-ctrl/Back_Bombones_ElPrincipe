@@ -7,7 +7,7 @@ const CondicionAmbientalRecepcion = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     recepcionId: {
@@ -17,43 +17,44 @@ const CondicionAmbientalRecepcion = sequelize.define(
       field: 'recepcion_id',
       references: {
         model: 'recepciones',
-        key: 'id'
-      }
+        key: 'id',
+      },
     },
 
     temperatura: {
       type: DataTypes.DECIMAL(6, 2),
-      allowNull: true
+      allowNull: true,
+      field: 'temperatura_cava',
     },
 
     desinfeccionRealizada: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      field: 'desinfeccion_realizada'
+      field: 'desinfeccion_realizada',
     },
 
     productoDesinfeccion: {
       type: DataTypes.STRING(150),
       allowNull: true,
-      field: 'producto_desinfeccion'
+      field: 'desinfectante_area',
     },
 
     concentracionDesinfeccion: {
       type: DataTypes.STRING(50),
       allowNull: true,
-      field: 'concentracion_desinfeccion'
+      field: 'concentracion_desinfeccion',
     },
 
     observaciones: {
       type: DataTypes.TEXT,
-      allowNull: true
-    }
+      allowNull: true,
+    },
   },
   {
     tableName: 'condiciones_ambientales_recepcion',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = CondicionAmbientalRecepcion;

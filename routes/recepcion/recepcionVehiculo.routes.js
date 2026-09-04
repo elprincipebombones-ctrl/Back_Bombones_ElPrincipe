@@ -9,16 +9,15 @@ const permiso = require('../../middleware/permiso');
 const validar = require('../../middleware/validar');
 
 const {
-  idRecepcionValidator,
+  recepcionIdValidator,
   idRecepcionVehiculoValidator,
   crearRecepcionVehiculoValidator,
-  actualizarRecepcionVehiculoValidator
-} = require('../../validators/maestro.validator');
+  actualizarRecepcionVehiculoValidator,
+} = require('../../validators/recepcion.validator');
 
 const router = Router();
 
 router.use(auth);
-
 
 // =====================================================
 // SWAGGER
@@ -30,7 +29,6 @@ router.use(auth);
  *   name: Vehículos de Recepción
  *   description: Gestión de los vehículos asociados a una recepción
  */
-
 
 // =====================================================
 // LISTAR VEHÍCULOS DE UNA RECEPCIÓN
@@ -61,11 +59,10 @@ router.use(auth);
 router.get(
   '/:recepcionId/vehiculos',
   permiso('Recepcion.Ver'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   validar,
-  ctrl.listar
+  ctrl.listar,
 );
-
 
 // =====================================================
 // OBTENER VEHÍCULO DE LA RECEPCIÓN
@@ -102,12 +99,11 @@ router.get(
 router.get(
   '/:recepcionId/vehiculos/:id',
   permiso('Recepcion.Ver'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   idRecepcionVehiculoValidator,
   validar,
-  ctrl.obtener
+  ctrl.obtener,
 );
-
 
 // =====================================================
 // AGREGAR VEHÍCULO A LA RECEPCIÓN
@@ -165,12 +161,11 @@ router.get(
 router.post(
   '/:recepcionId/vehiculos',
   permiso('Recepcion.Crear'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   crearRecepcionVehiculoValidator,
   validar,
-  ctrl.crear
+  ctrl.crear,
 );
-
 
 // =====================================================
 // ACTUALIZAR VEHÍCULO DE LA RECEPCIÓN
@@ -227,13 +222,12 @@ router.post(
 router.put(
   '/:recepcionId/vehiculos/:id',
   permiso('Recepcion.Editar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   idRecepcionVehiculoValidator,
   actualizarRecepcionVehiculoValidator,
   validar,
-  ctrl.actualizar
+  ctrl.actualizar,
 );
-
 
 // =====================================================
 // ELIMINAR VEHÍCULO DE LA RECEPCIÓN
@@ -270,11 +264,10 @@ router.put(
 router.delete(
   '/:recepcionId/vehiculos/:id',
   permiso('Recepcion.Eliminar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   idRecepcionVehiculoValidator,
   validar,
-  ctrl.eliminar
+  ctrl.eliminar,
 );
-
 
 module.exports = router;

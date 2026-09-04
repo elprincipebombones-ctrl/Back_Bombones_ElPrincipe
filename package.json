@@ -15,7 +15,8 @@
     "test:checklists": "node scripts/probar-api-checklists.js",
     "test:calidad-fase": "node scripts/probar-fase-calidad.js",
     "test:evidencia-http": "node scripts/probar-evidencia-http.js",
-    "test:campos-accion": "node scripts/probar-campos-accion-correctiva.js"
+    "test:campos-accion": "node scripts/probar-campos-accion-correctiva.js",
+    "test:recepcion": "node --test tests/recepcion.service.test.js"
   },
   "keywords": [
     "express",

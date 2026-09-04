@@ -7,7 +7,7 @@ const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
 
 const sequelize = require('./database/database');
-require('./models'); 
+require('./models');
 
 const routes = require('./routes');
 const errorMiddleware = require('./middleware/error');
@@ -36,9 +36,7 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api', routes);
 
 // 404
-app.use((req, res) =>
-  res.status(404).json({ success: false, message: 'Recurso no encontrado' }),
-);
+app.use((req, res) => res.status(404).json({ success: false, message: 'Recurso no encontrado' }));
 
 // Manejo de errores centralizado
 app.use(errorMiddleware);
@@ -48,14 +46,9 @@ const PORT = process.env.PORT || 3000;
 const httpServer = http.createServer(app);
 sockets.init(httpServer);
 
-const { db } = require('./database/database');
-
-
-
 (async () => {
   try {
     await sequelize.authenticate();
-    await sequelize.sync();
     console.log('[db] Conexión establecida');
     httpServer.listen(PORT, () => {
       console.log(`[server] Escuchando en http://localhost:${PORT}`);

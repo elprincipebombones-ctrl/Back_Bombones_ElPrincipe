@@ -9,16 +9,15 @@ const permiso = require('../../middleware/permiso');
 const validar = require('../../middleware/validar');
 
 const {
-  idRecepcionValidator,
+  recepcionIdValidator,
   idDetalleRecepcionValidator,
   crearDetalleRecepcionValidator,
-  actualizarDetalleRecepcionValidator
-} = require('../../validators/maestro.validator');
+  actualizarDetalleRecepcionValidator,
+} = require('../../validators/recepcion.validator');
 
 const router = Router();
 
 router.use(auth);
-
 
 // =====================================================
 // SWAGGER
@@ -30,7 +29,6 @@ router.use(auth);
  *   name: Detalles de Recepción
  *   description: Gestión de los productos recibidos en una recepción
  */
-
 
 // =====================================================
 // LISTAR DETALLES DE UNA RECEPCIÓN
@@ -61,11 +59,10 @@ router.use(auth);
 router.get(
   '/:recepcionId/detalles',
   permiso('Recepcion.Ver'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   validar,
-  ctrl.listar
+  ctrl.listar,
 );
-
 
 // =====================================================
 // OBTENER DETALLE
@@ -102,12 +99,11 @@ router.get(
 router.get(
   '/:recepcionId/detalles/:id',
   permiso('Recepcion.Ver'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   idDetalleRecepcionValidator,
   validar,
-  ctrl.obtener
+  ctrl.obtener,
 );
-
 
 // =====================================================
 // CREAR DETALLE
@@ -137,7 +133,7 @@ router.get(
  *             required:
  *               - productoId
  *               - unidadMedidaId
- *               - cantidad
+ *               - cantidadRecibida
  *             properties:
  *               productoId:
  *                 type: string
@@ -145,10 +141,13 @@ router.get(
  *               unidadMedidaId:
  *                 type: string
  *                 format: uuid
- *               cantidad:
+ *               cantidadSolicitada:
  *                 type: number
  *                 example: 100.500
- *               lote:
+ *               cantidadRecibida:
+ *                 type: number
+ *                 example: 100.500
+ *               loteProveedor:
  *                 type: string
  *                 example: LOT-001
  *               fechaVencimiento:
@@ -167,12 +166,11 @@ router.get(
 router.post(
   '/:recepcionId/detalles',
   permiso('Recepcion.Crear'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   crearDetalleRecepcionValidator,
   validar,
-  ctrl.crear
+  ctrl.crear,
 );
-
 
 // =====================================================
 // ACTUALIZAR DETALLE
@@ -212,9 +210,11 @@ router.post(
  *               unidadMedidaId:
  *                 type: string
  *                 format: uuid
- *               cantidad:
+ *               cantidadSolicitada:
  *                 type: number
- *               lote:
+ *               cantidadRecibida:
+ *                 type: number
+ *               loteProveedor:
  *                 type: string
  *               fechaVencimiento:
  *                 type: string
@@ -231,13 +231,12 @@ router.post(
 router.put(
   '/:recepcionId/detalles/:id',
   permiso('Recepcion.Editar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   idDetalleRecepcionValidator,
   actualizarDetalleRecepcionValidator,
   validar,
-  ctrl.actualizar
+  ctrl.actualizar,
 );
-
 
 // =====================================================
 // ELIMINAR DETALLE
@@ -274,11 +273,10 @@ router.put(
 router.delete(
   '/:recepcionId/detalles/:id',
   permiso('Recepcion.Eliminar'),
-  idRecepcionValidator,
+  recepcionIdValidator,
   idDetalleRecepcionValidator,
   validar,
-  ctrl.eliminar
+  ctrl.eliminar,
 );
-
 
 module.exports = router;

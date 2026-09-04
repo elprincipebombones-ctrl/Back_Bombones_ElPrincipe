@@ -7,7 +7,7 @@ const TemperaturaRecepcion = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     recepcionId: {
@@ -16,8 +16,8 @@ const TemperaturaRecepcion = sequelize.define(
       field: 'recepcion_id',
       references: {
         model: 'recepciones',
-        key: 'id'
-      }
+        key: 'id',
+      },
     },
 
     productoId: {
@@ -26,30 +26,39 @@ const TemperaturaRecepcion = sequelize.define(
       field: 'producto_id',
       references: {
         model: 'productos',
-        key: 'id'
-      }
+        key: 'id',
+      },
+    },
+
+    condicionTermica: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      field: 'condicion_termica',
+      validate: {
+        isIn: [['REFRIGERADO', 'CONGELADO']],
+      },
     },
 
     temperatura: {
       type: DataTypes.DECIMAL(6, 2),
-      allowNull: false
+      allowNull: false,
     },
 
     hora: {
       type: DataTypes.TIME,
-      allowNull: true
+      allowNull: true,
     },
 
     observaciones: {
       type: DataTypes.TEXT,
-      allowNull: true
-    }
+      allowNull: true,
+    },
   },
   {
     tableName: 'temperaturas_recepcion',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = TemperaturaRecepcion;

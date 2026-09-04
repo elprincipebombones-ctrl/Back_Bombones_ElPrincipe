@@ -1,8 +1,6 @@
 const { Router } = require('express');
 
-const ctrl = require(
-  '../../controllers/recepcion/recepcion.controller'
-);
+const ctrl = require('../../controllers/recepcion/recepcion.controller');
 
 const auth = require('../../middleware/auth');
 const permiso = require('../../middleware/permiso');
@@ -11,13 +9,19 @@ const validar = require('../../middleware/validar');
 const {
   idRecepcionValidator,
   crearRecepcionValidator,
-  actualizarRecepcionValidator
-} = require('../../validators/maestro.validator');
+  actualizarRecepcionValidator,
+} = require('../../validators/recepcion.validator');
 
 const router = Router();
 
 router.use(auth);
 
+router.use('/', require('./detalleRecepcion.routes'));
+router.use('/', require('./recepcionVehiculo.routes'));
+router.use('/', require('./verificacionRecepcion.routes'));
+router.use('/', require('./temperaturaRecepcion.routes'));
+router.use('/', require('./condicionAmbientalRecepcion.routes'));
+router.use('/', require('./resultadoRecepcion.routes'));
 
 // =====================================================
 // SWAGGER
@@ -29,7 +33,6 @@ router.use(auth);
  *   name: Recepciones
  *   description: Gestión de recepción de productos y materias primas
  */
-
 
 // =====================================================
 // LISTAR RECEPCIONES
@@ -48,12 +51,7 @@ router.use(auth);
  *         description: Lista de recepciones
  */
 
-router.get(
-  '/',
-  permiso('Recepcion.Ver'),
-  ctrl.listar
-);
-
+router.get('/', permiso('Recepcion.Ver'), ctrl.listar);
 
 // =====================================================
 // OBTENER RECEPCIÓN
@@ -81,14 +79,7 @@ router.get(
  *         description: Recepción no encontrada
  */
 
-router.get(
-  '/:id',
-  permiso('Recepcion.Ver'),
-  idRecepcionValidator,
-  validar,
-  ctrl.obtener
-);
-
+router.get('/:id', permiso('Recepcion.Ver'), idRecepcionValidator, validar, ctrl.obtener);
 
 // =====================================================
 // CREAR RECEPCIÓN
@@ -109,13 +100,11 @@ router.get(
  *           schema:
  *             type: object
  *             required:
- *               - numero
  *               - fechaRecepcion
  *               - proveedorId
+ *               - bodegaId
+ *               - detalles
  *             properties:
- *               numero:
- *                 type: string
- *                 example: REC-000001
  *               fechaRecepcion:
  *                 type: string
  *                 format: date-time
@@ -129,9 +118,10 @@ router.get(
  *               lugarAreaId:
  *                 type: string
  *                 format: uuid
- *               estado:
- *                 type: string
- *                 example: PENDIENTE
+ *               detalles:
+ *                 type: array
+ *                 items:
+ *                   type: object
  *               observaciones:
  *                 type: string
  *     responses:
@@ -139,18 +129,9 @@ router.get(
  *         description: Recepción creada
  *       400:
  *         description: Datos inválidos
- *       409:
- *         description: Ya existe una recepción con ese número
  */
 
-router.post(
-  '/',
-  permiso('Recepcion.Crear'),
-  crearRecepcionValidator,
-  validar,
-  ctrl.crear
-);
-
+router.post('/', permiso('Recepcion.Crear'), crearRecepcionValidator, validar, ctrl.crear);
 
 // =====================================================
 // ACTUALIZAR RECEPCIÓN
@@ -190,9 +171,16 @@ router.put(
   idRecepcionValidator,
   actualizarRecepcionValidator,
   validar,
-  ctrl.actualizar
+  ctrl.actualizar,
 );
 
+router.patch(
+  '/:id/finalizar',
+  permiso('Recepcion.Editar'),
+  idRecepcionValidator,
+  validar,
+  ctrl.finalizar,
+);
 
 // =====================================================
 // ELIMINAR RECEPCIÓN
@@ -220,13 +208,6 @@ router.put(
  *         description: Recepción no encontrada
  */
 
-router.delete(
-  '/:id',
-  permiso('Recepcion.Eliminar'),
-  idRecepcionValidator,
-  validar,
-  ctrl.eliminar
-);
-
+router.delete('/:id', permiso('Recepcion.Eliminar'), idRecepcionValidator, validar, ctrl.eliminar);
 
 module.exports = router;
