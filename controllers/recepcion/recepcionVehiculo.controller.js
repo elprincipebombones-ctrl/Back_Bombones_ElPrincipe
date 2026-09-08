@@ -8,8 +8,8 @@ const buscar = (recepcionId, id) =>
 const editable = async (recepcionId) => {
   const recepcion = await Recepcion.findByPk(recepcionId);
   if (!recepcion) return { error: 'Recepción no encontrada', status: 404 };
-  if (recepcion.estado === 'TERMINADA') {
-    return { error: 'Una recepción terminada es de solo lectura', status: 409 };
+  if (recepcion.estado !== 'EN_PROCESO') {
+    return { error: 'La recepción finalizada es de solo lectura', status: 409 };
   }
   return { recepcion };
 };

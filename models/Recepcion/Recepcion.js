@@ -48,8 +48,15 @@ const Recepcion = sequelize.define(
       allowNull: false,
       defaultValue: 'EN_PROCESO',
       validate: {
-        isIn: [['EN_PROCESO', 'TERMINADA']],
+        isIn: [['EN_PROCESO', 'TERMINADA', 'RECHAZADA']],
       },
+    },
+
+    tieneNovedades: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'tiene_novedades',
     },
 
     observaciones: {

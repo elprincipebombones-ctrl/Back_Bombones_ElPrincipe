@@ -15,8 +15,8 @@ module.exports = (Modelo, nombre) => ({
     try {
       const recepcion = await Recepcion.findByPk(req.params.recepcionId);
       if (!recepcion) return fail(res, 'Recepción no encontrada', 404);
-      if (recepcion.estado === 'TERMINADA') {
-        return fail(res, 'Una recepción terminada es de solo lectura', 409);
+      if (recepcion.estado !== 'EN_PROCESO') {
+        return fail(res, 'La recepción finalizada es de solo lectura', 409);
       }
       const existente = await Modelo.findOne({ where: { recepcionId: recepcion.id } });
       if (existente) return fail(res, `La recepción ya tiene ${nombre.toLowerCase()}`, 409);
@@ -31,8 +31,8 @@ module.exports = (Modelo, nombre) => ({
     try {
       const recepcion = await Recepcion.findByPk(req.params.recepcionId);
       if (!recepcion) return fail(res, 'Recepción no encontrada', 404);
-      if (recepcion.estado === 'TERMINADA') {
-        return fail(res, 'Una recepción terminada es de solo lectura', 409);
+      if (recepcion.estado !== 'EN_PROCESO') {
+        return fail(res, 'La recepción finalizada es de solo lectura', 409);
       }
       const registro = await Modelo.findOne({ where: { recepcionId: recepcion.id } });
       if (!registro) return fail(res, `${nombre} no encontrado`, 404);
@@ -47,8 +47,8 @@ module.exports = (Modelo, nombre) => ({
     try {
       const recepcion = await Recepcion.findByPk(req.params.recepcionId);
       if (!recepcion) return fail(res, 'Recepción no encontrada', 404);
-      if (recepcion.estado === 'TERMINADA') {
-        return fail(res, 'Una recepción terminada es de solo lectura', 409);
+      if (recepcion.estado !== 'EN_PROCESO') {
+        return fail(res, 'La recepción finalizada es de solo lectura', 409);
       }
       const registro = await Modelo.findOne({ where: { recepcionId: recepcion.id } });
       if (!registro) return fail(res, `${nombre} no encontrado`, 404);

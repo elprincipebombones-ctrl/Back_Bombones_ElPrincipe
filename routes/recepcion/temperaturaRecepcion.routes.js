@@ -129,10 +129,10 @@ router.get(
  *           schema:
  *             type: object
  *             required:
- *               - productoId
+ *               - detalleRecepcionId
  *               - temperatura
  *             properties:
- *               productoId:
+ *               detalleRecepcionId:
  *                 type: string
  *                 format: uuid
  *               temperatura:
@@ -191,7 +191,7 @@ router.post(
  *           schema:
  *             type: object
  *             properties:
- *               productoId:
+ *               detalleRecepcionId:
  *                 type: string
  *                 format: uuid
  *               temperatura:

@@ -4,6 +4,8 @@ const {
   DetalleRecepcion,
   Producto,
   CategoriaProducto,
+  TemperaturaRecepcion,
+  AccionMejoraRecepcion,
   VerificacionRecepcion,
   MovimientoInventario,
   DetalleMovimiento,
@@ -51,11 +53,6 @@ const validarDetalles = async (detalles, transaction, models = { Producto, Categ
     if (!producto || !producto.estado) {
       throw new RecepcionError(`El producto del detalle ${index + 1} no existe o está inactivo`);
     }
-    if (producto.unidadMedidaId !== detalle.unidadMedidaId) {
-      throw new RecepcionError(
-        `La unidad del detalle ${index + 1} debe ser la unidad configurada en el producto`,
-      );
-    }
     const cantidadRecibida = Number(detalle.cantidadRecibida);
     const cantidadSolicitada =
       detalle.cantidadSolicitada === null || detalle.cantidadSolicitada === undefined
@@ -75,12 +72,17 @@ const validarDetalles = async (detalles, transaction, models = { Producto, Categ
       );
     }
 
-    const clasificacion = producto.categoriaProducto?.clasificacionMp;
+    const categoria = producto.categoriaProducto;
     const loteProveedor = limpiarTexto(detalle.loteProveedor);
     const fechaVencimiento = detalle.fechaVencimiento || null;
-    if (clasificacion === 'PERECEDERA' && (!loteProveedor || !fechaVencimiento)) {
+    if (categoria?.requiereLote && !loteProveedor) {
       throw new RecepcionError(
-        `El lote del proveedor y la fecha de vencimiento son obligatorios para el producto perecedero ${producto.nombre}`,
+        `El lote del proveedor es obligatorio para el producto ${producto.nombre}`,
+      );
+    }
+    if (categoria?.requiereFechaVencimiento && !fechaVencimiento) {
+      throw new RecepcionError(
+        `La fecha de vencimiento es obligatoria para el producto ${producto.nombre}`,
       );
     }
 
@@ -123,6 +125,8 @@ const finalizarRecepcion = async ({
     DetalleRecepcion,
     Producto,
     CategoriaProducto,
+    TemperaturaRecepcion,
+    AccionMejoraRecepcion,
     VerificacionRecepcion,
     MovimientoInventario,
     DetalleMovimiento,
@@ -143,6 +147,8 @@ const finalizarRecepcion = async ({
           ],
         },
         { model: models.VerificacionRecepcion, as: 'verificacion' },
+        { model: models.TemperaturaRecepcion, as: 'temperaturas' },
+        { model: models.AccionMejoraRecepcion, as: 'accionesMejora' },
       ],
       transaction,
       lock: transaction.LOCK.UPDATE,
@@ -157,6 +163,22 @@ const finalizarRecepcion = async ({
     }
     if (!usuarioId) {
       throw new RecepcionError('No fue posible identificar al usuario que finaliza', 401);
+    }
+
+    validarVerificacionFinal(recepcion.verificacion);
+    const accionesMejora = recepcion.accionesMejora || [];
+    if (
+      accionesMejora.some(
+        (accion) =>
+          !limpiarTexto(accion.observacion) || !accion.decision || accion.estado !== 'GESTIONADA',
+      )
+    ) {
+      throw new RecepcionError('Debe gestionar todas las acciones de mejora antes de finalizar');
+    }
+
+    if (accionesMejora.some((accion) => accion.decision === 'NO_RECIBIR')) {
+      await recepcion.update({ estado: 'RECHAZADA', tieneNovedades: true }, { transaction });
+      return { recepcion, movimiento: null };
     }
 
     const existente = await models.MovimientoInventario.findOne({
@@ -182,18 +204,34 @@ const finalizarRecepcion = async ({
           `La unidad del detalle ${index + 1} no coincide con la configurada en el producto`,
         );
       }
-      const clasificacion = detalle.producto?.categoriaProducto?.clasificacionMp;
-      if (
-        clasificacion === 'PERECEDERA' &&
-        (!limpiarTexto(detalle.loteProveedor) || !detalle.fechaVencimiento)
-      ) {
+      const categoria = detalle.producto?.categoriaProducto;
+      if (categoria?.requiereLote && !limpiarTexto(detalle.loteProveedor)) {
         throw new RecepcionError(
-          `Faltan lote o vencimiento para el producto perecedero ${detalle.producto?.nombre || index + 1}`,
+          `Falta el lote para el producto ${detalle.producto?.nombre || index + 1}`,
         );
       }
+      if (categoria?.requiereFechaVencimiento && !detalle.fechaVencimiento) {
+        throw new RecepcionError(
+          `Falta la fecha de vencimiento para el producto ${detalle.producto?.nombre || index + 1}`,
+        );
+      }
+      if (categoria?.requiereTemperatura) {
+        const temperatura = (recepcion.temperaturas || []).find(
+          (registro) =>
+            registro.detalleRecepcionId === detalle.id ||
+            (!registro.detalleRecepcionId && registro.productoId === detalle.productoId),
+        );
+        if (
+          !temperatura ||
+          temperatura.temperatura === null ||
+          temperatura.temperatura === undefined
+        ) {
+          throw new RecepcionError(
+            `Falta registrar la temperatura del producto ${detalle.producto?.nombre || index + 1}`,
+          );
+        }
+      }
     }
-    validarVerificacionFinal(recepcion.verificacion);
-
     const numeroDocumento = await siguienteNumero(
       'movimientos_en_numero_seq',
       'EN',
@@ -231,7 +269,13 @@ const finalizarRecepcion = async ({
       { transaction },
     );
 
-    await recepcion.update({ estado: 'TERMINADA' }, { transaction });
+    await recepcion.update(
+      {
+        estado: 'TERMINADA',
+        tieneNovedades: accionesMejora.length > 0,
+      },
+      { transaction },
+    );
     return { recepcion, movimiento };
   });
 

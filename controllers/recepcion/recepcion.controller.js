@@ -16,6 +16,7 @@ const {
   LugarArea,
   MovimientoInventario,
   DetalleMovimiento,
+  AccionMejoraRecepcion,
 } = require('../../models');
 const { ok, created, fail } = require('../../utils/response');
 const {
@@ -54,10 +55,25 @@ const includeCompleto = [
   {
     model: TemperaturaRecepcion,
     as: 'temperaturas',
-    include: [{ model: Producto, as: 'producto' }],
+    include: [
+      { model: Producto, as: 'producto' },
+      { model: DetalleRecepcion, as: 'detalleRecepcion' },
+    ],
   },
   { model: CondicionAmbientalRecepcion, as: 'condicionAmbiental' },
   { model: ResultadoRecepcion, as: 'resultado' },
+  {
+    model: AccionMejoraRecepcion,
+    as: 'accionesMejora',
+    required: false,
+    include: [
+      {
+        model: DetalleRecepcion,
+        as: 'detalleRecepcion',
+        include: [{ model: Producto, as: 'producto' }],
+      },
+    ],
+  },
   {
     model: MovimientoInventario,
     as: 'movimientoInventario',
@@ -213,7 +229,9 @@ exports.finalizar = async (req, res, next) => {
     return ok(
       res,
       completa,
-      `Recepción terminada y movimiento ${movimiento.numeroDocumento} generado`,
+      movimiento
+        ? `Recepción terminada y movimiento ${movimiento.numeroDocumento} generado`
+        : 'Recepción rechazada sin generar movimiento de inventario',
     );
   } catch (err) {
     return next(err);

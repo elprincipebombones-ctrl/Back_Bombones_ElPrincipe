@@ -30,6 +30,16 @@ const TemperaturaRecepcion = sequelize.define(
       },
     },
 
+    detalleRecepcionId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'detalle_recepcion_id',
+      references: {
+        model: 'detalles_recepcion',
+        key: 'id',
+      },
+    },
+
     condicionTermica: {
       type: DataTypes.STRING(20),
       allowNull: false,

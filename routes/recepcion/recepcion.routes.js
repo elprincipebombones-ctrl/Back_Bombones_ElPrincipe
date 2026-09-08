@@ -19,6 +19,7 @@ router.use(auth);
 router.use('/', require('./detalleRecepcion.routes'));
 router.use('/', require('./recepcionVehiculo.routes'));
 router.use('/', require('./verificacionRecepcion.routes'));
+router.use('/', require('./accionMejoraRecepcion.routes'));
 router.use('/', require('./temperaturaRecepcion.routes'));
 router.use('/', require('./condicionAmbientalRecepcion.routes'));
 router.use('/', require('./resultadoRecepcion.routes'));

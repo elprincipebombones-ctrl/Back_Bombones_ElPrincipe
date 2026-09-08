@@ -31,13 +31,12 @@ const VerificacionRecepcion = require('./Recepcion/VerificacionRecepcion');
 const TemperaturaRecepcion = require('./Recepcion/TemperaturaRecepcion');
 const CondicionAmbientalRecepcion = require('./Recepcion/CondicionAmbientalRecepcion');
 const ResultadoRecepcion = require('./Recepcion/ResultadoRecepcion');
+const AccionMejoraRecepcion = require('./Recepcion/AccionMejoraRecepcion');
 const Bodega = require('./Inventario/Bodega');
 const Usuario = require('./Usuario');
 const UnidadMedida = require('./Recepcion/UnidadMedida');
 const MovimientoInventario = require('./Inventario/MovimientoInventario');
 const DetalleMovimiento = require('./Inventario/DetalleMovimiento');
-
-
 
 db.Proveedor = Proveedor;
 db.Producto = Producto;
@@ -50,6 +49,7 @@ db.VerificacionRecepcion = VerificacionRecepcion;
 db.TemperaturaRecepcion = TemperaturaRecepcion;
 db.CondicionAmbientalRecepcion = CondicionAmbientalRecepcion;
 db.ResultadoRecepcion = ResultadoRecepcion;
+db.AccionMejoraRecepcion = AccionMejoraRecepcion;
 db.DetalleRecepcion = DetalleRecepcion;
 db.Recepcion = Recepcion;
 db.Bodega = Bodega;
@@ -132,22 +132,22 @@ db.Producto.belongsTo(db.CategoriaProducto, {
 
 db.Producto.belongsTo(UnidadMedida, {
   foreignKey: 'unidadMedidaId',
-  as: 'unidadMedida'
+  as: 'unidadMedida',
 });
 
 db.UnidadMedida.hasMany(db.Producto, {
   foreignKey: 'unidadMedidaId',
-  as: 'productos'
+  as: 'productos',
 });
 
 db.UnidadMedida.hasMany(db.DetalleRecepcion, {
   foreignKey: 'unidadMedidaId',
-  as: 'detallesRecepcion'
+  as: 'detallesRecepcion',
 });
 
 db.DetalleRecepcion.belongsTo(db.UnidadMedida, {
   foreignKey: 'unidadMedidaId',
-  as: 'unidadMedida'
+  as: 'unidadMedida',
 });
 
 // ==========================================
@@ -271,6 +271,17 @@ db.TemperaturaRecepcion.belongsTo(db.Producto, {
   as: 'producto',
 });
 
+db.DetalleRecepcion.hasOne(db.TemperaturaRecepcion, {
+  foreignKey: 'detalleRecepcionId',
+  as: 'temperatura',
+  onDelete: 'CASCADE',
+});
+
+db.TemperaturaRecepcion.belongsTo(db.DetalleRecepcion, {
+  foreignKey: 'detalleRecepcionId',
+  as: 'detalleRecepcion',
+});
+
 // ==========================================
 // Recepción - Condiciones Ambientales
 // ==========================================
@@ -299,6 +310,32 @@ db.Recepcion.hasOne(db.ResultadoRecepcion, {
 db.ResultadoRecepcion.belongsTo(db.Recepcion, {
   foreignKey: 'recepcionId',
   as: 'recepcion',
+});
+
+// ==========================================
+// Recepción - Acciones de mejora
+// ==========================================
+
+db.Recepcion.hasMany(db.AccionMejoraRecepcion, {
+  foreignKey: 'recepcionId',
+  as: 'accionesMejora',
+  onDelete: 'CASCADE',
+});
+
+db.AccionMejoraRecepcion.belongsTo(db.Recepcion, {
+  foreignKey: 'recepcionId',
+  as: 'recepcion',
+});
+
+db.DetalleRecepcion.hasMany(db.AccionMejoraRecepcion, {
+  foreignKey: 'detalleRecepcionId',
+  as: 'accionesMejora',
+  onDelete: 'CASCADE',
+});
+
+db.AccionMejoraRecepcion.belongsTo(db.DetalleRecepcion, {
+  foreignKey: 'detalleRecepcionId',
+  as: 'detalleRecepcion',
 });
 
 // ==========================================

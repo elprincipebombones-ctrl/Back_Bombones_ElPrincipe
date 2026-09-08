@@ -5,7 +5,10 @@ const uuidOpcional = (campo, mensaje) =>
 
 const detalle = (prefijo = '') => [
   body(`${prefijo}productoId`).isUUID().withMessage('El producto es obligatorio'),
-  body(`${prefijo}unidadMedidaId`).isUUID().withMessage('La unidad de medida es obligatoria'),
+  body(`${prefijo}unidadMedidaId`)
+    .optional({ nullable: true })
+    .isUUID()
+    .withMessage('La unidad de medida no es válida'),
   body(`${prefijo}cantidadSolicitada`)
     .optional({ nullable: true })
     .isFloat({ gt: 0 })
@@ -123,13 +126,17 @@ const camposVerificacion = [
   'empaqueEmbalaje',
   'olor',
 ];
-exports.crearVerificacionRecepcionValidator = camposVerificacion.map((campo) =>
-  body(campo).optional({ nullable: true }).isBoolean(),
-);
+exports.crearVerificacionRecepcionValidator = camposVerificacion
+  .map((campo) => body(campo).optional({ nullable: true }).isBoolean())
+  .concat([
+    body('novedades').optional().isArray(),
+    body('novedades.*.control').isIn(camposVerificacion),
+    body('novedades.*.observacion').optional({ nullable: true }).isString(),
+  ]);
 exports.actualizarVerificacionRecepcionValidator = exports.crearVerificacionRecepcionValidator;
 
 exports.crearTemperaturaRecepcionValidator = [
-  body('productoId').isUUID().withMessage('El producto es obligatorio'),
+  body('detalleRecepcionId').isUUID().withMessage('El detalle de recepción es obligatorio'),
   body('condicionTermica')
     .isIn(['REFRIGERADO', 'CONGELADO'])
     .withMessage('La condición térmica no es válida'),
@@ -138,7 +145,7 @@ exports.crearTemperaturaRecepcionValidator = [
   body('observaciones').optional({ nullable: true }).isString(),
 ];
 exports.actualizarTemperaturaRecepcionValidator = [
-  body('productoId').optional().isUUID(),
+  body('detalleRecepcionId').optional().isUUID(),
   body('condicionTermica').optional().isIn(['REFRIGERADO', 'CONGELADO']),
   body('temperatura').optional().isFloat(),
   body('hora').optional({ nullable: true }).isTime(),

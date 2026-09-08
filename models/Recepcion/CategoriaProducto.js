@@ -35,6 +35,27 @@ const CategoriaProducto = sequelize.define(
       },
     },
 
+    requiereLote: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'requiere_lote',
+    },
+
+    requiereFechaVencimiento: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'requiere_fecha_vencimiento',
+    },
+
+    requiereTemperatura: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'requiere_temperatura',
+    },
+
     estado: {
       type: DataTypes.BOOLEAN,
       allowNull: false,

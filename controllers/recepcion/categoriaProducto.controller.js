@@ -29,7 +29,16 @@ exports.obtener = async (req, res, next) => {
 
 exports.crear = async (req, res, next) => {
   try {
-    const { nombre, codigo, descripcion, clasificacionMp, estado } = req.body;
+    const {
+      nombre,
+      codigo,
+      descripcion,
+      clasificacionMp,
+      requiereLote,
+      requiereFechaVencimiento,
+      requiereTemperatura,
+      estado,
+    } = req.body;
 
     if (!nombre) {
       return fail(res, 'Falta el nombre', 400);
@@ -54,6 +63,9 @@ exports.crear = async (req, res, next) => {
       codigo,
       descripcion,
       clasificacionMp,
+      requiereLote: requiereLote ?? false,
+      requiereFechaVencimiento: requiereFechaVencimiento ?? false,
+      requiereTemperatura: requiereTemperatura ?? false,
       estado: estado !== undefined ? estado : true,
     });
 
