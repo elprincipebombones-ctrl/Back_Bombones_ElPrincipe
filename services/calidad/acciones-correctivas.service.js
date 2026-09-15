@@ -5,6 +5,7 @@ const {
 } = require('../../models');
 const { ApiError } = require('../../utils/ApiError');
 const { requisitosDeDesviacion } = require('./comportamientos-accion.service');
+const { validarTareaParaAprobacion } = require('./tareas-accion-correctiva.service');
 
 const validarRequisitosCierre = async (accion, transaction) => {
   const requisitos = await requisitosDeDesviacion(accion.desviacionId, transaction);
@@ -58,6 +59,7 @@ const validarRequisitosCierre = async (accion, transaction) => {
       );
     }
   }
+  await validarTareaParaAprobacion(accion.id, transaction);
   return requisitos;
 };
 

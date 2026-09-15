@@ -7,7 +7,7 @@ const RecepcionVehiculo = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     recepcionId: {
@@ -16,52 +16,76 @@ const RecepcionVehiculo = sequelize.define(
       field: 'recepcion_id',
       references: {
         model: 'recepciones',
-        key: 'id'
-      }
+        key: 'id',
+      },
     },
 
     vehiculoId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       field: 'vehiculo_id',
       references: {
         model: 'vehiculos',
-        key: 'id'
-      }
+        key: 'id',
+      },
+    },
+
+    placaSnapshot: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      field: 'placa_snapshot',
+    },
+
+    tipoVehiculoSnapshot: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'tipo_vehiculo_snapshot',
+    },
+
+    marcaSnapshot: {
+      type: DataTypes.STRING(80),
+      allowNull: true,
+      field: 'marca_snapshot',
+    },
+
+    modeloSnapshot: {
+      type: DataTypes.STRING(80),
+      allowNull: true,
+      field: 'modelo_snapshot',
     },
 
     temperatura: {
       type: DataTypes.DECIMAL(6, 2),
-      allowNull: true
+      allowNull: true,
     },
 
     precinto: {
       type: DataTypes.STRING(100),
-      allowNull: true
+      allowNull: true,
     },
 
     guiaTransporte: {
       type: DataTypes.STRING(100),
       allowNull: true,
-      field: 'guia_transporte'
+      field: 'guia_transporte',
     },
 
     hora: {
       type: DataTypes.TIME,
-      allowNull: true
+      allowNull: true,
     },
 
     vehiculoConductorOk: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      field: 'vehiculo_conductor_ok'
-    }
+      field: 'vehiculo_conductor_ok',
+    },
   },
   {
     tableName: 'recepciones_vehiculos',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = RecepcionVehiculo;

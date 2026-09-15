@@ -1,5 +1,12 @@
 const { QueryTypes } = require('sequelize');
-const { sequelize } = require('../../models');
+const {
+  AccionCorrectiva,
+  AprobadorAccionCorrectiva,
+  sequelize,
+  TareaAccionCorrectiva,
+  Usuario,
+} = require('../../models');
+const { presentarTarea } = require('./tareas-accion-correctiva.service');
 
 const CONSULTA_RESUMEN = `
   WITH parametros AS (
@@ -68,11 +75,36 @@ const CONSULTA_RESUMEN = `
 
 const numero = (valor) => Number(valor ?? 0);
 
-const obtenerResumen = async (fecha) => {
+const obtenerResumen = async (fecha, usuario) => {
   const [resultado] = await sequelize.query(CONSULTA_RESUMEN, {
     replacements: { fecha: fecha || null },
     type: QueryTypes.SELECT,
   });
+
+  const puedeVerTodas =
+    usuario?.rol?.nombre === 'Administrador' ||
+    !!(await AprobadorAccionCorrectiva.findOne({
+      where: { usuarioId: usuario.id, estado: true },
+      attributes: ['id'],
+    }));
+  const whereTareas = { estado: 'PENDIENTE' };
+  if (!puedeVerTodas) whereTareas.usuarioAsignadoId = usuario.id;
+
+  const [totalTareas, tareas] = await Promise.all([
+    TareaAccionCorrectiva.count({ where: whereTareas }),
+    TareaAccionCorrectiva.findAll({
+      where: whereTareas,
+      include: [
+        { model: Usuario, as: 'usuarioAsignado', attributes: ['id', 'nombre', 'correo'] },
+        { model: AccionCorrectiva, as: 'accionCorrectiva', attributes: ['id'] },
+      ],
+      order: [
+        ['fechaLimite', 'ASC'],
+        ['created_at', 'ASC'],
+      ],
+      limit: 3,
+    }),
+  ]);
 
   return {
     programadas: numero(resultado.programadas),
@@ -81,6 +113,9 @@ const obtenerResumen = async (fecha) => {
     cumplimiento_porcentaje: numero(resultado.cumplimiento_porcentaje),
     acciones_abiertas: numero(resultado.acciones_abiertas),
     pendientes_aprobacion: numero(resultado.pendientes_aprobacion),
+    tareas_pendientes_total: totalTareas,
+    tareas_pendientes: tareas.map(presentarTarea),
+    tareas_visibilidad_global: puedeVerTodas,
   };
 };
 

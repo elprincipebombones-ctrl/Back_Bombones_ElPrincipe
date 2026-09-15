@@ -5,12 +5,21 @@ const {
   AccionMejoraRecepcion,
   Producto,
   CategoriaProducto,
+  CondicionTermica,
 } = require('../../models');
 const sequelize = require('../../database/database');
 const { ok, created, fail } = require('../../utils/response');
+const {
+  evaluarTemperatura,
+  describirRango,
+} = require('../../services/recepcion/condiciones-termicas.service');
 
 const include = [
-  { model: Producto, as: 'producto' },
+  {
+    model: Producto,
+    as: 'producto',
+    include: [{ model: CondicionTermica, as: 'condicionTermica' }],
+  },
   { model: DetalleRecepcion, as: 'detalleRecepcion' },
 ];
 
@@ -33,27 +42,36 @@ const buscarDetalle = (recepcionId, detalleRecepcionId) =>
       {
         model: Producto,
         as: 'producto',
-        include: [{ model: CategoriaProducto, as: 'categoriaProducto' }],
+        include: [
+          { model: CategoriaProducto, as: 'categoriaProducto' },
+          { model: CondicionTermica, as: 'condicionTermica' },
+        ],
       },
     ],
   });
 
-const datosEditables = (body) => ({
-  condicionTermica: Number(body.temperatura) <= 0 ? 'CONGELADO' : 'REFRIGERADO',
+const datosEditables = (body, condicion) => ({
+  condicionTermica: condicion.codigo,
   temperatura: body.temperatura,
   hora: body.hora || null,
   observaciones: body.observaciones || null,
 });
 
-const sincronizarAccionTemperatura = async ({ recepcion, detalle, temperatura, transaction }) => {
+const sincronizarAccionTemperatura = async ({
+  recepcion,
+  detalle,
+  condicion,
+  temperatura,
+  transaction,
+}) => {
   const control = `temperatura:${detalle.id}`;
   const existente = await AccionMejoraRecepcion.findOne({
     where: { recepcionId: recepcion.id, control },
     transaction,
   });
 
-  if (Number(temperatura) > 4) {
-    const observacion = `Temperatura fuera del rango permitido: ${Number(temperatura)} °C (máximo 4 °C).`;
+  if (!evaluarTemperatura(condicion, temperatura)) {
+    const observacion = `Temperatura fuera del rango permitido para ${condicion.nombre}: ${Number(temperatura)} °C (esperado ${describirRango(condicion)}).`;
     if (!existente) {
       await AccionMejoraRecepcion.create(
         {
@@ -119,6 +137,14 @@ exports.crear = async (req, res, next) => {
     if (!detalle.producto?.categoriaProducto?.requiereTemperatura) {
       return fail(res, 'La categoría del producto no requiere control de temperatura', 422);
     }
+    const condicion = detalle.producto?.condicionTermica;
+    if (!condicion) {
+      return fail(
+        res,
+        'El producto requiere temperatura, pero tiene pendiente configurar su condición térmica',
+        422,
+      );
+    }
 
     const duplicada = await TemperaturaRecepcion.findOne({
       where: {
@@ -131,7 +157,7 @@ exports.crear = async (req, res, next) => {
     const registro = await sequelize.transaction(async (transaction) => {
       const creado = await TemperaturaRecepcion.create(
         {
-          ...datosEditables(req.body),
+          ...datosEditables(req.body, condicion),
           recepcionId: req.params.recepcionId,
           detalleRecepcionId: detalle.id,
           productoId: detalle.productoId,
@@ -141,6 +167,7 @@ exports.crear = async (req, res, next) => {
       await sincronizarAccionTemperatura({
         recepcion: estado.recepcion,
         detalle,
+        condicion,
         temperatura: creado.temperatura,
         transaction,
       });
@@ -172,11 +199,19 @@ exports.actualizar = async (req, res, next) => {
     if (!detalle) {
       return fail(res, 'No fue posible relacionar la temperatura con el producto recibido', 422);
     }
+    const condicion = detalle.producto?.condicionTermica;
+    if (!condicion) {
+      return fail(
+        res,
+        'El producto requiere temperatura, pero tiene pendiente configurar su condición térmica',
+        422,
+      );
+    }
 
     await sequelize.transaction(async (transaction) => {
       await registro.update(
         {
-          ...datosEditables({ ...registro.toJSON(), ...req.body }),
+          ...datosEditables({ ...registro.toJSON(), ...req.body }, condicion),
           detalleRecepcionId: detalle.id,
           productoId: detalle.productoId,
         },
@@ -185,6 +220,7 @@ exports.actualizar = async (req, res, next) => {
       await sincronizarAccionTemperatura({
         recepcion: estado.recepcion,
         detalle,
+        condicion,
         temperatura: registro.temperatura,
         transaction,
       });

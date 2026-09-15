@@ -1,17 +1,116 @@
-const { Recepcion, RecepcionVehiculo, Vehiculo } = require('../../models');
+const { randomUUID } = require('crypto');
+const { Op } = require('sequelize');
+const { Recepcion, RecepcionVehiculo, Vehiculo, sequelize } = require('../../models');
+const { ApiError } = require('../../utils/ApiError');
 const { ok, created, fail } = require('../../utils/response');
 
-const include = [{ model: Vehiculo, as: 'vehiculo' }];
-const buscar = (recepcionId, id) =>
-  RecepcionVehiculo.findOne({ where: { id, recepcionId }, include });
+const include = [{ model: Vehiculo, as: 'vehiculo', required: false }];
 
-const editable = async (recepcionId) => {
-  const recepcion = await Recepcion.findByPk(recepcionId);
-  if (!recepcion) return { error: 'Recepción no encontrada', status: 404 };
+const buscar = (recepcionId, id, transaction) =>
+  RecepcionVehiculo.findOne({ where: { id, recepcionId }, include, transaction });
+
+const editable = async (recepcionId, transaction) => {
+  const recepcion = await Recepcion.findByPk(recepcionId, {
+    transaction,
+    lock: transaction?.LOCK.UPDATE,
+  });
+  if (!recepcion) throw new ApiError('Recepción no encontrada', 404);
   if (recepcion.estado !== 'EN_PROCESO') {
-    return { error: 'La recepción finalizada es de solo lectura', status: 409 };
+    throw new ApiError('La recepción finalizada es de solo lectura', 409);
   }
-  return { recepcion };
+  return recepcion;
+};
+
+const texto = (valor) => {
+  const limpio = String(valor ?? '').trim();
+  return limpio || null;
+};
+
+const snapshotDesdeVehiculo = (vehiculo) => ({
+  placaSnapshot: vehiculo.placa.trim().toUpperCase(),
+  tipoVehiculoSnapshot: texto(vehiculo.tipoVehiculo),
+  marcaSnapshot: texto(vehiculo.marca),
+  modeloSnapshot: texto(vehiculo.modelo),
+});
+
+const snapshotOcasional = (body) => ({
+  placaSnapshot: body.placa.trim().toUpperCase(),
+  tipoVehiculoSnapshot: texto(body.tipoVehiculo),
+  marcaSnapshot: texto(body.marca),
+  modeloSnapshot: texto(body.modelo),
+});
+
+const datosOperativos = (body) => ({
+  temperatura: body.temperatura ?? null,
+  precinto: texto(body.precinto),
+  guiaTransporte: texto(body.guiaTransporte),
+  hora: body.hora || null,
+  vehiculoConductorOk: body.vehiculoConductorOk ?? null,
+});
+
+const obtenerVehiculoActivo = async (vehiculoId, transaction) => {
+  const vehiculo = await Vehiculo.findOne({
+    where: { id: vehiculoId, estado: true },
+    transaction,
+  });
+  if (!vehiculo) throw new ApiError('El vehículo no existe o está inactivo', 422);
+  return vehiculo;
+};
+
+const crearVehiculoMaestro = async (recepcion, body, transaction) => {
+  const placa = body.placa.trim().toUpperCase();
+  const existente = await Vehiculo.findOne({
+    where: { placa: { [Op.iLike]: placa } },
+    transaction,
+  });
+  if (existente) {
+    throw new ApiError(
+      'La placa ya existe en el maestro. Selecciona el vehículo registrado en lugar de crearlo como ocasional',
+      409,
+    );
+  }
+
+  const placaCodigo = placa.replace(/[^A-Z0-9]/g, '').slice(0, 20) || 'VEHICULO';
+  return Vehiculo.create(
+    {
+      codigo: `OC-${placaCodigo}-${randomUUID().slice(0, 8)}`,
+      placa,
+      tipoVehiculo: body.tipoVehiculo.trim(),
+      marca: texto(body.marca),
+      modelo: texto(body.modelo),
+      proveedorId: recepcion.proveedorId,
+      descripcion: `Registrado desde la recepción ${recepcion.numero}`,
+      estado: true,
+    },
+    { transaction },
+  );
+};
+
+const resolverVehiculo = async (recepcion, body, transaction) => {
+  if (body.vehiculoId) {
+    const vehiculo = await obtenerVehiculoActivo(body.vehiculoId, transaction);
+    return { vehiculoId: vehiculo.id, ...snapshotDesdeVehiculo(vehiculo) };
+  }
+
+  const snapshot = snapshotOcasional(body);
+  if (!body.guardarEnMaestro) return { vehiculoId: null, ...snapshot };
+
+  const vehiculo = await crearVehiculoMaestro(recepcion, body, transaction);
+  return { vehiculoId: vehiculo.id, ...snapshotDesdeVehiculo(vehiculo) };
+};
+
+const validarDuplicado = async (recepcionId, datos, excluirId, transaction) => {
+  const condiciones = [{ placaSnapshot: datos.placaSnapshot }];
+  if (datos.vehiculoId) condiciones.push({ vehiculoId: datos.vehiculoId });
+  const repetido = await RecepcionVehiculo.findOne({
+    where: {
+      recepcionId,
+      ...(excluirId ? { id: { [Op.ne]: excluirId } } : {}),
+      [Op.or]: condiciones,
+    },
+    transaction,
+  });
+  if (repetido) throw new ApiError('Este vehículo ya está asociado a la recepción', 409);
 };
 
 exports.listar = async (req, res, next) => {
@@ -26,8 +125,8 @@ exports.listar = async (req, res, next) => {
         order: [['createdAt', 'ASC']],
       }),
     );
-  } catch (err) {
-    return next(err);
+  } catch (error) {
+    return next(error);
   }
 };
 
@@ -35,62 +134,66 @@ exports.obtener = async (req, res, next) => {
   try {
     const registro = await buscar(req.params.recepcionId, req.params.id);
     return registro ? ok(res, registro) : fail(res, 'Vehículo no encontrado en la recepción', 404);
-  } catch (err) {
-    return next(err);
+  } catch (error) {
+    return next(error);
   }
 };
 
-const validarVehiculo = async (vehiculoId) => {
-  const vehiculo = await Vehiculo.findByPk(vehiculoId);
-  return vehiculo && vehiculo.estado;
-};
-
 exports.crear = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
   try {
-    const estado = await editable(req.params.recepcionId);
-    if (estado.error) return fail(res, estado.error, estado.status);
-    if (!(await validarVehiculo(req.body.vehiculoId))) {
-      return fail(res, 'El vehículo no existe o está inactivo', 422);
-    }
-    const repetido = await RecepcionVehiculo.findOne({
-      where: { recepcionId: req.params.recepcionId, vehiculoId: req.body.vehiculoId },
-    });
-    if (repetido) return fail(res, 'El vehículo ya está asociado a la recepción', 409);
-    const registro = await RecepcionVehiculo.create({
-      ...req.body,
-      recepcionId: req.params.recepcionId,
-    });
-    return created(res, await buscar(req.params.recepcionId, registro.id));
-  } catch (err) {
-    return next(err);
+    const recepcion = await editable(req.params.recepcionId, transaction);
+    const vehiculo = await resolverVehiculo(recepcion, req.body, transaction);
+    await validarDuplicado(recepcion.id, vehiculo, null, transaction);
+    const registro = await RecepcionVehiculo.create(
+      { recepcionId: recepcion.id, ...vehiculo, ...datosOperativos(req.body) },
+      { transaction },
+    );
+    await transaction.commit();
+    return created(res, await buscar(recepcion.id, registro.id));
+  } catch (error) {
+    if (!transaction.finished) await transaction.rollback();
+    return next(error);
   }
 };
 
 exports.actualizar = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
   try {
-    const estado = await editable(req.params.recepcionId);
-    if (estado.error) return fail(res, estado.error, estado.status);
-    const registro = await buscar(req.params.recepcionId, req.params.id);
-    if (!registro) return fail(res, 'Vehículo no encontrado en la recepción', 404);
-    if (req.body.vehiculoId && !(await validarVehiculo(req.body.vehiculoId))) {
-      return fail(res, 'El vehículo no existe o está inactivo', 422);
-    }
-    await registro.update(req.body);
-    return ok(res, await buscar(req.params.recepcionId, registro.id), 'Vehículo actualizado');
-  } catch (err) {
-    return next(err);
+    const recepcion = await editable(req.params.recepcionId, transaction);
+    const registro = await RecepcionVehiculo.findOne({
+      where: { id: req.params.id, recepcionId: recepcion.id },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!registro) throw new ApiError('Vehículo no encontrado en la recepción', 404);
+
+    const vehiculo = await resolverVehiculo(recepcion, req.body, transaction);
+    await validarDuplicado(recepcion.id, vehiculo, registro.id, transaction);
+    await registro.update({ ...vehiculo, ...datosOperativos(req.body) }, { transaction });
+    await transaction.commit();
+    return ok(res, await buscar(recepcion.id, registro.id), 'Vehículo actualizado');
+  } catch (error) {
+    if (!transaction.finished) await transaction.rollback();
+    return next(error);
   }
 };
 
 exports.eliminar = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
   try {
-    const estado = await editable(req.params.recepcionId);
-    if (estado.error) return fail(res, estado.error, estado.status);
-    const registro = await buscar(req.params.recepcionId, req.params.id);
-    if (!registro) return fail(res, 'Vehículo no encontrado en la recepción', 404);
-    await registro.destroy();
-    return ok(res, null, 'Vehículo retirado de la recepción');
-  } catch (err) {
-    return next(err);
+    const recepcion = await editable(req.params.recepcionId, transaction);
+    const registro = await RecepcionVehiculo.findOne({
+      where: { id: req.params.id, recepcionId: recepcion.id },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!registro) throw new ApiError('Vehículo no encontrado en la recepción', 404);
+    await registro.destroy({ transaction });
+    await transaction.commit();
+    return ok(res, null, 'Vehículo retirado únicamente de esta recepción');
+  } catch (error) {
+    if (!transaction.finished) await transaction.rollback();
+    return next(error);
   }
 };

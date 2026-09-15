@@ -3,7 +3,7 @@ const { obtenerResumen } = require('../../services/calidad/dashboard-calidad.ser
 
 exports.resumen = async (req, res, next) => {
   try {
-    const resumen = await obtenerResumen(req.query.fecha);
+    const resumen = await obtenerResumen(req.query.fecha, req.usuario);
     return ok(res, resumen, 'Resumen de Calidad');
   } catch (error) {
     return next(error);

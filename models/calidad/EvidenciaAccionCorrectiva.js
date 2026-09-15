@@ -11,6 +11,11 @@ module.exports = definir(
       allowNull: true,
       field: 'seguimiento_accion_correctiva_id',
     },
+    tareaAccionCorrectivaId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'tarea_accion_correctiva_id',
+    },
     nombreArchivo: { type: DataTypes.STRING(255), allowNull: false, field: 'nombre_archivo' },
     tipoArchivo: { type: DataTypes.STRING(100), allowNull: true, field: 'tipo_archivo' },
     urlArchivo: { type: DataTypes.TEXT, allowNull: false, field: 'url_archivo' },

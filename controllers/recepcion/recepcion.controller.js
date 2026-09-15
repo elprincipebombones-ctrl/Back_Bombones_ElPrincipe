@@ -10,6 +10,7 @@ const {
   Proveedor,
   Producto,
   CategoriaProducto,
+  CondicionTermica,
   UnidadMedida,
   Vehiculo,
   Bodega,
@@ -40,6 +41,7 @@ const includeCompleto = [
         as: 'producto',
         include: [
           { model: CategoriaProducto, as: 'categoriaProducto' },
+          { model: CondicionTermica, as: 'condicionTermica' },
           { model: UnidadMedida, as: 'unidadMedida' },
         ],
       },
@@ -56,7 +58,11 @@ const includeCompleto = [
     model: TemperaturaRecepcion,
     as: 'temperaturas',
     include: [
-      { model: Producto, as: 'producto' },
+      {
+        model: Producto,
+        as: 'producto',
+        include: [{ model: CondicionTermica, as: 'condicionTermica' }],
+      },
       { model: DetalleRecepcion, as: 'detalleRecepcion' },
     ],
   },
@@ -221,7 +227,7 @@ exports.actualizar = async (req, res, next) => {
 
 exports.finalizar = async (req, res, next) => {
   try {
-    const { recepcion, movimiento } = await finalizarRecepcion({
+    const { recepcion, movimiento, recepcionParcial } = await finalizarRecepcion({
       recepcionId: req.params.id,
       usuarioId: req.usuario.id,
     });
@@ -229,9 +235,11 @@ exports.finalizar = async (req, res, next) => {
     return ok(
       res,
       completa,
-      movimiento
-        ? `Recepción terminada y movimiento ${movimiento.numeroDocumento} generado`
-        : 'Recepción rechazada sin generar movimiento de inventario',
+      recepcionParcial
+        ? `Recepción terminada con novedad. Movimiento ${movimiento.numeroDocumento} generado únicamente con los productos recibidos`
+        : movimiento
+          ? `Recepción terminada y movimiento ${movimiento.numeroDocumento} generado`
+          : 'Recepción rechazada sin generar movimiento de inventario',
     );
   } catch (err) {
     return next(err);
