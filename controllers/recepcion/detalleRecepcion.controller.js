@@ -3,6 +3,7 @@ const {
   DetalleRecepcion,
   Producto,
   CategoriaProducto,
+  CondicionTermica,
   UnidadMedida,
 } = require('../../models');
 const { ok, created, fail } = require('../../utils/response');
@@ -12,7 +13,10 @@ const include = [
   {
     model: Producto,
     as: 'producto',
-    include: [{ model: CategoriaProducto, as: 'categoriaProducto' }],
+    include: [
+      { model: CategoriaProducto, as: 'categoriaProducto' },
+      { model: CondicionTermica, as: 'condicionTermica' },
+    ],
   },
   { model: UnidadMedida, as: 'unidadMedida' },
 ];
@@ -82,6 +86,7 @@ exports.actualizar = async (req, res, next) => {
           ? detalle.cantidadSolicitada
           : req.body.cantidadSolicitada,
       cantidadRecibida: req.body.cantidadRecibida ?? detalle.cantidadRecibida,
+      costoUnitario: req.body.costoUnitario ?? detalle.costoUnitario,
       loteProveedor:
         req.body.loteProveedor === undefined ? detalle.loteProveedor : req.body.loteProveedor,
       fechaVencimiento:

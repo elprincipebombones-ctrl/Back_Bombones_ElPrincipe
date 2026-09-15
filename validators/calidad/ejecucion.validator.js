@@ -70,6 +70,22 @@ exports.actualizarAccionValidator = [
     return true;
   }),
 ];
+exports.guardarTareaValidator = [
+  param('id').isUUID(),
+  uuidEnBody('usuarioAsignadoId', 'usuario_asignado_id'),
+  body().custom((_, { req }) => {
+    const fecha = valor(req.body, 'fechaLimite', 'fecha_limite');
+    if (typeof fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      throw new Error('La fecha límite es obligatoria y debe tener formato YYYY-MM-DD');
+    }
+    if (Number.isNaN(Date.parse(`${fecha}T12:00:00Z`))) {
+      throw new Error('La fecha límite no es válida');
+    }
+    return true;
+  }),
+  body('descripcion').trim().isLength({ min: 1 }).withMessage('La descripción es obligatoria'),
+  body('documentacion').optional({ nullable: true }).isString(),
+];
 exports.cerrarAccionValidator = [
   param('id').isUUID(),
   body('observacion_cierre').optional({ nullable: true }).isString(),
@@ -119,6 +135,7 @@ exports.listarAccionesValidator = [
   query('estado').optional().isIn(['PENDIENTE', 'EN_PROCESO', 'PENDIENTE_APROBACION', 'CERRADA']),
   query('solo_pendientes').optional().isBoolean(),
   query('responsable_id').optional().isUUID(),
+  query('tareas_pendientes').optional().isBoolean(),
 ];
 exports.listarDesviacionesValidator = [
   query('estado').optional().isIn(['ABIERTA', 'EN_TRATAMIENTO', 'CERRADA']),

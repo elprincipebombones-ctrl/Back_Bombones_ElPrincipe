@@ -32,6 +32,7 @@ const MateriaPrima = require('./Recepcion/MateriaPrima');
 const LugarArea = require('./Recepcion/LugarArea');
 const Vehiculo = require('./Recepcion/Vehiculo');
 const CategoriaProducto = require('./Recepcion/CategoriaProducto');
+const CondicionTermica = require('./Recepcion/CondicionTermica');
 const DetalleRecepcion = require('./Recepcion/DetalleRecepcion');
 const Recepcion = require('./Recepcion/Recepcion');
 const RecepcionVehiculo = require('./Recepcion/RecepcionVehiculo');
@@ -52,6 +53,7 @@ db.MateriaPrima = MateriaPrima;
 db.LugarArea = LugarArea;
 db.Vehiculo = Vehiculo;
 db.CategoriaProducto = CategoriaProducto;
+db.CondicionTermica = CondicionTermica;
 db.RecepcionVehiculo = RecepcionVehiculo;
 db.VerificacionRecepcion = VerificacionRecepcion;
 db.TemperaturaRecepcion = TemperaturaRecepcion;
@@ -136,6 +138,16 @@ db.CategoriaProducto.hasMany(db.Producto, {
 db.Producto.belongsTo(db.CategoriaProducto, {
   foreignKey: 'categoriaProductoId',
   as: 'categoriaProducto',
+});
+
+db.CondicionTermica.hasMany(db.Producto, {
+  foreignKey: 'condicionTermicaId',
+  as: 'productos',
+});
+
+db.Producto.belongsTo(db.CondicionTermica, {
+  foreignKey: 'condicionTermicaId',
+  as: 'condicionTermica',
 });
 
 db.Producto.belongsTo(UnidadMedida, {
@@ -852,6 +864,22 @@ db.Usuario.hasMany(db.AccionCorrectiva, {
   as: 'accionesCorrectivasAsignadas',
 });
 db.AccionCorrectiva.belongsTo(db.Usuario, { foreignKey: 'responsableId', as: 'responsable' });
+db.AccionCorrectiva.hasOne(db.TareaAccionCorrectiva, {
+  foreignKey: 'accionCorrectivaId',
+  as: 'tarea',
+});
+db.TareaAccionCorrectiva.belongsTo(db.AccionCorrectiva, {
+  foreignKey: 'accionCorrectivaId',
+  as: 'accionCorrectiva',
+});
+db.Usuario.hasMany(db.TareaAccionCorrectiva, {
+  foreignKey: 'usuarioAsignadoId',
+  as: 'tareasCorrectivasAsignadas',
+});
+db.TareaAccionCorrectiva.belongsTo(db.Usuario, {
+  foreignKey: 'usuarioAsignadoId',
+  as: 'usuarioAsignado',
+});
 db.Usuario.hasMany(db.AccionCorrectiva, {
   foreignKey: 'cerradaPor',
   as: 'accionesCorrectivasCerradas',
@@ -923,6 +951,14 @@ db.SeguimientoAccionCorrectiva.hasMany(db.EvidenciaAccionCorrectiva, {
 db.EvidenciaAccionCorrectiva.belongsTo(db.SeguimientoAccionCorrectiva, {
   foreignKey: 'seguimientoAccionCorrectivaId',
   as: 'seguimiento',
+});
+db.TareaAccionCorrectiva.hasMany(db.EvidenciaAccionCorrectiva, {
+  foreignKey: 'tareaAccionCorrectivaId',
+  as: 'evidencias',
+});
+db.EvidenciaAccionCorrectiva.belongsTo(db.TareaAccionCorrectiva, {
+  foreignKey: 'tareaAccionCorrectivaId',
+  as: 'tarea',
 });
 db.Usuario.hasMany(db.EvidenciaAccionCorrectiva, {
   foreignKey: 'subidoPor',

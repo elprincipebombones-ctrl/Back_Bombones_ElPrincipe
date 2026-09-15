@@ -27,6 +27,15 @@ const Producto = sequelize.define(
       allowNull: true,
     },
 
+    tipoProducto: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      field: 'tipo_producto',
+      validate: {
+        isIn: [['MP', 'INSUMO', 'EMPAQUE', 'PT']],
+      },
+    },
+
     categoriaProductoId: {
       type: DataTypes.UUID,
       allowNull: false,
@@ -43,6 +52,18 @@ const Producto = sequelize.define(
       allowNull: false,
       references: {
         model: 'unidades_medida',
+        key: 'id',
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'RESTRICT',
+    },
+
+    condicionTermicaId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'condicion_termica_id',
+      references: {
+        model: 'condiciones_termicas',
         key: 'id',
       },
       onUpdate: 'CASCADE',

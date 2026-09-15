@@ -861,6 +861,12 @@ router.get(
   validar,
   accionCorrectiva.listar,
 );
+const tareaAccionCorrectiva = require('../../controllers/calidad/tarea-accion-correctiva.controller');
+router.get(
+  '/tareas-accion-correctiva/usuarios-activos',
+  permiso('acciones_correctivas.ver'),
+  tareaAccionCorrectiva.usuariosActivos,
+);
 router.get(
   '/acciones-correctivas/:id',
   permiso('acciones_correctivas.ver'),
@@ -874,6 +880,20 @@ router.put(
   ejecucion.actualizarAccionValidator,
   validar,
   accionCorrectiva.actualizar,
+);
+router.put(
+  '/acciones-correctivas/:id/tarea',
+  permiso('acciones_correctivas.editar'),
+  ejecucion.guardarTareaValidator,
+  validar,
+  tareaAccionCorrectiva.guardar,
+);
+router.post(
+  '/acciones-correctivas/:id/tarea/completar',
+  permiso('acciones_correctivas.editar'),
+  ejecucion.idValidator,
+  validar,
+  tareaAccionCorrectiva.completar,
 );
 router.post(
   '/acciones-correctivas/:id/iniciar',

@@ -16,11 +16,9 @@ exports.idValidator = [param('id').isUUID().withMessage('El ID debe ser un UUID 
 
 exports.crearProductoValidator = [
   body('codigo')
-    .isString()
-    .withMessage('El código es obligatorio')
-    .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('El código debe tener entre 1 y 50 caracteres'),
+    .not()
+    .exists()
+    .withMessage('El código se genera automáticamente y no debe enviarse'),
 
   body('nombre')
     .isString()
@@ -35,9 +33,18 @@ exports.crearProductoValidator = [
     .withMessage('La descripción debe ser texto')
     .trim(),
 
+  body('tipoProducto')
+    .isIn(['MP', 'INSUMO', 'EMPAQUE', 'PT'])
+    .withMessage('El tipo de producto debe ser MP, INSUMO, EMPAQUE o PT'),
+
   body('categoriaProductoId').isUUID().withMessage('La categoría de producto es obligatoria'),
 
   body('unidadMedidaId').isUUID().withMessage('La unidad de medida es obligatoria'),
+
+  body('condicionTermicaId')
+    .optional({ nullable: true })
+    .isUUID()
+    .withMessage('La condición térmica no es válida'),
 
   body('estado').optional().isBoolean().withMessage('El estado debe ser booleano'),
 ];
@@ -45,13 +52,7 @@ exports.crearProductoValidator = [
 exports.actualizarProductoValidator = [
   param('id').isUUID().withMessage('El ID debe ser un UUID válido'),
 
-  body('codigo')
-    .optional()
-    .isString()
-    .withMessage('El código debe ser texto')
-    .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('El código debe tener entre 1 y 50 caracteres'),
+  body('codigo').not().exists().withMessage('El código del producto no se puede modificar'),
 
   body('nombre')
     .optional()
@@ -67,12 +68,22 @@ exports.actualizarProductoValidator = [
     .withMessage('La descripción debe ser texto')
     .trim(),
 
+  body('tipoProducto')
+    .optional()
+    .isIn(['MP', 'INSUMO', 'EMPAQUE', 'PT'])
+    .withMessage('El tipo de producto debe ser MP, INSUMO, EMPAQUE o PT'),
+
   body('categoriaProductoId')
     .optional()
     .isUUID()
     .withMessage('La categoría de producto no es válida'),
 
   body('unidadMedidaId').optional().isUUID().withMessage('La unidad de medida no es válida'),
+
+  body('condicionTermicaId')
+    .optional({ nullable: true })
+    .isUUID()
+    .withMessage('La condición térmica no es válida'),
 
   body('estado').optional().isBoolean().withMessage('El estado debe ser booleano'),
 ];

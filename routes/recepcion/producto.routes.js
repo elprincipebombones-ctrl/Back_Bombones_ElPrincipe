@@ -1,10 +1,13 @@
-
 const { Router } = require('express');
 const ctrl = require('../../controllers/recepcion/productos.controller');
 const auth = require('../../middleware/auth');
 const permiso = require('../../middleware/permiso');
 const validar = require('../../middleware/validar');
-const { crearProductoValidator, actualizarProductoValidator, idValidator } = require('../../validators/maestro.validator');
+const {
+  crearProductoValidator,
+  actualizarProductoValidator,
+  idValidator,
+} = require('../../validators/maestro.validator');
 
 const router = Router();
 
@@ -33,6 +36,20 @@ router.get('/', permiso('Productos.Ver'), ctrl.listar);
 
 /**
  * @swagger
+ * /api/productos/condiciones-termicas:
+ *   get:
+ *     tags: [Productos]
+ *     summary: Listar condiciones térmicas activas
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de condiciones térmicas activas
+ */
+router.get('/condiciones-termicas', permiso('Productos.Ver'), ctrl.listarCondicionesTermicas);
+
+/**
+ * @swagger
  * /api/productos/{id}:
  *   get:
  *     tags: [Productos]
@@ -52,13 +69,7 @@ router.get('/', permiso('Productos.Ver'), ctrl.listar);
  *       404:
  *         description: Producto no encontrado
  */
-router.get(
-  '/:id',
-  permiso('Productos.Ver'),
-  idValidator,
-  validar,
-  ctrl.obtener
-);
+router.get('/:id', permiso('Productos.Ver'), idValidator, validar, ctrl.obtener);
 
 /**
  * @swagger
@@ -78,11 +89,7 @@ router.get(
  *       201:
  *         description: Producto creado
  */
-router.post(
-  '/',
-  permiso('Productos.Crear'),
-  ctrl.crear
-);
+router.post('/', permiso('Productos.Crear'), crearProductoValidator, validar, ctrl.crear);
 
 /**
  * @swagger
@@ -114,9 +121,9 @@ router.post(
 router.put(
   '/:id',
   permiso('Productos.Editar'),
-  idValidator,
+  actualizarProductoValidator,
   validar,
-  ctrl.actualizar
+  ctrl.actualizar,
 );
 
 /**
@@ -140,13 +147,6 @@ router.put(
  *       404:
  *         description: Producto no encontrado
  */
-router.delete(
-  '/:id',
-  permiso('Productos.Eliminar'),
-  idValidator,
-  validar,
-  ctrl.eliminar
-);
+router.delete('/:id', permiso('Productos.Eliminar'), idValidator, validar, ctrl.eliminar);
 
 module.exports = router;
-

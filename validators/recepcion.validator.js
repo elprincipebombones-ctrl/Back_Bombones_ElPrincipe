@@ -16,6 +16,9 @@ const detalle = (prefijo = '') => [
   body(`${prefijo}cantidadRecibida`)
     .isFloat({ gt: 0 })
     .withMessage('La cantidad recibida debe ser mayor que cero'),
+  body(`${prefijo}costoUnitario`)
+    .isFloat({ gt: 0 })
+    .withMessage('El costo unitario debe ser mayor que cero'),
   body(`${prefijo}loteProveedor`)
     .optional({ nullable: true })
     .trim()
@@ -95,27 +98,41 @@ exports.actualizarDetalleRecepcionValidator = [
   body('unidadMedidaId').optional().isUUID(),
   body('cantidadSolicitada').optional({ nullable: true }).isFloat({ gt: 0 }),
   body('cantidadRecibida').optional().isFloat({ gt: 0 }),
+  body('costoUnitario').optional().isFloat({ gt: 0 }),
   body('loteProveedor').optional({ nullable: true }).trim().isLength({ max: 100 }),
   body('fechaVencimiento').optional({ nullable: true }).isISO8601(),
   body('observaciones').optional({ nullable: true }).isString(),
 ];
 
-exports.crearRecepcionVehiculoValidator = [
-  body('vehiculoId').isUUID().withMessage('El vehículo es obligatorio'),
+const recepcionVehiculo = [
+  body('vehiculoId')
+    .optional({ nullable: true, checkFalsy: true })
+    .isUUID()
+    .withMessage('El vehículo seleccionado no es válido'),
+  body('placa').optional({ nullable: true }).trim().isLength({ min: 1, max: 20 }),
+  body('tipoVehiculo').optional({ nullable: true }).trim().isLength({ max: 50 }),
+  body('marca').optional({ nullable: true }).trim().isLength({ max: 80 }),
+  body('modelo').optional({ nullable: true }).trim().isLength({ max: 80 }),
+  body('guardarEnMaestro').optional().isBoolean(),
   body('temperatura').optional({ nullable: true }).isFloat(),
   body('precinto').optional({ nullable: true }).trim().isLength({ max: 100 }),
   body('guiaTransporte').optional({ nullable: true }).trim().isLength({ max: 100 }),
   body('hora').optional({ nullable: true }).isTime(),
   body('vehiculoConductorOk').optional({ nullable: true }).isBoolean(),
+  body().custom((_, { req }) => {
+    if (req.body.vehiculoId) return true;
+    if (!String(req.body.placa ?? '').trim()) {
+      throw new Error('La placa del vehículo ocasional es obligatoria');
+    }
+    if (req.body.guardarEnMaestro && !String(req.body.tipoVehiculo ?? '').trim()) {
+      throw new Error('El tipo de vehículo es obligatorio para guardarlo en el maestro');
+    }
+    return true;
+  }),
 ];
-exports.actualizarRecepcionVehiculoValidator = [
-  body('vehiculoId').optional().isUUID(),
-  body('temperatura').optional({ nullable: true }).isFloat(),
-  body('precinto').optional({ nullable: true }).trim().isLength({ max: 100 }),
-  body('guiaTransporte').optional({ nullable: true }).trim().isLength({ max: 100 }),
-  body('hora').optional({ nullable: true }).isTime(),
-  body('vehiculoConductorOk').optional({ nullable: true }).isBoolean(),
-];
+
+exports.crearRecepcionVehiculoValidator = recepcionVehiculo;
+exports.actualizarRecepcionVehiculoValidator = recepcionVehiculo;
 
 const camposVerificacion = [
   'certificadoCalidad',
@@ -137,16 +154,12 @@ exports.actualizarVerificacionRecepcionValidator = exports.crearVerificacionRece
 
 exports.crearTemperaturaRecepcionValidator = [
   body('detalleRecepcionId').isUUID().withMessage('El detalle de recepción es obligatorio'),
-  body('condicionTermica')
-    .isIn(['REFRIGERADO', 'CONGELADO'])
-    .withMessage('La condición térmica no es válida'),
   body('temperatura').isFloat().withMessage('La temperatura es obligatoria'),
   body('hora').optional({ nullable: true }).isTime(),
   body('observaciones').optional({ nullable: true }).isString(),
 ];
 exports.actualizarTemperaturaRecepcionValidator = [
   body('detalleRecepcionId').optional().isUUID(),
-  body('condicionTermica').optional().isIn(['REFRIGERADO', 'CONGELADO']),
   body('temperatura').optional().isFloat(),
   body('hora').optional({ nullable: true }).isTime(),
   body('observaciones').optional({ nullable: true }).isString(),

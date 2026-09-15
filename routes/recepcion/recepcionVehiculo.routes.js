@@ -114,7 +114,7 @@ router.get(
  * /api/recepciones/{recepcionId}/vehiculos:
  *   post:
  *     tags: [Vehículos de Recepción]
- *     summary: Asociar un vehículo a una recepción
+ *     summary: Asociar un vehículo registrado u ocasional a una recepción
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -130,12 +130,24 @@ router.get(
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - vehiculoId
  *             properties:
  *               vehiculoId:
  *                 type: string
  *                 format: uuid
+ *                 nullable: true
+ *                 description: Requerido cuando se selecciona un vehículo registrado
+ *               placa:
+ *                 type: string
+ *                 description: Requerida cuando se registra un vehículo ocasional
+ *               tipoVehiculo:
+ *                 type: string
+ *               marca:
+ *                 type: string
+ *               modelo:
+ *                 type: string
+ *               guardarEnMaestro:
+ *                 type: boolean
+ *                 description: Crea el vehículo y lo asocia al proveedor de la recepción
  *               temperatura:
  *                 type: number
  *                 example: 4.50
@@ -202,6 +214,17 @@ router.post(
  *               vehiculoId:
  *                 type: string
  *                 format: uuid
+ *                 nullable: true
+ *               placa:
+ *                 type: string
+ *               tipoVehiculo:
+ *                 type: string
+ *               marca:
+ *                 type: string
+ *               modelo:
+ *                 type: string
+ *               guardarEnMaestro:
+ *                 type: boolean
  *               temperatura:
  *                 type: number
  *               precinto:
@@ -238,7 +261,7 @@ router.put(
  * /api/recepciones/{recepcionId}/vehiculos/{id}:
  *   delete:
  *     tags: [Vehículos de Recepción]
- *     summary: Eliminar un vehículo de una recepción
+ *     summary: Quitar un vehículo de una recepción sin eliminarlo del maestro
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -256,14 +279,14 @@ router.put(
  *           format: uuid
  *     responses:
  *       200:
- *         description: Vehículo eliminado de la recepción
+ *         description: Asociación del vehículo retirada de la recepción
  *       404:
  *         description: Registro no encontrado
  */
 
 router.delete(
   '/:recepcionId/vehiculos/:id',
-  permiso('Recepcion.Eliminar'),
+  permiso('Recepcion.Editar'),
   recepcionIdValidator,
   idRecepcionVehiculoValidator,
   validar,

@@ -2,6 +2,7 @@ const {
   AccionCorrectiva,
   SeguimientoAccionCorrectiva,
   EvidenciaAccionCorrectiva,
+  TareaAccionCorrectiva,
 } = require('../../models');
 const { created, fail } = require('../../utils/response');
 const fs = require('fs');
@@ -37,9 +38,20 @@ exports.crearEvidencia = async (req, res, next) => {
         return fail(res, 'El seguimiento no pertenece a la acción correctiva', 422);
       }
     }
+    const tareaId = req.body.tareaAccionCorrectivaId ?? req.body.tarea_accion_correctiva_id ?? null;
+    if (tareaId) {
+      const tarea = await TareaAccionCorrectiva.findOne({
+        where: { id: tareaId, accionCorrectivaId: accion.id },
+      });
+      if (!tarea) {
+        eliminarSilencioso(req.file.path);
+        return fail(res, 'La tarea no pertenece a la acción correctiva', 422);
+      }
+    }
     const evidencia = await EvidenciaAccionCorrectiva.create({
       accionCorrectivaId: accion.id,
       seguimientoAccionCorrectivaId: seguimientoId,
+      tareaAccionCorrectivaId: tareaId,
       nombreArchivo: req.file.originalname,
       tipoArchivo: req.file.mimetype,
       urlArchivo: urlPara(req.file.filename),

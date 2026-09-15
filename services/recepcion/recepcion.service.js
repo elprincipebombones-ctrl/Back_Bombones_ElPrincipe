@@ -4,6 +4,7 @@ const {
   DetalleRecepcion,
   Producto,
   CategoriaProducto,
+  CondicionTermica,
   TemperaturaRecepcion,
   AccionMejoraRecepcion,
   VerificacionRecepcion,
@@ -24,6 +25,16 @@ const limpiarTexto = (valor) => {
   if (valor === null || valor === undefined) return null;
   const texto = String(valor).trim();
   return texto || null;
+};
+
+const calcularCostoTotal = (cantidad, costoUnitario) => {
+  const cantidadEscalada = BigInt(Number(cantidad).toFixed(3).replace('.', ''));
+  const costoEscalado = BigInt(Number(costoUnitario).toFixed(6).replace('.', ''));
+  const divisor = 10_000_000n;
+  const totalCentavos = (cantidadEscalada * costoEscalado + divisor / 2n) / divisor;
+  const enteros = totalCentavos / 100n;
+  const centavos = String(totalCentavos % 100n).padStart(2, '0');
+  return `${enteros}.${centavos}`;
 };
 
 const recepcionEsEditable = (recepcion) => recepcion?.estado === 'EN_PROCESO';
@@ -58,6 +69,7 @@ const validarDetalles = async (detalles, transaction, models = { Producto, Categ
       detalle.cantidadSolicitada === null || detalle.cantidadSolicitada === undefined
         ? null
         : Number(detalle.cantidadSolicitada);
+    const costoUnitario = Number(detalle.costoUnitario);
     if (!Number.isFinite(cantidadRecibida) || cantidadRecibida <= 0) {
       throw new RecepcionError(
         `La cantidad recibida del detalle ${index + 1} debe ser mayor que cero`,
@@ -69,6 +81,11 @@ const validarDetalles = async (detalles, transaction, models = { Producto, Categ
     ) {
       throw new RecepcionError(
         `La cantidad solicitada del detalle ${index + 1} debe ser mayor que cero`,
+      );
+    }
+    if (!Number.isFinite(costoUnitario) || costoUnitario <= 0) {
+      throw new RecepcionError(
+        `El costo unitario del detalle ${index + 1} debe ser mayor que cero`,
       );
     }
 
@@ -91,6 +108,7 @@ const validarDetalles = async (detalles, transaction, models = { Producto, Categ
       unidadMedidaId: producto.unidadMedidaId,
       cantidadSolicitada,
       cantidadRecibida,
+      costoUnitario,
       loteProveedor,
       fechaVencimiento,
       observaciones: limpiarTexto(detalle.observaciones),
@@ -125,6 +143,7 @@ const finalizarRecepcion = async ({
     DetalleRecepcion,
     Producto,
     CategoriaProducto,
+    CondicionTermica,
     TemperaturaRecepcion,
     AccionMejoraRecepcion,
     VerificacionRecepcion,
@@ -142,7 +161,10 @@ const finalizarRecepcion = async ({
             {
               model: models.Producto,
               as: 'producto',
-              include: [{ model: models.CategoriaProducto, as: 'categoriaProducto' }],
+              include: [
+                { model: models.CategoriaProducto, as: 'categoriaProducto' },
+                { model: models.CondicionTermica, as: 'condicionTermica' },
+              ],
             },
           ],
         },
@@ -151,7 +173,8 @@ const finalizarRecepcion = async ({
         { model: models.AccionMejoraRecepcion, as: 'accionesMejora' },
       ],
       transaction,
-      // Bloquear solo la cabecera: los LEFT JOIN pueden contener filas nulas.
+      // PostgreSQL no permite FOR UPDATE sobre las tablas opcionales de los LEFT JOIN.
+      // Se bloquea únicamente la fila principal de la recepción.
       lock: { level: transaction.LOCK.UPDATE, of: models.Recepcion },
     });
 
@@ -177,10 +200,26 @@ const finalizarRecepcion = async ({
       throw new RecepcionError('Debe gestionar todas las acciones de mejora antes de finalizar');
     }
 
-    if (accionesMejora.some((accion) => accion.decision === 'NO_RECIBIR')) {
+    const rechazoRecepcionCompleta = accionesMejora.some(
+      (accion) =>
+        accion.decision === 'NO_RECIBIR' &&
+        (accion.afectacion !== 'PRODUCTO' || !accion.detalleRecepcionId),
+    );
+    if (rechazoRecepcionCompleta) {
       await recepcion.update({ estado: 'RECHAZADA', tieneNovedades: true }, { transaction });
-      return { recepcion, movimiento: null };
+      return { recepcion, movimiento: null, recepcionParcial: false };
     }
+
+    const detalleIdsRechazados = new Set(
+      accionesMejora
+        .filter(
+          (accion) =>
+            accion.decision === 'NO_RECIBIR' &&
+            accion.afectacion === 'PRODUCTO' &&
+            accion.detalleRecepcionId,
+        )
+        .map((accion) => accion.detalleRecepcionId),
+    );
 
     const existente = await models.MovimientoInventario.findOne({
       where: { origen: 'RECEPCION', origenId: recepcion.id },
@@ -205,6 +244,11 @@ const finalizarRecepcion = async ({
           `La unidad del detalle ${index + 1} no coincide con la configurada en el producto`,
         );
       }
+      if (!Number.isFinite(Number(detalle.costoUnitario)) || Number(detalle.costoUnitario) <= 0) {
+        throw new RecepcionError(
+          `Falta el costo unitario del producto ${detalle.producto?.nombre || index + 1}`,
+        );
+      }
       const categoria = detalle.producto?.categoriaProducto;
       if (categoria?.requiereLote && !limpiarTexto(detalle.loteProveedor)) {
         throw new RecepcionError(
@@ -217,6 +261,11 @@ const finalizarRecepcion = async ({
         );
       }
       if (categoria?.requiereTemperatura) {
+        if (!detalle.producto?.condicionTermica) {
+          throw new RecepcionError(
+            `El producto ${detalle.producto?.nombre || index + 1} tiene pendiente configurar su condición térmica`,
+          );
+        }
         const temperatura = (recepcion.temperaturas || []).find(
           (registro) =>
             registro.detalleRecepcionId === detalle.id ||
@@ -233,6 +282,12 @@ const finalizarRecepcion = async ({
         }
       }
     }
+    const detallesRecibidos = detalles.filter((detalle) => !detalleIdsRechazados.has(detalle.id));
+    if (detallesRecibidos.length === 0) {
+      await recepcion.update({ estado: 'RECHAZADA', tieneNovedades: true }, { transaction });
+      return { recepcion, movimiento: null, recepcionParcial: false };
+    }
+
     const numeroDocumento = await siguienteNumero(
       'movimientos_en_numero_seq',
       'EN',
@@ -255,7 +310,7 @@ const finalizarRecepcion = async ({
     );
 
     await models.DetalleMovimiento.bulkCreate(
-      detalles.map((detalle) => ({
+      detallesRecibidos.map((detalle) => ({
         movimientoInventarioId: movimiento.id,
         productoId: detalle.productoId,
         unidadMedidaId: detalle.unidadMedidaId,
@@ -263,8 +318,8 @@ const finalizarRecepcion = async ({
         lote: detalle.loteProveedor,
         loteProveedor: detalle.loteProveedor,
         fechaVencimiento: detalle.fechaVencimiento,
-        costoUnitario: null,
-        costoTotal: null,
+        costoUnitario: detalle.costoUnitario,
+        costoTotal: calcularCostoTotal(detalle.cantidadRecibida, detalle.costoUnitario),
         observaciones: detalle.observaciones,
       })),
       { transaction },
@@ -277,12 +332,17 @@ const finalizarRecepcion = async ({
       },
       { transaction },
     );
-    return { recepcion, movimiento };
+    return {
+      recepcion,
+      movimiento,
+      recepcionParcial: detallesRecibidos.length < detalles.length,
+    };
   });
 
 module.exports = {
   RecepcionError,
   limpiarTexto,
+  calcularCostoTotal,
   recepcionEsEditable,
   siguienteNumero,
   validarDetalles,

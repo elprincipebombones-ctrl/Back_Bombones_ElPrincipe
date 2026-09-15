@@ -37,6 +37,13 @@ const DetalleRecepcion = sequelize.define(
       field: 'cantidad_recibida',
     },
 
+    costoUnitario: {
+      type: DataTypes.DECIMAL(18, 6),
+      allowNull: true,
+      field: 'costo_unitario',
+      validate: { min: 0.000001 },
+    },
+
     loteProveedor: {
       type: DataTypes.STRING(100),
       allowNull: true,

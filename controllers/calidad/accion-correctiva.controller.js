@@ -24,6 +24,7 @@ const {
   CriterioInspeccion,
   AprobadorAccionCorrectiva,
   CampoAccionInstancia,
+  TareaAccionCorrectiva,
 } = require('../../models');
 const { ok, fail } = require('../../utils/response');
 const { ApiError } = require('../../utils/ApiError');
@@ -32,6 +33,7 @@ const {
   requisitosDeDesviacion,
 } = require('../../services/calidad/acciones-correctivas.service');
 const { camposObligatoriosPendientes } = require('../../services/calidad/inspecciones.service');
+const { presentarTarea } = require('../../services/calidad/tareas-accion-correctiva.service');
 
 const include = [
   { model: TipoAccion, as: 'tipoAccion' },
@@ -41,6 +43,14 @@ const include = [
   { model: SeguimientoAccionCorrectiva, as: 'seguimientos' },
   { model: EvidenciaAccionCorrectiva, as: 'evidencias' },
   { model: CampoAccionInstancia, as: 'camposAdicionales' },
+  {
+    model: TareaAccionCorrectiva,
+    as: 'tarea',
+    include: [
+      { model: Usuario, as: 'usuarioAsignado', attributes: ['id', 'nombre', 'correo'] },
+      { model: EvidenciaAccionCorrectiva, as: 'evidencias' },
+    ],
+  },
   {
     model: Desviacion,
     as: 'desviacion',
@@ -102,11 +112,15 @@ const include = [
   },
 ];
 
-const conRequisitos = async (accion, puedeCerrar = false) => ({
-  ...accion.toJSON(),
-  requisitos: await requisitosDeDesviacion(accion.desviacionId),
-  puedeCerrar,
-});
+const conRequisitos = async (accion, puedeCerrar = false) => {
+  const datos = accion.toJSON();
+  return {
+    ...datos,
+    tarea: presentarTarea(datos.tarea),
+    requisitos: await requisitosDeDesviacion(accion.desviacionId),
+    puedeCerrar,
+  };
+};
 
 const usuarioPuedeCerrar = async (req, transaction) => {
   const registro = await AprobadorAccionCorrectiva.findOne({
@@ -133,6 +147,15 @@ exports.listar = async (req, res, next) => {
       );
     }
     const puedeCerrar = await usuarioPuedeCerrar(req);
+    if (req.query.tareas_pendientes === 'true') {
+      acciones = acciones.filter(
+        (accion) =>
+          accion.tarea?.estado === 'PENDIENTE' &&
+          (puedeCerrar ||
+            req.usuario.rol?.nombre === 'Administrador' ||
+            accion.tarea.usuarioAsignadoId === req.usuario.id),
+      );
+    }
     return ok(res, await Promise.all(acciones.map((accion) => conRequisitos(accion, puedeCerrar))));
   } catch (error) {
     return next(error);
