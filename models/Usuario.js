@@ -11,10 +11,22 @@ const Usuario = sequelize.define(
       primaryKey: true,
     },
     nombre: { type: DataTypes.STRING(100), allowNull: false },
+    usuario: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      unique: true,
+      set(value) {
+        this.setDataValue(
+          'usuario',
+          typeof value === 'string' ? value.trim().toLowerCase() : value,
+        );
+      },
+      validate: { is: /^[a-z0-9._-]{3,100}$/ },
+    },
+    cargoId: { type: DataTypes.UUID, allowNull: true, field: 'cargo_id' },
     correo: {
       type: DataTypes.STRING(150),
       allowNull: false,
-      unique: true,
       validate: { isEmail: true },
     },
     password: { type: DataTypes.STRING(255), allowNull: false },

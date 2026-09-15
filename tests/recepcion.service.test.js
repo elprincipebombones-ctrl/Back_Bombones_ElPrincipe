@@ -35,6 +35,30 @@ const empaque = {
   requiereTemperatura: false,
 };
 
+test('el SQL de finalizacion bloquea solo Recepcion con relaciones opcionales', async (t) => {
+  const sequelize = require('../database/database');
+  const models = require('../models');
+  let sqlGenerado;
+  t.mock.method(sequelize, 'query', async (sql) => {
+    sqlGenerado = sql;
+    return null;
+  });
+
+  await assert.rejects(
+    finalizarRecepcion({
+      recepcionId: '21994f71-37ee-4844-b9ae-302c32fdfc05',
+      usuarioId: 'usuario-1',
+      database: {
+        transaction: async (callback) => callback({ LOCK: { UPDATE: 'UPDATE' } }),
+      },
+      models,
+    }),
+    (error) => error.status === 404,
+  );
+  assert.match(sqlGenerado, /LEFT OUTER JOIN/);
+  assert.match(sqlGenerado, /FOR UPDATE OF "Recepcion";$/);
+});
+
 const modelosValidacion = (productos) => ({
   Producto: {
     findAll: async () => productos,

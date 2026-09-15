@@ -151,7 +151,8 @@ const finalizarRecepcion = async ({
         { model: models.AccionMejoraRecepcion, as: 'accionesMejora' },
       ],
       transaction,
-      lock: transaction.LOCK.UPDATE,
+      // Bloquear solo la cabecera: los LEFT JOIN pueden contener filas nulas.
+      lock: { level: transaction.LOCK.UPDATE, of: models.Recepcion },
     });
 
     if (!recepcion) throw new RecepcionError('Recepción no encontrada', 404);

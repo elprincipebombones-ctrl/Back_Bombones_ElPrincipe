@@ -17,6 +17,14 @@ const cargarModelos = (directorio) => {
 };
 
 cargarModelos(__dirname);
+db.OperacionInventario.hasMany(db.LineaOperacionInventario, { foreignKey: 'operacionId', as: 'detalles' });
+db.LineaOperacionInventario.belongsTo(db.OperacionInventario, { foreignKey: 'operacionId', as: 'operacion' });
+db.OperacionInventario.hasMany(db.MovimientoInventario, { foreignKey: 'operacionId', as: 'documentos' });
+db.MovimientoInventario.belongsTo(db.OperacionInventario, { foreignKey: 'operacionId', as: 'operacion' });
+db.OperacionInventario.belongsTo(db.Bodega, { foreignKey: 'bodegaId', as: 'bodega' });
+db.LineaOperacionInventario.belongsTo(db.Producto, { foreignKey: 'productoId', as: 'producto' });
+db.Cargo.hasMany(db.Usuario, { foreignKey: 'cargoId', as: 'usuarios' });
+db.Usuario.belongsTo(db.Cargo, { foreignKey: 'cargoId', as: 'cargo' });
 
 const Proveedor = require('./Recepcion/Proveedor');
 const Producto = require('./Recepcion/Producto');

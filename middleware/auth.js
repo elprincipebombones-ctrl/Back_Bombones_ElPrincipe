@@ -205,6 +205,8 @@ module.exports = async (req, res, next) => {
           'id',
           'nombre',
           'correo',
+          'usuario',
+          'cargoId',
           'estado',
           'rolId'
         ],

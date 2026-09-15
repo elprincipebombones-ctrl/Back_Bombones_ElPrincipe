@@ -9,6 +9,7 @@ const MovimientoInventario = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    operacionId: { type: DataTypes.UUID, allowNull: true, field: 'operacion_id' },
     tipoDocumento: {
       type: DataTypes.STRING(2),
       allowNull: false,

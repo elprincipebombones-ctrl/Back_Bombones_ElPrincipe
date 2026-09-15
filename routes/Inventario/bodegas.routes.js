@@ -9,7 +9,7 @@ const validar = require('../../middleware/validar');
 const {
   crearBodegaValidator,
   actualizarBodegaValidator,
-  idValidator
+  idValidator,
 } = require('../../validators/maestro.validator');
 
 const router = Router();
@@ -35,11 +35,7 @@ router.use(auth);
  *       200:
  *         description: Lista de bodegas
  */
-router.get(
-  '/',
-  permiso('Bodegas.Ver'),
-  ctrl.listar
-);
+router.get('/', permiso('Bodegas.Ver'), ctrl.listar);
 
 /**
  * @swagger
@@ -62,13 +58,7 @@ router.get(
  *       404:
  *         description: Bodega no encontrada
  */
-router.get(
-  '/:id',
-  permiso('Bodegas.Ver'),
-  idValidator,
-  validar,
-  ctrl.obtener
-);
+router.get('/:id', permiso('Bodegas.Ver'), idValidator, validar, ctrl.obtener);
 
 /**
  * @swagger
@@ -88,13 +78,7 @@ router.get(
  *       201:
  *         description: Bodega creada
  */
-router.post(
-  '/',
-  permiso('Bodegas.Crear'),
-  crearBodegaValidator,
-  validar,
-  ctrl.crear
-);
+router.post('/', permiso('Bodegas.Crear'), crearBodegaValidator, validar, ctrl.crear);
 
 /**
  * @swagger
@@ -129,7 +113,7 @@ router.put(
   idValidator,
   actualizarBodegaValidator,
   validar,
-  ctrl.actualizar
+  ctrl.actualizar,
 );
 
 /**
@@ -153,12 +137,6 @@ router.put(
  *       404:
  *         description: Bodega no encontrada
  */
-router.delete(
-  '/:id',
-  permiso('Bodegas.Eliminar'),
-  idValidator,
-  validar,
-  ctrl.eliminar
-);
+router.delete('/:id', permiso('Bodegas.Eliminar'), idValidator, validar, ctrl.eliminar);
 
 module.exports = router;

@@ -26,10 +26,11 @@ module.exports = {
     // Permisos
     const permisosDef = [
       { modulo: 'Usuarios', acciones: ['Ver', 'Crear', 'Editar', 'Eliminar'] },
+      { modulo: 'Cargos', acciones: ['Ver', 'Crear', 'Editar', 'Eliminar'] },
       { modulo: 'Roles', acciones: ['Ver', 'Crear', 'Editar', 'Eliminar'] },
       { modulo: 'Permisos', acciones: ['Ver', 'Crear', 'Editar', 'Eliminar'] },
       { modulo: 'Menus', acciones: ['Ver', 'Crear', 'Editar', 'Eliminar'] },
-      { modulo: 'Inventario', acciones: ['Ver', 'Editar'] },
+      { modulo: 'Inventario', acciones: ['Ver', 'Editar', 'Contar', 'Ajustar', 'Trasladar'] },
       { modulo: 'Compras', acciones: ['Ver'] },
       { modulo: 'Ventas', acciones: ['Ver'] },
       { modulo: 'Configuracion', acciones: ['Ver'] },
@@ -62,6 +63,7 @@ module.exports = {
     const menus = [
       { id: uuidv4(), nombre: 'Dashboard', ruta: '/dashboard', icono: 'dashboard', orden: 1 },
       { id: uuidv4(), nombre: 'Usuarios', ruta: '/usuarios', icono: 'people', orden: 2 },
+      { id: uuidv4(), nombre: 'Cargos', ruta: '/cargos', icono: 'badge', orden: 10 },
       { id: uuidv4(), nombre: 'Roles', ruta: '/roles', icono: 'security', orden: 3 },
       { id: uuidv4(), nombre: 'Permisos', ruta: '/permisos', icono: 'lock', orden: 4 },
       { id: uuidv4(), nombre: 'Menús', ruta: '/menus', icono: 'menu', orden: 5 },
@@ -85,6 +87,7 @@ module.exports = {
         id: uuidv4(),
         nombre: 'Administrador',
         correo: 'admin@empresa.com',
+        usuario: 'admin',
         password: passwordHash,
         estado: true,
         rol_id: adminRol.id,

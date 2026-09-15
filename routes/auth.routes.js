@@ -27,7 +27,7 @@ const router = Router();
  *           schema:
  *             type: object
  *             properties:
- *               correo: { type: string, example: admin@empresa.com }
+ *               usuario: { type: string, example: admin }
  *               password: { type: string, example: Admin123* }
  *     responses:
  *       200: { description: OK }
