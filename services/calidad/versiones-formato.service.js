@@ -13,6 +13,8 @@ const copiarAtributos = (registro, atributos) =>
   Object.fromEntries(atributos.map((atributo) => [atributo, registro[atributo]]));
 
 const clonarContenido = async (origenId, destinoId, transaction) => {
+  const camposClonados = new Map();
+  const calculosPendientes = [];
   const secciones = await SeccionFormato.findAll({
     where: { versionFormatoId: origenId },
     include: [
@@ -57,9 +59,17 @@ const clonarContenido = async (origenId, destinoId, transaction) => {
             'bloquearAlGuardar',
             'estado',
           ]),
+          esCalculado: false,
+          campoNumeradorId: null,
+          campoDenominadorId: null,
+          multiplicador: campoOrigen.multiplicador ?? 100,
         },
         { transaction },
       );
+      camposClonados.set(campoOrigen.id, campo.id);
+      if (campoOrigen.esCalculado) {
+        calculosPendientes.push({ origen: campoOrigen, destino: campo });
+      }
       if (campoOrigen.opciones.length) {
         await OpcionCampo.bulkCreate(
           campoOrigen.opciones.map((opcion) => ({
@@ -100,6 +110,17 @@ const clonarContenido = async (origenId, destinoId, transaction) => {
         );
       }
     }
+  }
+  for (const { origen, destino } of calculosPendientes) {
+    await destino.update(
+      {
+        esCalculado: true,
+        campoNumeradorId: camposClonados.get(origen.campoNumeradorId),
+        campoDenominadorId: camposClonados.get(origen.campoDenominadorId),
+        multiplicador: origen.multiplicador ?? 100,
+      },
+      { transaction },
+    );
   }
 };
 

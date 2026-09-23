@@ -12,6 +12,7 @@ const programas = require('../../validators/calidad/programas.validator');
 const camposAccion = require('../../validators/calidad/campos-accion.validator');
 const dashboard = require('../../validators/calidad/dashboard.validator');
 const lugares = require('../../validators/calidad/lugares-inspeccion.validator');
+const produccionCalidad = require('../../validators/calidad/produccion.validator');
 
 const router = Router();
 router.use(auth);
@@ -103,6 +104,16 @@ router.use(auth);
  *   get:
  *     tags: [Calidad]
  *     summary: Obtiene una versión con formato, secciones, campos, reglas y acciones
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ * /api/calidad/versiones-formato/{id}/campos-calculados:
+ *   get:
+ *     tags: [Calidad]
+ *     summary: Consulta los porcentajes calculados configurados en una versión
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
@@ -653,6 +664,13 @@ router.get(
   validar,
   version.obtenerCompleta,
 );
+router.get(
+  '/versiones-formato/:id/campos-calculados',
+  permiso('calidad.ver'),
+  configuracion.idValidator,
+  validar,
+  version.listarCamposCalculados,
+);
 router.post(
   '/versiones-formato/:id/publicar',
   permiso('calidad.editar'),
@@ -763,8 +781,53 @@ router.use(
 
 // Ejecución de inspecciones
 const inspeccion = require('../../controllers/calidad/inspeccion.controller');
+const inspeccionProduccion = require('../../controllers/calidad/inspeccion-produccion.controller');
 const respuesta = require('../../controllers/calidad/respuesta-inspeccion.controller');
 const respuestaChecklist = require('../../controllers/calidad/respuesta-checklist.controller');
+/**
+ * @swagger
+ * /api/calidad/produccion/formatos:
+ *   get:
+ *     tags: [Calidad]
+ *     summary: Lista formatos activos con versión publicada de tipo Producción
+ *     security: [{ bearerAuth: [] }]
+ * /api/calidad/produccion/ordenes/{ordenId}/contexto:
+ *   get:
+ *     tags: [Calidad]
+ *     summary: Consulta formatos, PT e historial de calidad de una OT en producción
+ *     security: [{ bearerAuth: [] }]
+ * /api/calidad/produccion/ordenes/{ordenId}/inspecciones:
+ *   get:
+ *     tags: [Calidad]
+ *     summary: Lista las inspecciones asociadas a una OT
+ *     security: [{ bearerAuth: [] }]
+ *   post:
+ *     tags: [Calidad]
+ *     summary: Inicia una inspección usando el motor existente de Calidad
+ *     security: [{ bearerAuth: [] }]
+ */
+router.get('/produccion/formatos', permiso('inspecciones.ver'), inspeccionProduccion.formatos);
+router.get(
+  '/produccion/ordenes/:ordenId/contexto',
+  permiso('inspecciones.ver'),
+  produccionCalidad.ordenValidator,
+  validar,
+  inspeccionProduccion.contexto,
+);
+router.get(
+  '/produccion/ordenes/:ordenId/inspecciones',
+  permiso('inspecciones.ver'),
+  produccionCalidad.ordenValidator,
+  validar,
+  inspeccionProduccion.inspecciones,
+);
+router.post(
+  '/produccion/ordenes/:ordenId/inspecciones',
+  permiso('inspecciones.crear'),
+  produccionCalidad.iniciarValidator,
+  validar,
+  inspeccionProduccion.iniciar,
+);
 router.get('/inspecciones/pendientes', permiso('inspecciones.ver'), inspeccion.pendientes);
 router.get(
   '/inspecciones',

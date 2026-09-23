@@ -28,6 +28,8 @@ const {
   CriterioInspeccion,
   AccionCriterio,
   RespuestaElementoChecklist,
+  OrdenProduccion,
+  Producto,
 } = require('../../models');
 
 const usuarioPublico = ['id', 'nombre', 'correo'];
@@ -42,6 +44,13 @@ const obtenerCompleta = async (id, transaction) => {
       },
       { model: Usuario, as: 'iniciador', attributes: usuarioPublico },
       { model: Usuario, as: 'cerrador', attributes: usuarioPublico },
+      { model: OrdenProduccion, as: 'ordenProduccion', attributes: ['id', 'numero', 'fecha'] },
+      {
+        model: Producto,
+        as: 'producto',
+        attributes: ['id', 'codigo', 'nombre'],
+        include: [{ model: UnidadMedida, as: 'unidadMedida' }],
+      },
       {
         model: VersionFormato,
         as: 'version',
@@ -87,6 +96,8 @@ const obtenerCompleta = async (id, transaction) => {
                   { model: TipoCampo, as: 'tipoCampo' },
                   { model: UnidadMedida, as: 'unidadMedida' },
                   { model: OpcionCampo, as: 'opciones' },
+                  { model: CampoFormato, as: 'campoNumerador' },
+                  { model: CampoFormato, as: 'campoDenominador' },
                 ],
               },
               {
@@ -232,7 +243,7 @@ const obtenerCompleta = async (id, transaction) => {
 
 const camposObligatoriosPendientes = async (inspeccion, transaction) => {
   const campos = await CampoFormato.findAll({
-    attributes: ['id', 'codigo', 'etiqueta', 'esObligatorio'],
+    attributes: ['id', 'codigo', 'etiqueta', 'esObligatorio', 'esCalculado'],
     where: { estado: true },
     include: [
       { model: ParametroCalidad, as: 'parametro', required: false },
@@ -246,8 +257,10 @@ const camposObligatoriosPendientes = async (inspeccion, transaction) => {
     ],
     transaction,
   });
-  const camposObligatorios = campos.filter((campo) =>
-    campo.parametro ? campo.parametro.esObligatorioDefault : campo.esObligatorio,
+  const camposObligatorios = campos.filter(
+    (campo) =>
+      !campo.esCalculado &&
+      (campo.parametro ? campo.parametro.esObligatorioDefault : campo.esObligatorio),
   );
   const respuestas = await RespuestaInspeccion.findAll({
     attributes: ['campoFormatoId'],

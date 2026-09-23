@@ -25,6 +25,8 @@ const {
   AprobadorAccionCorrectiva,
   CampoAccionInstancia,
   TareaAccionCorrectiva,
+  OrdenProduccion,
+  Producto,
 } = require('../../models');
 const { ok, fail } = require('../../utils/response');
 const { ApiError } = require('../../utils/ApiError');
@@ -70,6 +72,8 @@ const include = [
             include: [{ model: CategoriaLugarInspeccion, as: 'categoria' }],
           },
           { model: Usuario, as: 'iniciador', attributes: ['id', 'nombre', 'correo'] },
+          { model: OrdenProduccion, as: 'ordenProduccion', attributes: ['id', 'numero'] },
+          { model: Producto, as: 'producto', attributes: ['id', 'codigo', 'nombre'] },
         ],
       },
       {
@@ -114,8 +118,19 @@ const include = [
 
 const conRequisitos = async (accion, puedeCerrar = false) => {
   const datos = accion.toJSON();
+  const inspeccion = datos.desviacion?.inspeccion;
+
   return {
     ...datos,
+    contextoProduccion: {
+      ordenProduccionId: inspeccion?.ordenProduccionId ?? null,
+      numeroOt: inspeccion?.ordenProduccion?.numero ?? null,
+      productoId: inspeccion?.productoId ?? null,
+      codigoProducto: inspeccion?.producto?.codigo ?? null,
+      nombreProducto: inspeccion?.producto?.nombre ?? null,
+      lote: inspeccion?.lote ?? null,
+      fechaVencimiento: inspeccion?.fechaVencimiento ?? null,
+    },
     tarea: presentarTarea(datos.tarea),
     requisitos: await requisitosDeDesviacion(accion.desviacionId),
     puedeCerrar,

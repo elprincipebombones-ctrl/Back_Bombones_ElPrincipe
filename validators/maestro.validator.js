@@ -46,6 +46,11 @@ exports.crearProductoValidator = [
     .isUUID()
     .withMessage('La condición térmica no es válida'),
 
+  body('familiaMpCarnicaId')
+    .optional({ nullable: true })
+    .isUUID()
+    .withMessage('La familia cárnica no es válida'),
+
   body('estado').optional().isBoolean().withMessage('El estado debe ser booleano'),
 ];
 
@@ -85,7 +90,21 @@ exports.actualizarProductoValidator = [
     .isUUID()
     .withMessage('La condición térmica no es válida'),
 
+  body('familiaMpCarnicaId')
+    .optional({ nullable: true })
+    .isUUID()
+    .withMessage('La familia cárnica no es válida'),
+
   body('estado').optional().isBoolean().withMessage('El estado debe ser booleano'),
+];
+
+exports.crearFamiliaMpCarnicaValidator = [
+  body('nombre')
+    .isString()
+    .withMessage('El nombre de la familia es obligatorio')
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('El nombre debe tener entre 2 y 100 caracteres'),
 ];
 
 /**

@@ -7,6 +7,10 @@ module.exports = definir(
     id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
     versionFormatoId: { type: DataTypes.UUID, allowNull: false, field: 'version_formato_id' },
     lugarInspeccionId: { type: DataTypes.UUID, allowNull: true, field: 'lugar_inspeccion_id' },
+    ordenProduccionId: { type: DataTypes.UUID, allowNull: true, field: 'orden_produccion_id' },
+    productoId: { type: DataTypes.UUID, allowNull: true, field: 'producto_id' },
+    lote: { type: DataTypes.STRING(100), allowNull: true },
+    fechaVencimiento: { type: DataTypes.DATEONLY, allowNull: true, field: 'fecha_vencimiento' },
     estado: {
       type: DataTypes.ENUM(
         'BORRADOR',

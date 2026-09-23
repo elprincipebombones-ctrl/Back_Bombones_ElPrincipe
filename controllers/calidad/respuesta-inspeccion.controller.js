@@ -13,6 +13,7 @@ const { ok } = require('../../utils/response');
 const { ApiError } = require('../../utils/ApiError');
 const { evaluarRespuesta, esVacio } = require('../../services/calidad/evaluador-reglas.service');
 const { validarEditable } = require('../../services/calidad/bloqueo-diario.service');
+const { recalcularCampos } = require('../../services/calidad/campos-calculados.service');
 
 const dato = (body, camel, snake) => body[camel] ?? body[snake];
 
@@ -81,6 +82,7 @@ exports.guardarRespuestas = async (req, res, next) => {
     await validarEditable(inspeccion, transaction);
 
     const guardadas = [];
+    const observacionesCalculadas = new Map();
     for (const entrada of req.body.respuestas) {
       const datos = normalizar(entrada);
       const campo = await CampoFormato.findOne({
@@ -99,6 +101,10 @@ exports.guardarRespuestas = async (req, res, next) => {
       });
       if (!campo) {
         throw new ApiError('El campo no pertenece a la versión de esta inspección', 422);
+      }
+      if (campo.esCalculado) {
+        observacionesCalculadas.set(campo.id, datos.observacion);
+        continue;
       }
       validarTipoValor(campo, datos);
 
@@ -176,6 +182,15 @@ exports.guardarRespuestas = async (req, res, next) => {
       });
       guardadas.push(respuesta);
     }
+
+    guardadas.push(
+      ...(await recalcularCampos({
+        inspeccion,
+        usuarioId: req.usuario.id,
+        observaciones: observacionesCalculadas,
+        transaction,
+      })),
+    );
 
     if (inspeccion.estado === 'BORRADOR') {
       await inspeccion.update({ estado: 'EN_PROCESO' }, { transaction });

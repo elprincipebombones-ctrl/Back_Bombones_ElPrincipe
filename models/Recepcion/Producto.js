@@ -70,6 +70,18 @@ const Producto = sequelize.define(
       onDelete: 'RESTRICT',
     },
 
+    familiaMpCarnicaId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'familia_mp_carnica_id',
+      references: {
+        model: 'familias_mp_carnicas',
+        key: 'id',
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'RESTRICT',
+    },
+
     estado: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
