@@ -25,7 +25,7 @@ const DetalleMovimiento = sequelize.define(
       field: 'unidad_medida_id',
     },
     cantidad: {
-      type: DataTypes.DECIMAL(15, 3),
+      type: DataTypes.DECIMAL(18, 6),
       allowNull: false,
     },
     sentido: {

@@ -4,6 +4,7 @@ const Producto = require('../../models/Recepcion/Producto');
 const CategoriaProducto = require('../../models/Recepcion/CategoriaProducto');
 const UnidadMedida = require('../../models/Recepcion/UnidadMedida');
 const CondicionTermica = require('../../models/Recepcion/CondicionTermica');
+const FamiliaMpCarnica = require('../../models/Recepcion/FamiliaMpCarnica');
 const { ok, created, fail } = require('../../utils/response');
 
 const include = [
@@ -22,10 +23,16 @@ const include = [
     as: 'condicionTermica',
     attributes: ['id', 'codigo', 'nombre', 'temperaturaMinima', 'temperaturaMaxima', 'activo'],
   },
+  {
+    model: FamiliaMpCarnica,
+    as: 'familiaMpCarnica',
+    attributes: ['id', 'nombre', 'activo'],
+  },
 ];
 
-const esMpCarnica = (categoria) =>
-  categoria?.codigo === 'MP-CAR' || categoria?.nombre?.trim().toUpperCase() === 'MP CÁRNICAS';
+const esMpCarnica = (tipoProducto, categoria) =>
+  tipoProducto === 'MP' &&
+  (categoria?.codigo === 'MP-CAR' || categoria?.nombre?.trim().toUpperCase() === 'MP CÁRNICAS');
 
 const generarCodigo = async (tipoProducto, transaction) => {
   const esProductoTerminado = tipoProducto === 'PT';
@@ -80,18 +87,33 @@ exports.obtener = async (req, res, next) => {
   }
 };
 
-const validarRelaciones = async (categoriaProductoId, unidadMedidaId, condicionTermicaId) => {
-  const [categoria, unidad, condicion] = await Promise.all([
+const validarRelaciones = async ({
+  tipoProducto,
+  categoriaProductoId,
+  unidadMedidaId,
+  condicionTermicaId,
+  familiaMpCarnicaId,
+}) => {
+  const [categoria, unidad, condicion, familia] = await Promise.all([
     CategoriaProducto.findByPk(categoriaProductoId),
     UnidadMedida.findByPk(unidadMedidaId),
     condicionTermicaId ? CondicionTermica.findByPk(condicionTermicaId) : null,
+    familiaMpCarnicaId ? FamiliaMpCarnica.findByPk(familiaMpCarnicaId) : null,
   ]);
   if (!categoria || !categoria.estado) return { error: 'La categoría no existe o está inactiva' };
   if (!unidad || !unidad.estado) return { error: 'La unidad de medida no existe o está inactiva' };
-  if (esMpCarnica(categoria) && (!condicion || !condicion.activo)) {
+  const aplicaFamiliaCarnica = esMpCarnica(tipoProducto, categoria);
+  if (aplicaFamiliaCarnica && (!condicion || !condicion.activo)) {
     return { error: 'La condición térmica es obligatoria y debe estar activa para una MP cárnica' };
   }
-  return { categoria, condicionTermicaId: esMpCarnica(categoria) ? condicionTermicaId : null };
+  if (aplicaFamiliaCarnica && (!familia || !familia.activo)) {
+    return { error: 'La familia cárnica es obligatoria y debe estar activa para una MP cárnica' };
+  }
+  return {
+    categoria,
+    condicionTermicaId: aplicaFamiliaCarnica ? condicionTermicaId : null,
+    familiaMpCarnicaId: aplicaFamiliaCarnica ? familiaMpCarnicaId : null,
+  };
 };
 
 exports.listarCondicionesTermicas = async (_req, res, next) => {
@@ -108,6 +130,44 @@ exports.listarCondicionesTermicas = async (_req, res, next) => {
   }
 };
 
+exports.listarFamiliasMpCarnicas = async (_req, res, next) => {
+  try {
+    return ok(
+      res,
+      await FamiliaMpCarnica.findAll({
+        where: { activo: true },
+        order: [['nombre', 'ASC']],
+      }),
+    );
+  } catch (err) {
+    return next(err);
+  }
+};
+
+exports.crearFamiliaMpCarnica = async (req, res, next) => {
+  try {
+    const nombre = req.body.nombre.trim().toUpperCase();
+    const existente = await FamiliaMpCarnica.findOne({
+      where: sequelize.where(
+        sequelize.fn('LOWER', sequelize.fn('BTRIM', sequelize.col('nombre'))),
+        nombre.toLowerCase(),
+      ),
+    });
+    if (existente) return fail(res, 'Ya existe una familia cárnica con ese nombre', 409);
+
+    return created(
+      res,
+      await FamiliaMpCarnica.create({ nombre, activo: true }),
+      'Familia cárnica creada',
+    );
+  } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      return fail(res, 'Ya existe una familia cárnica con ese nombre', 409);
+    }
+    return next(err);
+  }
+};
+
 exports.crear = async (req, res, next) => {
   try {
     const {
@@ -117,13 +177,16 @@ exports.crear = async (req, res, next) => {
       categoriaProductoId,
       unidadMedidaId,
       condicionTermicaId,
+      familiaMpCarnicaId,
       estado,
     } = req.body;
-    const validacion = await validarRelaciones(
+    const validacion = await validarRelaciones({
+      tipoProducto,
       categoriaProductoId,
       unidadMedidaId,
       condicionTermicaId,
-    );
+      familiaMpCarnicaId,
+    });
     if (validacion.error) return fail(res, validacion.error, 422);
     const producto = await sequelize.transaction(async (transaction) => {
       const codigo = await generarCodigo(tipoProducto, transaction);
@@ -136,6 +199,7 @@ exports.crear = async (req, res, next) => {
           categoriaProductoId,
           unidadMedidaId,
           condicionTermicaId: validacion.condicionTermicaId,
+          familiaMpCarnicaId: validacion.familiaMpCarnicaId,
           estado: estado ?? true,
         },
         { transaction },
@@ -154,13 +218,16 @@ exports.actualizar = async (req, res, next) => {
     const categoriaProductoId = req.body.categoriaProductoId ?? producto.categoriaProductoId;
     const unidadMedidaId = req.body.unidadMedidaId ?? producto.unidadMedidaId;
     const condicionTermicaId = req.body.condicionTermicaId ?? producto.condicionTermicaId;
-    const validacion = await validarRelaciones(
+    const familiaMpCarnicaId = req.body.familiaMpCarnicaId ?? producto.familiaMpCarnicaId;
+    const tipoProducto = req.body.tipoProducto ?? producto.tipoProducto;
+    const validacion = await validarRelaciones({
+      tipoProducto,
       categoriaProductoId,
       unidadMedidaId,
       condicionTermicaId,
-    );
+      familiaMpCarnicaId,
+    });
     if (validacion.error) return fail(res, validacion.error, 422);
-    const tipoProducto = req.body.tipoProducto ?? producto.tipoProducto;
     const campos = {
       nombre: req.body.nombre ?? producto.nombre,
       descripcion: req.body.descripcion ?? producto.descripcion,
@@ -168,6 +235,7 @@ exports.actualizar = async (req, res, next) => {
       categoriaProductoId,
       unidadMedidaId,
       condicionTermicaId: validacion.condicionTermicaId,
+      familiaMpCarnicaId: validacion.familiaMpCarnicaId,
       estado: req.body.estado ?? producto.estado,
     };
     await sequelize.transaction(async (transaction) => {

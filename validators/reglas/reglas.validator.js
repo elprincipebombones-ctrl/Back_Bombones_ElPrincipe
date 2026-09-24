@@ -8,7 +8,10 @@ const id = (campo, opcional = false, nullable = false) => {
 const codigo = (opcional = false) => {
   let regla = body('codigo');
   if (opcional) regla = regla.optional();
-  return regla.trim().isLength({ min: 2, max: 30 }).matches(/^[A-Z0-9_-]+$/);
+  return regla
+    .trim()
+    .isLength({ min: 2, max: 30 })
+    .matches(/^[A-Z0-9_-]+$/);
 };
 const regla = (opcional = false) => [
   id('parametroCalidadId', opcional),
@@ -24,15 +27,33 @@ const regla = (opcional = false) => [
 ];
 const condicion = (opcional = false) => [
   id('reglaCalidadId', opcional),
-  body('tipoCondicion')[opcional ? 'optional' : 'exists']().isIn([
-    'RANGO', 'VALOR_EXACTO', 'LISTA', 'OBLIGATORIO',
-  ]),
-  body('operador')[opcional ? 'optional' : 'exists']().isIn([
-    'IGUAL', 'DIFERENTE', 'MAYOR_QUE', 'MAYOR_IGUAL', 'MENOR_QUE', 'MENOR_IGUAL',
-    'ENTRE', 'FUERA_DE_RANGO', 'EN_LISTA', 'NO_EN_LISTA', 'VACIO', 'NO_VACIO',
-  ]),
-  body('valor1').optional({ nullable: true }).isString().isLength({ max: 255 }),
-  body('valor2').optional({ nullable: true }).isString().isLength({ max: 255 }),
+  body('tipoCondicion')
+    [opcional ? 'optional' : 'exists']()
+    .isIn(['RANGO', 'VALOR_EXACTO', 'LISTA', 'OBLIGATORIO']),
+  body('operador')
+    [opcional ? 'optional' : 'exists']()
+    .isIn([
+      'IGUAL',
+      'DIFERENTE',
+      'MAYOR_QUE',
+      'MAYOR_IGUAL',
+      'MENOR_QUE',
+      'MENOR_IGUAL',
+      'ENTRE',
+      'FUERA_DE_RANGO',
+      'EN_LISTA',
+      'NO_EN_LISTA',
+      'VACIO',
+      'NO_VACIO',
+    ]),
+  body('valor1')
+    .optional({ nullable: true })
+    .customSanitizer((valor) => String(valor))
+    .isLength({ max: 255 }),
+  body('valor2')
+    .optional({ nullable: true })
+    .customSanitizer((valor) => String(valor))
+    .isLength({ max: 255 }),
   body('valorJson').optional({ nullable: true }),
   body('orden').optional().isInt({ min: 0 }),
   body('estado').optional().isBoolean(),
@@ -41,12 +62,16 @@ const condicion = (opcional = false) => [
     if (!operador) return true;
     const sinValor = ['VACIO', 'NO_VACIO'];
     const dosValores = ['ENTRE', 'FUERA_DE_RANGO'];
-    if (!sinValor.includes(operador) &&
-      (valor.valor1 === undefined || valor.valor1 === null || valor.valor1 === '')) {
+    if (
+      !sinValor.includes(operador) &&
+      (valor.valor1 === undefined || valor.valor1 === null || valor.valor1 === '')
+    ) {
       throw new Error('valor1 es obligatorio para el operador seleccionado');
     }
-    if (dosValores.includes(operador) &&
-      (valor.valor2 === undefined || valor.valor2 === null || valor.valor2 === '')) {
+    if (
+      dosValores.includes(operador) &&
+      (valor.valor2 === undefined || valor.valor2 === null || valor.valor2 === '')
+    ) {
       throw new Error('valor2 es obligatorio para el operador seleccionado');
     }
     return true;

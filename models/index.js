@@ -33,6 +33,7 @@ const LugarArea = require('./Recepcion/LugarArea');
 const Vehiculo = require('./Recepcion/Vehiculo');
 const CategoriaProducto = require('./Recepcion/CategoriaProducto');
 const CondicionTermica = require('./Recepcion/CondicionTermica');
+const FamiliaMpCarnica = require('./Recepcion/FamiliaMpCarnica');
 const DetalleRecepcion = require('./Recepcion/DetalleRecepcion');
 const Recepcion = require('./Recepcion/Recepcion');
 const RecepcionVehiculo = require('./Recepcion/RecepcionVehiculo');
@@ -46,6 +47,8 @@ const Usuario = require('./Usuario');
 const UnidadMedida = require('./Recepcion/UnidadMedida');
 const MovimientoInventario = require('./Inventario/MovimientoInventario');
 const DetalleMovimiento = require('./Inventario/DetalleMovimiento');
+const FormulaProducto = require('./Produccion/FormulaProducto');
+const FormulaComponente = require('./Produccion/FormulaComponente');
 
 db.Proveedor = Proveedor;
 db.Producto = Producto;
@@ -54,6 +57,7 @@ db.LugarArea = LugarArea;
 db.Vehiculo = Vehiculo;
 db.CategoriaProducto = CategoriaProducto;
 db.CondicionTermica = CondicionTermica;
+db.FamiliaMpCarnica = FamiliaMpCarnica;
 db.RecepcionVehiculo = RecepcionVehiculo;
 db.VerificacionRecepcion = VerificacionRecepcion;
 db.TemperaturaRecepcion = TemperaturaRecepcion;
@@ -66,6 +70,8 @@ db.Bodega = Bodega;
 db.UnidadMedida = UnidadMedida;
 db.MovimientoInventario = MovimientoInventario;
 db.DetalleMovimiento = DetalleMovimiento;
+db.FormulaProducto = FormulaProducto;
+db.FormulaComponente = FormulaComponente;
 // ==========================================
 // Usuario - Rol
 // ==========================================
@@ -150,6 +156,16 @@ db.Producto.belongsTo(db.CondicionTermica, {
   as: 'condicionTermica',
 });
 
+db.FamiliaMpCarnica.hasMany(db.Producto, {
+  foreignKey: 'familiaMpCarnicaId',
+  as: 'productos',
+});
+
+db.Producto.belongsTo(db.FamiliaMpCarnica, {
+  foreignKey: 'familiaMpCarnicaId',
+  as: 'familiaMpCarnica',
+});
+
 db.Producto.belongsTo(UnidadMedida, {
   foreignKey: 'unidadMedidaId',
   as: 'unidadMedida',
@@ -163,6 +179,246 @@ db.UnidadMedida.hasMany(db.Producto, {
 db.UnidadMedida.hasMany(db.DetalleRecepcion, {
   foreignKey: 'unidadMedidaId',
   as: 'detallesRecepcion',
+});
+
+// ==========================================
+// Producción: fórmulas de productos terminados
+// ==========================================
+db.Producto.hasMany(db.FormulaProducto, {
+  foreignKey: 'productoTerminadoId',
+  as: 'formulas',
+});
+db.FormulaProducto.belongsTo(db.Producto, {
+  foreignKey: 'productoTerminadoId',
+  as: 'productoTerminado',
+});
+db.FormulaProducto.hasMany(db.FormulaComponente, {
+  foreignKey: 'formulaProductoId',
+  as: 'componentes',
+});
+db.FormulaComponente.belongsTo(db.FormulaProducto, {
+  foreignKey: 'formulaProductoId',
+  as: 'formula',
+});
+db.Producto.hasMany(db.FormulaComponente, {
+  foreignKey: 'productoId',
+  as: 'usosEnFormulas',
+});
+db.FormulaComponente.belongsTo(db.Producto, {
+  foreignKey: 'productoId',
+  as: 'producto',
+});
+db.FamiliaMpCarnica.hasMany(db.FormulaComponente, {
+  foreignKey: 'familiaMpCarnicaId',
+  as: 'usosEnFormulas',
+});
+db.FormulaComponente.belongsTo(db.FamiliaMpCarnica, {
+  foreignKey: 'familiaMpCarnicaId',
+  as: 'familiaMpCarnica',
+});
+db.UnidadMedida.hasMany(db.FormulaComponente, {
+  foreignKey: 'unidadMedidaId',
+  as: 'componentesFormula',
+});
+db.FormulaComponente.belongsTo(db.UnidadMedida, {
+  foreignKey: 'unidadMedidaId',
+  as: 'unidadMedida',
+});
+db.UnidadMedida.hasMany(db.ConversionUnidad, {
+  foreignKey: 'unidadOrigenId',
+  as: 'conversionesOrigen',
+});
+db.ConversionUnidad.belongsTo(db.UnidadMedida, {
+  foreignKey: 'unidadOrigenId',
+  as: 'unidadOrigen',
+});
+db.UnidadMedida.hasMany(db.ConversionUnidad, {
+  foreignKey: 'unidadDestinoId',
+  as: 'conversionesDestino',
+});
+db.ConversionUnidad.belongsTo(db.UnidadMedida, {
+  foreignKey: 'unidadDestinoId',
+  as: 'unidadDestino',
+});
+
+db.Usuario.hasMany(db.OrdenProduccion, {
+  foreignKey: 'usuarioId',
+  as: 'ordenesProduccion',
+});
+db.OrdenProduccion.belongsTo(db.Usuario, {
+  foreignKey: 'usuarioId',
+  as: 'usuario',
+});
+db.Usuario.hasMany(db.OrdenProduccion, {
+  foreignKey: 'usuarioSalidaMpId',
+  as: 'salidasMpConfirmadas',
+});
+db.OrdenProduccion.belongsTo(db.Usuario, {
+  foreignKey: 'usuarioSalidaMpId',
+  as: 'usuarioSalidaMp',
+});
+db.MovimientoInventario.hasOne(db.OrdenProduccion, {
+  foreignKey: 'movimientoSalidaId',
+  as: 'ordenProduccionSalida',
+});
+db.OrdenProduccion.belongsTo(db.MovimientoInventario, {
+  foreignKey: 'movimientoSalidaId',
+  as: 'movimientoSalida',
+});
+db.OrdenProduccion.hasMany(db.OrdenProduccionDetalle, {
+  foreignKey: 'ordenProduccionId',
+  as: 'detalles',
+  onDelete: 'CASCADE',
+});
+db.OrdenProduccionDetalle.belongsTo(db.OrdenProduccion, {
+  foreignKey: 'ordenProduccionId',
+  as: 'orden',
+});
+db.Producto.hasMany(db.OrdenProduccionDetalle, {
+  foreignKey: 'productoTerminadoId',
+  as: 'ordenesProduccionDetalle',
+});
+db.OrdenProduccionDetalle.belongsTo(db.Producto, {
+  foreignKey: 'productoTerminadoId',
+  as: 'productoTerminado',
+});
+db.OrdenProduccion.hasOne(db.OrdenProduccionSimulacion, {
+  foreignKey: 'ordenProduccionId',
+  as: 'simulacion',
+  onDelete: 'CASCADE',
+});
+db.OrdenProduccionSimulacion.belongsTo(db.OrdenProduccion, {
+  foreignKey: 'ordenProduccionId',
+  as: 'orden',
+});
+db.OrdenProduccionSimulacion.hasMany(db.OrdenProduccionSimulacionDetalle, {
+  foreignKey: 'simulacionId',
+  as: 'detalles',
+  onDelete: 'CASCADE',
+});
+db.OrdenProduccionSimulacionDetalle.belongsTo(db.OrdenProduccionSimulacion, {
+  foreignKey: 'simulacionId',
+  as: 'simulacion',
+});
+db.Producto.hasMany(db.OrdenProduccionSimulacionDetalle, {
+  foreignKey: 'productoId',
+  as: 'simulacionesProduccion',
+});
+db.OrdenProduccionSimulacionDetalle.belongsTo(db.Producto, {
+  foreignKey: 'productoId',
+  as: 'producto',
+});
+db.FamiliaMpCarnica.hasMany(db.OrdenProduccionSimulacionDetalle, {
+  foreignKey: 'familiaMpCarnicaId',
+  as: 'simulacionesProduccion',
+});
+db.OrdenProduccionSimulacionDetalle.belongsTo(db.FamiliaMpCarnica, {
+  foreignKey: 'familiaMpCarnicaId',
+  as: 'familiaMpCarnica',
+});
+db.UnidadMedida.hasMany(db.OrdenProduccionSimulacionDetalle, {
+  foreignKey: 'unidadMedidaId',
+  as: 'simulacionesProduccion',
+});
+db.OrdenProduccionSimulacionDetalle.belongsTo(db.UnidadMedida, {
+  foreignKey: 'unidadMedidaId',
+  as: 'unidadMedida',
+});
+db.OrdenProduccionSimulacionDetalle.hasMany(db.OrdenProduccionSimulacionLote, {
+  foreignKey: 'detalleSimulacionId',
+  as: 'lotes',
+  onDelete: 'CASCADE',
+});
+db.OrdenProduccionSimulacionLote.belongsTo(db.OrdenProduccionSimulacionDetalle, {
+  foreignKey: 'detalleSimulacionId',
+  as: 'detalle',
+});
+db.Producto.hasMany(db.OrdenProduccionSimulacionLote, {
+  foreignKey: 'productoId',
+  as: 'lotesSimulacionProduccion',
+});
+db.OrdenProduccionSimulacionLote.belongsTo(db.Producto, {
+  foreignKey: 'productoId',
+  as: 'producto',
+});
+db.Bodega.hasMany(db.OrdenProduccionSimulacionLote, {
+  foreignKey: 'bodegaId',
+  as: 'lotesSimulacionProduccion',
+});
+db.OrdenProduccionSimulacionLote.belongsTo(db.Bodega, {
+  foreignKey: 'bodegaId',
+  as: 'bodega',
+});
+
+// ==========================================
+// Producción: resultados reales y mermas
+// ==========================================
+db.OrdenProduccion.hasMany(db.ResultadoProduccion, {
+  foreignKey: 'ordenProduccionId',
+  as: 'resultadosProduccion',
+  onDelete: 'CASCADE',
+});
+db.ResultadoProduccion.belongsTo(db.OrdenProduccion, {
+  foreignKey: 'ordenProduccionId',
+  as: 'orden',
+});
+db.Producto.hasMany(db.ResultadoProduccion, {
+  foreignKey: 'productoTerminadoId',
+  as: 'resultadosProduccion',
+});
+db.ResultadoProduccion.belongsTo(db.Producto, {
+  foreignKey: 'productoTerminadoId',
+  as: 'productoTerminado',
+});
+db.UnidadMedida.hasMany(db.ResultadoProduccion, {
+  foreignKey: 'unidadMedidaId',
+  as: 'resultadosProduccion',
+});
+db.ResultadoProduccion.belongsTo(db.UnidadMedida, {
+  foreignKey: 'unidadMedidaId',
+  as: 'unidadMedida',
+});
+
+db.OrdenProduccion.hasMany(db.MermaProduccion, {
+  foreignKey: 'ordenProduccionId',
+  as: 'mermasProduccion',
+  onDelete: 'CASCADE',
+});
+db.MermaProduccion.belongsTo(db.OrdenProduccion, {
+  foreignKey: 'ordenProduccionId',
+  as: 'orden',
+});
+db.Producto.hasMany(db.MermaProduccion, {
+  foreignKey: 'productoId',
+  as: 'mermasProduccion',
+});
+db.MermaProduccion.belongsTo(db.Producto, {
+  foreignKey: 'productoId',
+  as: 'producto',
+});
+db.UnidadMedida.hasMany(db.MermaProduccion, {
+  foreignKey: 'unidadMedidaId',
+  as: 'mermasProduccion',
+});
+db.MermaProduccion.belongsTo(db.UnidadMedida, {
+  foreignKey: 'unidadMedidaId',
+  as: 'unidadMedida',
+});
+db.MotivoMerma.hasMany(db.MermaProduccion, {
+  foreignKey: 'motivoMermaId',
+  as: 'mermasProduccion',
+});
+db.MermaProduccion.belongsTo(db.MotivoMerma, {
+  foreignKey: 'motivoMermaId',
+  as: 'motivo',
+});
+db.Usuario.hasMany(db.MermaProduccion, {
+  foreignKey: 'usuarioId',
+  as: 'mermasProduccion',
+});
+db.MermaProduccion.belongsTo(db.Usuario, {
+  foreignKey: 'usuarioId',
+  as: 'usuario',
 });
 
 db.DetalleRecepcion.belongsTo(db.UnidadMedida, {
@@ -569,6 +825,14 @@ db.CampoFormato.belongsTo(db.UnidadMedida, {
   foreignKey: 'unidadMedidaId',
   as: 'unidadMedida',
 });
+db.CampoFormato.belongsTo(db.CampoFormato, {
+  foreignKey: 'campoNumeradorId',
+  as: 'campoNumerador',
+});
+db.CampoFormato.belongsTo(db.CampoFormato, {
+  foreignKey: 'campoDenominadorId',
+  as: 'campoDenominador',
+});
 
 db.CampoFormato.hasMany(db.OpcionCampo, { foreignKey: 'campoFormatoId', as: 'opciones' });
 db.OpcionCampo.belongsTo(db.CampoFormato, { foreignKey: 'campoFormatoId', as: 'campo' });
@@ -702,6 +966,22 @@ db.Usuario.hasMany(db.Inspeccion, { foreignKey: 'iniciadaPor', as: 'inspecciones
 db.Inspeccion.belongsTo(db.Usuario, { foreignKey: 'iniciadaPor', as: 'iniciador' });
 db.Usuario.hasMany(db.Inspeccion, { foreignKey: 'cerradaPor', as: 'inspeccionesCerradas' });
 db.Inspeccion.belongsTo(db.Usuario, { foreignKey: 'cerradaPor', as: 'cerrador' });
+db.OrdenProduccion.hasMany(db.Inspeccion, {
+  foreignKey: 'ordenProduccionId',
+  as: 'inspeccionesCalidad',
+});
+db.Inspeccion.belongsTo(db.OrdenProduccion, {
+  foreignKey: 'ordenProduccionId',
+  as: 'ordenProduccion',
+});
+db.Producto.hasMany(db.Inspeccion, {
+  foreignKey: 'productoId',
+  as: 'inspeccionesProduccion',
+});
+db.Inspeccion.belongsTo(db.Producto, {
+  foreignKey: 'productoId',
+  as: 'producto',
+});
 
 db.Inspeccion.hasMany(db.RespuestaInspeccion, {
   foreignKey: 'inspeccionId',

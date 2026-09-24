@@ -177,6 +177,8 @@ exports.obtenerCompleta = async (req, res, next) => {
                 { model: TipoCampo, as: 'tipoCampo' },
                 { model: UnidadMedida, as: 'unidadMedida' },
                 { model: OpcionCampo, as: 'opciones' },
+                { model: CampoFormato, as: 'campoNumerador' },
+                { model: CampoFormato, as: 'campoDenominador' },
                 {
                   model: ReglaCalidad,
                   as: 'reglas',
@@ -250,6 +252,28 @@ exports.obtenerCompleta = async (req, res, next) => {
     });
     if (!version) return fail(res, 'Versión de formato no encontrada', 404);
     return ok(res, version);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+exports.listarCamposCalculados = async (req, res, next) => {
+  try {
+    const campos = await CampoFormato.findAll({
+      where: { esCalculado: true },
+      include: [
+        {
+          model: SeccionFormato,
+          as: 'seccion',
+          where: { versionFormatoId: req.params.id },
+          required: true,
+        },
+        { model: CampoFormato, as: 'campoNumerador' },
+        { model: CampoFormato, as: 'campoDenominador' },
+      ],
+      order: [['orden', 'ASC']],
+    });
+    return ok(res, campos);
   } catch (error) {
     return next(error);
   }

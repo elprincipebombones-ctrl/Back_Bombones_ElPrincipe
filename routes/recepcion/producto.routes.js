@@ -6,6 +6,7 @@ const validar = require('../../middleware/validar');
 const {
   crearProductoValidator,
   actualizarProductoValidator,
+  crearFamiliaMpCarnicaValidator,
   idValidator,
 } = require('../../validators/maestro.validator');
 
@@ -47,6 +48,47 @@ router.get('/', permiso('Productos.Ver'), ctrl.listar);
  *         description: Lista de condiciones térmicas activas
  */
 router.get('/condiciones-termicas', permiso('Productos.Ver'), ctrl.listarCondicionesTermicas);
+
+/**
+ * @swagger
+ * /api/productos/familias-mp-carnicas:
+ *   get:
+ *     tags: [Productos]
+ *     summary: Listar familias de materias primas cárnicas activas
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de familias cárnicas activas
+ *   post:
+ *     tags: [Productos]
+ *     summary: Crear una familia cárnica desde el formulario de producto
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [nombre]
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Familia cárnica creada
+ *       409:
+ *         description: Ya existe una familia con ese nombre
+ */
+router.get('/familias-mp-carnicas', permiso('Productos.Ver'), ctrl.listarFamiliasMpCarnicas);
+router.post(
+  '/familias-mp-carnicas',
+  permiso('Productos.Crear'),
+  crearFamiliaMpCarnicaValidator,
+  validar,
+  ctrl.crearFamiliaMpCarnica,
+);
 
 /**
  * @swagger
