@@ -32,7 +32,7 @@ async function saldo(bodegaId, linea, transaction) {
   const [r] = await db.query(
     `WITH d AS (
     SELECT d.*,m.estado,m.fecha,m.tipo_documento,
-      CASE WHEN m.tipo_documento='EN' THEN 1 WHEN m.tipo_documento='SA' THEN -1 WHEN d.sentido='ENTRADA' THEN 1 WHEN d.sentido='SALIDA' THEN -1 ELSE 0 END AS signo
+      CASE WHEN m.tipo_documento IN ('EN','AJN','TRN') THEN 1 WHEN m.tipo_documento IN ('SA','AJS','TRS') THEN -1 WHEN d.sentido='ENTRADA' THEN 1 WHEN d.sentido='SALIDA' THEN -1 ELSE 0 END AS signo
     FROM detalle_movimiento d JOIN movimientos_inventario m ON m.id=d.movimiento_inventario_id
     WHERE m.bodega_id=:bodegaId AND d.producto_id=:productoId AND d.unidad_medida_id=:unidadMedidaId
       AND m.estado='APLICADO' AND m.fecha<=clock_timestamp()
@@ -118,50 +118,103 @@ async function obtener(id, transaction) {
   return op;
 }
 async function guardarConteo(body, usuarioId, id) {
+  if (!texto(body.nota)) throw error('La nota del ajuste es obligatoria');
+  if (
+    typeof body.idempotencia !== 'string' ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.idempotencia)
+  )
+    throw error('idempotencia debe ser un UUID');
+  const hash = createHash('sha256')
+    .update(
+      JSON.stringify({
+        tipo: 'CONTEO',
+        id: id || null,
+        bodegaId: body.bodegaId,
+        nota: texto(body.nota),
+        detalles: body.detalles,
+      }),
+    )
+    .digest('hex');
   return db.transaction(async (transaction) => {
-    let op;
-    if (id) {
-      op = await models.OperacionInventario.findByPk(id, {
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      });
-      if (!op || op.tipo !== 'CONTEO') throw error('Conteo no encontrado', 404);
-      if (op.estado !== 'BORRADOR') throw error('Sólo se puede editar un conteo en borrador', 409);
-      if (body.bodegaId && body.bodegaId !== op.bodegaId)
-        throw error('No se puede cambiar la bodega de un conteo');
+    await db.query('SELECT pg_advisory_xact_lock(hashtextextended(:key,0))', {
+      replacements: { key: body.idempotencia },
+      transaction,
+    });
+    const previo = await models.OperacionInventario.findOne({
+      where: { idempotencia: body.idempotencia },
+      transaction,
+    });
+    if (previo) {
+      if (
+        previo.tipo !== 'CONTEO' ||
+        previo.usuarioId !== usuarioId ||
+        previo.solicitudHash !== hash
+      )
+        throw error('La clave de idempotencia ya corresponde a otra solicitud', 409);
+      return obtener(previo.id, transaction);
     }
-    const bodegaId = op?.bodegaId || body.bodegaId;
-    await bodegas([bodegaId], transaction);
-    const lineas = await preparar(body.detalles, 'CONTEO', transaction);
-    if (!op)
-      op = await models.OperacionInventario.create(
-        { tipo: 'CONTEO', bodegaId, usuarioId, nota: texto(body.nota) },
-        { transaction },
-      );
-    else {
-      await op.update(
-        { nota: body.nota === undefined ? op.nota : texto(body.nota) },
-        { transaction },
-      );
-      await models.LineaOperacionInventario.destroy({ where: { operacionId: op.id }, transaction });
-    }
-    for (const linea of lineas) {
-      const actual = await saldo(bodegaId, linea, transaction);
-      const ajuste = miles(linea.cantidadContada) - actual.cantidad;
-      miles(decimal(ajuste), true);
-      await models.LineaOperacionInventario.create(
-        {
-          ...linea,
-          operacionId: op.id,
-          cantidadSistema: decimal(actual.cantidad),
-          cantidad: decimal(ajuste),
-          huella: actual.huella,
-        },
-        { transaction },
-      );
-    }
-    return obtener(op.id, transaction);
+    const op = await prepararConteo(body, usuarioId, id, transaction);
+    await op.update({ idempotencia: body.idempotencia, solicitudHash: hash }, { transaction });
+    return aplicarConteo(op.id, body.nota, usuarioId, transaction);
   });
+}
+async function prepararConteo(body, usuarioId, id, transaction) {
+  let op;
+  if (id) {
+    op = await models.OperacionInventario.findByPk(id, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!op || op.tipo !== 'CONTEO') throw error('Conteo no encontrado', 404);
+    if (op.estado !== 'BORRADOR') throw error('Sólo se puede editar un conteo en borrador', 409);
+    if (body.bodegaId && body.bodegaId !== op.bodegaId)
+      throw error('No se puede cambiar la bodega de un conteo');
+  }
+  const bodegaId = op?.bodegaId || body.bodegaId;
+  await bodegas([bodegaId], transaction);
+  const lineas = await preparar(body.detalles, 'CONTEO', transaction);
+  if (!op)
+    op = await models.OperacionInventario.create(
+      { tipo: 'CONTEO', bodegaId, usuarioId, nota: texto(body.nota) },
+      { transaction },
+    );
+  else {
+    await op.update(
+      { nota: body.nota === undefined ? op.nota : texto(body.nota) },
+      { transaction },
+    );
+    await models.LineaOperacionInventario.destroy({ where: { operacionId: op.id }, transaction });
+  }
+  for (const linea of lineas) {
+    const actual = await saldo(bodegaId, linea, transaction);
+    const enviado = body.detalles.find(
+      (d) =>
+        d.productoId === linea.productoId &&
+        texto(d.lote) === linea.lote &&
+        (d.fechaVencimiento || null) === linea.fechaVencimiento,
+    );
+    if (
+      enviado.cantidadSistema !== undefined &&
+      miles(enviado.cantidadSistema, true) !== actual.cantidad
+    )
+      throw error(
+        'Las existencias cambiaron; consulte nuevamente y revise el conteo antes de guardar',
+        409,
+      );
+    const ajuste = miles(linea.cantidadContada) - actual.cantidad;
+    miles(decimal(ajuste), true);
+    await models.LineaOperacionInventario.create(
+      {
+        ...linea,
+        operacionId: op.id,
+        cantidadSistema: decimal(actual.cantidad),
+        cantidad: decimal(ajuste),
+        huella: actual.huella,
+      },
+      { transaction },
+    );
+  }
+  return obtener(op.id, transaction);
 }
 async function documento(op, lineas, tipoDocumento, bodegaId, usuarioId, transaction) {
   const [[r]] = await db.query("SELECT nextval('inventario_documento_seq') AS numero", {
@@ -190,7 +243,7 @@ async function documento(op, lineas, tipoDocumento, bodegaId, usuarioId, transac
       cantidad: decimal(
         miles(l.cantidad, true) < 0n ? -miles(l.cantidad, true) : miles(l.cantidad, true),
       ),
-      sentido: tipoDocumento === 'EN' ? 'ENTRADA' : 'SALIDA',
+      sentido: ['EN', 'AJN', 'TRN'].includes(tipoDocumento) ? 'ENTRADA' : 'SALIDA',
       lote: l.lote,
       loteProveedor: l.lote,
       fechaVencimiento: l.fechaVencimiento,
@@ -200,8 +253,8 @@ async function documento(op, lineas, tipoDocumento, bodegaId, usuarioId, transac
   );
   return mov;
 }
-async function aplicarConteo(id, nota, usuarioId) {
-  return db.transaction(async (transaction) => {
+async function aplicarConteo(id, nota, usuarioId, transaccion) {
+  const ejecutar = async (transaction) => {
     const op = await models.OperacionInventario.findByPk(id, {
       transaction,
       lock: transaction.LOCK.UPDATE,
@@ -233,14 +286,15 @@ async function aplicarConteo(id, nota, usuarioId) {
     await op.update({ nota: motivo }, { transaction });
     const entradas = lineas.filter((l) => miles(l.cantidad, true) > 0n),
       salidas = lineas.filter((l) => miles(l.cantidad, true) < 0n);
-    if (entradas.length) await documento(op, entradas, 'EN', op.bodegaId, usuarioId, transaction);
-    if (salidas.length) await documento(op, salidas, 'SA', op.bodegaId, usuarioId, transaction);
+    if (entradas.length) await documento(op, entradas, 'AJN', op.bodegaId, usuarioId, transaction);
+    if (salidas.length) await documento(op, salidas, 'AJS', op.bodegaId, usuarioId, transaction);
     await op.update(
       { estado: 'APLICADO', aplicadoPor: usuarioId, aplicadoEn: new Date() },
       { transaction },
     );
     return obtener(id, transaction);
-  });
+  };
+  return transaccion ? ejecutar(transaccion) : db.transaction(ejecutar);
 }
 async function trasladar(body, usuarioId) {
   const hash = createHash('sha256')
@@ -299,12 +353,12 @@ async function trasladar(body, usuarioId) {
       lineas.map((l) => ({ ...l, operacionId: op.id })),
       { transaction },
     );
-    await documento(op, lineas, 'SA', body.bodegaId, usuarioId, transaction);
+    await documento(op, lineas, 'TRS', body.bodegaId, usuarioId, transaction);
     for (const destino of [...new Set(lineas.map((l) => l.bodegaDestinoId))].sort())
       await documento(
         op,
         lineas.filter((l) => l.bodegaDestinoId === destino),
-        'EN',
+        'TRN',
         destino,
         usuarioId,
         transaction,

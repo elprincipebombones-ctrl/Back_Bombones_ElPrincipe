@@ -25,7 +25,7 @@ const Proveedor = sequelize.define(
 
     razonSocial: {
       type: DataTypes.STRING(200),
-      allowNull: false,
+      allowNull: true,
       field: 'razon_social'
     },
 
@@ -38,6 +38,12 @@ const Proveedor = sequelize.define(
     telefono: {
       type: DataTypes.STRING(30),
       allowNull: true
+    },
+
+    nombreContactoTelefono: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+      field: 'nombre_contacto_telefono'
     },
 
     email: {

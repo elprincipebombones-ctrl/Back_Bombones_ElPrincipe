@@ -1,10 +1,13 @@
 const { Router } = require('express');
+const { param } = require('express-validator');
 const ctrl = require('../../controllers/recepcion/proveedores.controller');
 const auth = require('../../middleware/auth');
 const permiso = require('../../middleware/permiso');
 const validar = require('../../middleware/validar');
 const { crearProveedorValidator, actualizarProveedorValidator, idValidator } = require('../../validators/maestro.validator');
 const router = Router();
+const documentos = require('../../services/proveedores/almacenamiento-documentos.service');
+const multipart = (req, res, next) => documentos.upload(req, res, (err) => err ? next(Object.assign(err, { status: err.status || 422 })) : next());
 
 router.use(auth);
 
@@ -54,6 +57,7 @@ router.get(
  *       404:
  *         description: Proveedor no encontrado
  */
+router.get('/:id/documentos/:documentoId/descarga', permiso('Proveedores.Ver'), idValidator, param('documentoId').isUUID(), validar, ctrl.descargar);
 router.get(
     '/:id',
     permiso('Proveedores.Ver'),
@@ -73,6 +77,12 @@ router.get(
  *     requestBody:
  *       required: true
  *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               camaraComercio: { type: string, format: binary }
+ *               rut: { type: string, format: binary }
  *         application/json:
  *           schema:
  *             type: object
@@ -83,6 +93,9 @@ router.get(
 router.post(
     '/',
     permiso('Proveedores.Crear'),
+    multipart,
+    crearProveedorValidator,
+    validar,
     ctrl.crear
 );
 
@@ -104,6 +117,12 @@ router.post(
  *     requestBody:
  *       required: true
  *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               camaraComercio: { type: string, format: binary }
+ *               rut: { type: string, format: binary }
  *         application/json:
  *           schema:
  *             type: object
@@ -116,7 +135,8 @@ router.post(
 router.put(
     '/:id',
     permiso('Proveedores.Editar'),
-    idValidator,
+    multipart,
+    actualizarProveedorValidator,
     validar,
     ctrl.actualizar
 );

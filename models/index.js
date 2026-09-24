@@ -454,6 +454,13 @@ db.DetalleMovimiento.belongsTo(db.UnidadMedida, {
   foreignKey: 'unidadMedidaId',
   as: 'unidadMedida',
 });
+db.Proveedor.hasMany(db.DocumentoProveedor, { foreignKey: 'proveedorId', as: 'documentos', onDelete: 'CASCADE' });
+db.DocumentoProveedor.belongsTo(db.Proveedor, { foreignKey: 'proveedorId', as: 'proveedor' });
+
+db.Producto.hasMany(db.ConfiguracionStock, { foreignKey: 'productoId', as: 'configuracionesStock' });
+db.ConfiguracionStock.belongsTo(db.Producto, { foreignKey: 'productoId', as: 'producto' });
+db.Bodega.hasMany(db.ConfiguracionStock, { foreignKey: 'bodegaId', as: 'configuracionesStock' });
+db.ConfiguracionStock.belongsTo(db.Bodega, { foreignKey: 'bodegaId', as: 'bodega' });
 
 // Calidad: maestros y formatos
 db.TipoInspeccion.hasMany(db.FormatoCalidad, {

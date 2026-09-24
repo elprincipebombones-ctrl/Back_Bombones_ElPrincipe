@@ -38,43 +38,24 @@ Fila: `productoId,codigo,nombre,descripcion,categoriaProductoId,bodegaId,bodega,
 
 Mostrar disponible, código, producto, bodega, unidad y lote/vencimiento. No sumar unidades o productos distintos. Disponible null significa historia pendiente de clasificar: no convertir a cero ni reemplazarlo por saldoConocido. Acciones “Contar” y “Kardex” precargan producto/bodega.
 
-## 5. Conteos físicos y ajustes
+## 5. Conteos: Guardar aplica directamente
 
-Una bodega por conteo, hasta 500 líneas. Seleccionar producto, lote/vencimiento si corresponde y mostrar **Cantidad sistema**, **Cantidad contada**, **Ajuste = contada − sistema**. Cantidad contada permite cero, no negativos, máximo 12 enteros y 3 decimales. Unidad determinada por el producto, sin conversiones.
+Eliminar Guardar borrador, la pantalla de revisión y el botón separado Aplicar. Capturar productos en modal; Enter agrega una línea y no envía el conteo. Una bodega por conteo, máximo 500 líneas, cantidades no negativas con hasta 3 decimales.
 
-```text
-GET  /api/inventario/conteos?bodegaId=UUID&estado=BORRADOR&pagina=1&limite=50
-GET  /api/inventario/conteos/:id
-POST /api/inventario/conteos
-PUT  /api/inventario/conteos/:id
-POST /api/inventario/conteos/:id/aplicar
-POST /api/inventario/conteos/:id/anular
-```
+Al pulsar Guardar, enviar una única petición POST /api/inventario/conteos con:
 
-Crear/editar/anular borradores requiere `Inventario.Contar`, además de Ver. Body de crear y editar (PUT reemplaza las líneas completas):
+- idempotencia: UUID requerido, generado por el cliente para esa solicitud.
+- bodegaId: UUID requerido.
+- nota: texto obligatorio de 1 a 2000 caracteres.
+- detalles: productoId, cantidadContada, lote/fechaVencimiento si corresponden; cantidadSistema opcional con el disponible que se mostró al usuario.
 
-```json
-{
-  "bodegaId": "UUID-BODEGA",
-  "nota": "Conteo físico de cierre",
-  "detalles": [
-    { "productoId": "UUID-PRODUCTO", "cantidadContada": "12.500", "lote": "L001", "fechaVencimiento": "2027-01-31" }
-  ]
-}
-```
+El backend siempre calcula el saldo real bajo bloqueo. cantidadSistema sólo permite detectar una vista desactualizada: si difiere, devuelve 409 sin guardar ni ajustar. Enviar este campo cuando se disponga del saldo; nunca enviar null ni usar cero por defecto para un saldo desconocido.
 
-Omitir lote/fecha o enviar null cuando no los requiera el producto. En productos con lotes, contar cada combinación lote/vencimiento por separado, sin lotes ficticios ni detalles repetidos. No cambiar la bodega de un conteo existente.
+Requiere Inventario.Ver + Inventario.Contar + Inventario.Ajustar. Mostrar éxito sólo al recibir data.estado=APLICADO. La respuesta contiene detalles con cantidadSistema, cantidadContada y cantidad (diferencia), y documentos generados. Una diferencia positiva genera AJN; negativa AJS por valor absoluto; cero no genera documento. Un conteo mixto genera hasta un documento de cada sentido, con número propio y la nota.
 
-Respuesta: cabecera con `id,tipo,estado,bodegaId,usuarioId,nota,aplicadoPor,aplicadoEn,createdAt,updatedAt`, `bodega`, `detalles`, `documentos`. Cada detalle incluye `producto`, `productoId,unidadMedidaId,lote,fechaVencimiento,cantidadSistema,cantidadContada,cantidad` (diferencia firmada). El backend calcula sistema/diferencia; no enviar usuario, estado, huella o saldo como valores de autoridad. Mostrar las cifras devueltas para revisión.
+Todo se confirma en una transacción. Un fallo no deja un borrador persistente ni ajustes parciales. Deshabilitar Guardar mientras se procesa. Conservar UUID y body exacto ante timeout/reintento; después del éxito cerrar o limpiar el formulario. Una nueva operación utiliza otro UUID. Reutilizar una clave con otro body o usuario devuelve 409.
 
-La nota puede quedar vacía en borrador, pero es **obligatoria al aplicar**. Aplicar requiere `Inventario.Ajustar`: enviar `{ "nota": "Motivo del ajuste" }` o utilizar la nota guardada. Máximo 2.000 caracteres.
-
-- Diferencia positiva: EN; negativa: SA por valor absoluto; cero: sin movimiento.
-- Conteo mixto genera hasta dos documentos: un EN con los aumentos y un SA con las disminuciones. Ambos con número propio, misma bodega, nota obligatoria, `origen: AJUSTE_CONTEO` y `operacionId`.
-- Aplicar devuelve `APLICADO` y documentos. Reintentar el mismo ID no duplica movimientos.
-- Si cambia stock desde guardar, devuelve **409**. Recargar existencias, pedir revisar/recontar y guardar de nuevo. No recalcular silenciosamente ni reintentar ajustando valores.
-- Sólo borradores se editan/anulan. Aplicados quedan de consulta; corregir con nuevo conteo. Anular borrador no mueve stock.
-- Listados devuelven `{ filas,total,pagina,limite }`; estados BORRADOR/APLICADO/ANULADO. Mostrar auditoría, sin editarla.
+GET /api/inventario/conteos y GET /api/inventario/conteos/:id conservan consultas y auditoría. Los nuevos conteos quedan APLICADO y no se editan ni anulan. PUT /api/inventario/conteos/:id sólo sirve para finalizar borradores históricos: exige el mismo contrato y guarda/aplica en una transacción. Las rutas antiguas aplicar/anular se conservan únicamente para documentos históricos; no usarlas en el flujo nuevo.
 
 ## 6. Traslados
 
@@ -102,7 +83,7 @@ El filtro bodegaId del listado es la bodega origen. Body:
 
 Generar UUID idempotencia y conservarlo con el mismo body al reintentar por timeout/red. Una nueva solicitud usa otro UUID. Reutilizar clave con contenido o usuario diferente devuelve 409. Deshabilitar enviar mientras se procesa.
 
-El backend valida existencias de la suma de **todos los destinos** por producto/unidad/lote/vencimiento. Stock insuficiente devuelve 409, sin documentos. Si es válido, aplica una SA de origen y una EN por destino, todos vinculados a operacionId y origen TRASLADO, conservando lote/vencimiento. Un fallo revierte toda la operación. No implementar descuentos y entradas separados en frontend. Mostrar documentos y refrescar existencias.
+El backend valida existencias de la suma de **todos los destinos** por producto/unidad/lote/vencimiento. Stock insuficiente devuelve 409, sin documentos. Si es válido, aplica una TRS de origen y una TRN por destino, todos vinculados a operacionId y origen TRASLADO, conservando lote/vencimiento. Un fallo revierte toda la operación. No implementar descuentos y entradas separados en frontend. Mostrar documentos y refrescar existencias.
 
 ## 7. Kardex
 
@@ -129,3 +110,7 @@ Ambos informes y kardex aceptan `formato=xlsx` o `formato=pdf` con los mismos fi
 ## Criterios de aceptación
 
 Verificar nota obligatoria, conteos positivos/negativos/cero, conflicto por stock cambiado, reintento sin duplicar, traslado cuyo total a varios destinos excede stock, lotes, rollback sin documentos parciales, todas las bodegas, producto obligatorio, saldo inicial fuera de rango, paginación de kardex y descargas autenticadas. Mantener login y cargos; revertir únicamente lo añadido al maestro de productos.
+
+## Tipos de documento almacenados
+
+AJN = Entrada por ajuste; AJS = Salida por ajuste; TRN = Entrada por traslado; TRS = Salida por traslado. Mostrar el código real que devuelve tipoDocumento junto con su descripción; no mapear artificialmente EN/SA. Recepciones conservan EN. La migración reclasifica los antiguos EN/SA de origen AJUSTE_CONTEO o TRASLADO sin cambiar sus números históricos; los nuevos números usan AJN-INV-, AJS-INV-, TRN-INV- o TRS-INV-.

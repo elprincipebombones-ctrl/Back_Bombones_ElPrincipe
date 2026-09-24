@@ -1,7 +1,7 @@
 const { QueryTypes } = require('sequelize');
 const { sequelize, Producto } = require('../../models');
 const { periodo } = require('./informes.service');
-const direccion = `CASE WHEN m.tipo_documento='EN' THEN 1 WHEN m.tipo_documento='SA' THEN -1 WHEN d.sentido='ENTRADA' THEN 1 WHEN d.sentido='SALIDA' THEN -1 ELSE 0 END`;
+const direccion = `CASE WHEN m.tipo_documento IN ('EN','AJN','TRN') THEN 1 WHEN m.tipo_documento IN ('SA','AJS','TRS') THEN -1 WHEN d.sentido='ENTRADA' THEN 1 WHEN d.sentido='SALIDA' THEN -1 ELSE 0 END`;
 function filtros(query) {
   if (query.tipoProducto)
     throw Object.assign(
@@ -15,6 +15,7 @@ function filtros(query) {
     codigo: query.codigo ? `%${query.codigo}%` : null,
     limit: Number(query.limite || 50),
     offset: (Number(query.pagina || 1) - 1) * Number(query.limite || 50),
+    estadoStock: query.estadoStock || null,
   };
 }
 async function existencias(query) {
@@ -23,22 +24,44 @@ async function existencias(query) {
     `WITH movimientos AS (
     SELECT d.*,m.bodega_id,${direccion} AS signo FROM detalle_movimiento d JOIN movimientos_inventario m ON m.id=d.movimiento_inventario_id
     WHERE m.estado='APLICADO' AND m.fecha<=CURRENT_TIMESTAMP
-  ), datos AS (
+  ), lotes AS (
     SELECT p.id AS "productoId",p.codigo,p.nombre,p.descripcion,p.categoria_producto_id AS "categoriaProductoId",
       b.id AS "bodegaId",b.nombre AS bodega,b.estado AS "bodegaActiva",p.estado AS "productoActivo",
       COALESCE(d.unidad_medida_id,p.unidad_medida_id) AS "unidadMedidaId",u.simbolo AS unidad,
       COALESCE(d.lote,d.lote_proveedor) AS lote,d.fecha_vencimiento AS "fechaVencimiento",
       COALESCE(SUM(d.cantidad*d.signo),0)::text AS "saldoConocido",
       COUNT(d.id) FILTER(WHERE d.signo=0)::int AS "movimientosSinSentido",
-      CASE WHEN COUNT(d.id) FILTER(WHERE d.signo=0)>0 THEN NULL ELSE COALESCE(SUM(d.cantidad*d.signo),0)::text END AS "inventarioDisponible"
+      CASE WHEN COUNT(d.id) FILTER(WHERE d.signo=0)>0 THEN NULL ELSE COALESCE(SUM(d.cantidad*d.signo),0) END AS "inventarioDisponible"
     FROM productos p CROSS JOIN bodegas b LEFT JOIN movimientos d ON d.producto_id=p.id AND d.bodega_id=b.id
     JOIN unidades_medida u ON u.id=COALESCE(d.unidad_medida_id,p.unidad_medida_id)
     WHERE (:bodegaId::uuid IS NULL OR b.id=:bodegaId::uuid) AND (:productoId::uuid IS NULL OR p.id=:productoId::uuid)
       AND (:categoriaProductoId::uuid IS NULL OR p.categoria_producto_id=:categoriaProductoId::uuid)
       AND (:codigo::text IS NULL OR p.codigo ILIKE :codigo)
     GROUP BY p.id,p.codigo,p.nombre,p.descripcion,p.categoria_producto_id,p.estado,p.unidad_medida_id,b.id,b.nombre,b.estado,d.unidad_medida_id,u.simbolo,COALESCE(d.lote,d.lote_proveedor),d.fecha_vencimiento
-  ) SELECT (SELECT COUNT(*)::int FROM datos) AS total,
-    COALESCE((SELECT json_agg(f) FROM (SELECT * FROM datos ORDER BY codigo,"bodegaId","unidadMedidaId",lote NULLS FIRST,"fechaVencimiento" NULLS FIRST LIMIT :limit OFFSET :offset) f),'[]'::json) AS filas`,
+  ), totales AS (
+    SELECT "productoId","bodegaId",SUM(COALESCE("inventarioDisponible",0)) AS disponible,
+      SUM("movimientosSinSentido")::int AS pendientes
+    FROM lotes GROUP BY "productoId","bodegaId"
+  ), estados AS (
+    SELECT t.*,c.stock_minimo,c.punto_reorden,c.stock_maximo,
+      CASE WHEN t.pendientes>0 THEN 'INDETERMINADO'
+        WHEN c.id IS NULL THEN 'SIN_CONFIGURAR'
+        WHEN t.disponible<=0 THEN 'AGOTADO'
+        WHEN t.disponible<=c.stock_minimo THEN 'CRITICO'
+        WHEN t.disponible<=c.punto_reorden THEN 'BAJO' ELSE 'NORMAL' END AS estado,
+      CASE WHEN t.pendientes>0 OR c.id IS NULL THEN NULL
+        ELSE GREATEST(c.punto_reorden-t.disponible,0) END AS sugerida
+    FROM totales t LEFT JOIN configuraciones_stock c ON c.producto_id=t."productoId" AND c.bodega_id=t."bodegaId" AND c.activo=true
+  ), datos AS (
+    SELECT l.*, CASE WHEN l."inventarioDisponible" IS NULL THEN NULL ELSE l."inventarioDisponible"::text END AS "inventarioDisponibleTexto",
+      e.stock_minimo::text AS "stockMinimo",e.punto_reorden::text AS "puntoReorden",e.stock_maximo::text AS "stockMaximo",
+      e.estado AS "estadoStock",e.sugerida::text AS "cantidadSugerida"
+    FROM lotes l JOIN estados e USING ("productoId","bodegaId")
+  ), filtrados AS (
+    SELECT * FROM datos WHERE (:estadoStock::text IS NULL OR "estadoStock"=:estadoStock)
+  ) SELECT (SELECT COUNT(*)::int FROM filtrados) AS total,
+    COALESCE((SELECT json_agg(f.datos) FROM (SELECT row_to_json(datos)::jsonb - 'inventarioDisponible' - 'inventarioDisponibleTexto' || jsonb_build_object('inventarioDisponible',"inventarioDisponibleTexto") AS datos FROM filtrados datos ORDER BY codigo,"bodegaId","unidadMedidaId",lote NULLS FIRST,"fechaVencimiento" NULLS FIRST LIMIT :limit OFFSET :offset) f),'[]'::json) AS filas,
+    (SELECT json_build_object('agotados',COUNT(*) FILTER(WHERE estado='AGOTADO'),'criticos',COUNT(*) FILTER(WHERE estado='CRITICO'),'bajos',COUNT(*) FILTER(WHERE estado='BAJO'),'normales',COUNT(*) FILTER(WHERE estado='NORMAL'),'sinConfigurar',COUNT(*) FILTER(WHERE estado='SIN_CONFIGURAR'),'indeterminados',COUNT(*) FILTER(WHERE estado='INDETERMINADO')) FROM estados) AS resumen`,
     { replacements, type: QueryTypes.SELECT },
   );
   return {
@@ -49,6 +72,7 @@ async function existencias(query) {
       filtroTipoProducto: false,
       fechaConsulta: new Date().toISOString(),
       agrupacion: 'producto/bodega/unidad/lote/vencimiento',
+      resumenAlertas: r.resumen,
     },
   };
 }

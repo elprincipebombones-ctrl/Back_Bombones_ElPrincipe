@@ -17,7 +17,7 @@ function periodo(desde, hasta) {
 const base = `WITH movimientos AS (
   SELECT d.*, m.fecha, m.tipo_documento, m.numero_documento, m.bodega_id,
     m.origen, m.origen_id, m.usuario_id, m.observaciones AS observaciones_movimiento,
-    CASE WHEN m.tipo_documento='EN' THEN 'ENTRADA' WHEN m.tipo_documento='SA' THEN 'SALIDA' ELSE d.sentido END AS direccion
+    CASE WHEN m.tipo_documento IN ('EN','AJN','TRN') THEN 'ENTRADA' WHEN m.tipo_documento IN ('SA','AJS','TRS') THEN 'SALIDA' ELSE d.sentido END AS direccion
   FROM detalle_movimiento d JOIN movimientos_inventario m ON m.id=d.movimiento_inventario_id
   WHERE m.estado='APLICADO' AND (:bodegaId::uuid IS NULL OR m.bodega_id=:bodegaId::uuid)
 ), productos_filtrados AS (

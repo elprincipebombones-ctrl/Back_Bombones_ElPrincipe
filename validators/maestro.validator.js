@@ -184,11 +184,12 @@ exports.crearProveedorValidator = [
     .withMessage('El número de documento debe tener entre 3 y 30 caracteres'),
 
   body('razonSocial')
+    .optional({ nullable: true, checkFalsy: true })
     .isString()
-    .withMessage('La razón social es obligatoria')
+    .withMessage('La razón social debe ser texto')
     .trim()
-    .isLength({ min: 2, max: 200 })
-    .withMessage('La razón social debe tener entre 2 y 200 caracteres'),
+    .isLength({ max: 200 })
+    .withMessage('La razón social no puede superar los 200 caracteres'),
 
   body('nombreComercial')
     .optional({ nullable: true })
@@ -205,6 +206,7 @@ exports.crearProveedorValidator = [
     .trim()
     .isLength({ max: 30 })
     .withMessage('El teléfono no puede superar los 30 caracteres'),
+  body('nombreContactoTelefono').optional({ nullable: true, checkFalsy: true }).isString().trim().isLength({ max: 150 }),
 
   body('email')
     .optional({ nullable: true })
@@ -251,12 +253,12 @@ exports.actualizarProveedorValidator = [
     .withMessage('El número de documento debe tener entre 3 y 30 caracteres'),
 
   body('razonSocial')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .isString()
     .withMessage('La razón social debe ser texto')
     .trim()
-    .isLength({ min: 2, max: 200 })
-    .withMessage('La razón social debe tener entre 2 y 200 caracteres'),
+    .isLength({ max: 200 })
+    .withMessage('La razón social no puede superar los 200 caracteres'),
 
   body('nombreComercial')
     .optional({ nullable: true })
@@ -273,6 +275,7 @@ exports.actualizarProveedorValidator = [
     .trim()
     .isLength({ max: 30 })
     .withMessage('El teléfono no puede superar los 30 caracteres'),
+  body('nombreContactoTelefono').optional({ nullable: true, checkFalsy: true }).isString().trim().isLength({ max: 150 }),
 
   body('email')
     .optional({ nullable: true })

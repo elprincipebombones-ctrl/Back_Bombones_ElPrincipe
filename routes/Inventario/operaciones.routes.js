@@ -24,12 +24,20 @@ const detalle = [
   body('nota').optional({ nullable: true }).isString().trim().isLength({ max: 2000 }),
 ];
 const conteo = [
+  body('idempotencia').isUUID(),
+  body('nota').isString().bail().trim().isLength({ min: 1, max: 2000 }),
   body('bodegaId').isUUID(),
   ...detalle,
   body('detalles.*.cantidadContada').custom((v) => {
     operaciones.miles(v);
     return true;
   }),
+  body('detalles.*.cantidadSistema')
+    .optional()
+    .custom((v) => {
+      operaciones.miles(v, true);
+      return true;
+    }),
   validar,
 ];
 router.get(
@@ -39,8 +47,19 @@ router.get(
   query('categoriaProductoId').optional().isUUID(),
   query('codigo').optional().isString().isLength({ max: 50 }),
   query('tipoProducto').optional().isIn(['MATERIA_PRIMA', 'PRODUCTO_TERMINADO']),
+  query('estadoStock').optional().isIn(['AGOTADO', 'CRITICO', 'BAJO', 'NORMAL', 'SIN_CONFIGURAR', 'INDETERMINADO']),
   validar,
   wrap(async (req, res) => ok(res, await consultas.existencias(req.query))),
+);
+router.put(
+  '/configuraciones-stock/:productoId/:bodegaId',
+  permiso('Inventario.Ajustar'),
+  param('productoId').isUUID(), param('bodegaId').isUUID(),
+  body('stockMinimo').custom((v) => { operaciones.miles(v); return true; }),
+  body('puntoReorden').custom((v) => { operaciones.miles(v); return true; }),
+  body('stockMaximo').optional({ nullable: true }).custom((v) => { operaciones.miles(v); return true; }),
+  body('activo').optional().isBoolean(), validar,
+  wrap(async (req, res) => ok(res, await require('../../services/inventario/configuraciones-stock.service').guardar(req.params.productoId, req.params.bodegaId, req.body, req.usuario.id), 'Configuración de stock actualizada.')),
 );
 router.get(
   '/kardex',
@@ -87,12 +106,14 @@ for (const [ruta, tipo] of [
 router.post(
   '/conteos',
   permiso('Inventario.Contar'),
+  permiso('Inventario.Ajustar'),
   conteo,
   wrap(async (req, res) => created(res, await operaciones.guardarConteo(req.body, req.usuario.id))),
 );
 router.put(
   '/conteos/:id',
   permiso('Inventario.Contar'),
+  permiso('Inventario.Ajustar'),
   id,
   conteo,
   wrap(async (req, res) =>

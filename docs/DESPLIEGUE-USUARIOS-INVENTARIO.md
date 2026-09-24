@@ -4,6 +4,14 @@ Se conserva login por usuario, correo repetible y cargo opcional. Se retiró tip
 
 ## Migraciones
 
+Actualización 2026-09-16: aplicada `20260916000001-tipos-documento-inventario.js` en la base configurada. Amplía tipo_documento a tres caracteres y permite AJN/AJS/TRN/TRS. Reclasifica los anteriores EN/SA de origen AJUSTE_CONTEO/TRASLADO, conservando números y recepciones. Los productos no se modifican.
+
+POST /api/inventario/conteos ahora guarda y aplica en una transacción: requiere nota, UUID idempotencia y permisos Inventario.Contar e Inventario.Ajustar además de Inventario.Ver. Responde APLICADO con documentos AJN/AJS. Un reintento con el mismo UUID y contenido devuelve la operación existente. cantidadSistema es opcional como control de concurrencia: si se envía y difiere del saldo real, responde 409 sin registrar cambios.
+
+No mostrar Guardar borrador, Revisión ni Aplicar en el flujo nuevo. Las referencias a borradores de este documento sólo corresponden a históricos. PUT guarda y aplica esos documentos. Los traslados nuevos generan TRS en origen y TRN por destino. Reiniciar el backend si no usa recarga automática y desplegar el frontend con el nuevo contrato antes de operar.
+
+Verificación: 33 pruebas aprobadas, incluidas migración de tipos, conservación de documentos, guardado directo, idempotencia, rollback, kardex, exportaciones y recepciones. La suite se ejecuta secuencialmente para limitar el consumo de memoria.
+
 - 20260914000001-usuarios-cargos-inventario.js: usuarios, cargos y sentido de detalles; ya no modifica productos en instalaciones nuevas.
 - 20260915000001-inventario-fisico-traslados.js: operaciones/conteos, líneas, vínculo a documentos, secuencia, permisos y bloqueo de bodegas. Conserva productos.tipo_producto y sus valores: esta columna también fue creada por la migración independiente 20260913000002-add-tipo-producto.js. No debe eliminarse desde inventarios.
 

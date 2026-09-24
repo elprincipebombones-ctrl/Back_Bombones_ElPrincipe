@@ -11,11 +11,11 @@ const MovimientoInventario = sequelize.define(
     },
     operacionId: { type: DataTypes.UUID, allowNull: true, field: 'operacion_id' },
     tipoDocumento: {
-      type: DataTypes.STRING(2),
+      type: DataTypes.STRING(3),
       allowNull: false,
       field: 'tipo_documento',
       validate: {
-        isIn: [['EN', 'SA', 'AJ', 'TR']],
+        isIn: [['EN', 'SA', 'AJ', 'TR', 'AJN', 'AJS', 'TRN', 'TRS']],
       },
     },
     numeroDocumento: {
