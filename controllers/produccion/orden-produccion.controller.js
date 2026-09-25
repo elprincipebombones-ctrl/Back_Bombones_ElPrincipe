@@ -36,6 +36,12 @@ const includeOrden = [
     required: false,
   },
   {
+    model: Usuario,
+    as: 'usuarioCancelacion',
+    attributes: ['id', 'nombre', 'correo'],
+    required: false,
+  },
+  {
     model: MovimientoInventario,
     as: 'movimientoSalida',
     attributes: ['id', 'numeroDocumento', 'fecha', 'estado', 'observaciones'],
@@ -147,8 +153,9 @@ exports.catalogos = async (_req, res, next) => {
 
 exports.listar = async (req, res, next) => {
   try {
-    const where = {};
-    if (req.query.estado) where.estado = req.query.estado;
+    const where = {
+      estado: req.query.estado || { [Op.ne]: 'CANCELADA' },
+    };
     if (req.query.buscar) {
       where.numero = { [Op.iLike]: `%${String(req.query.buscar).trim()}%` };
     }
@@ -156,6 +163,12 @@ exports.listar = async (req, res, next) => {
       where,
       include: [
         { model: Usuario, as: 'usuario', attributes: ['id', 'nombre'] },
+        {
+          model: Usuario,
+          as: 'usuarioCancelacion',
+          attributes: ['id', 'nombre'],
+          required: false,
+        },
         { model: OrdenProduccionDetalle, as: 'detalles', attributes: ['id'] },
         {
           model: OrdenProduccionSimulacion,
@@ -335,6 +348,60 @@ exports.confirmarSalida = async (req, res, next) => {
       await obtenerCompleta(req.params.id),
       'Salida de materias primas confirmada correctamente',
     );
+  } catch (error) {
+    return manejarError(error, res, next);
+  }
+};
+
+exports.cancelar = async (req, res, next) => {
+  try {
+    await sequelize.transaction(async (transaction) => {
+      const orden = await OrdenProduccion.findByPk(req.params.id, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!orden) throw new OrdenProduccionError('La orden de producción no existe', 404);
+      if (!['BORRADOR', 'SIMULADA'].includes(orden.estado)) {
+        throw new OrdenProduccionError(
+          'Solo se pueden cancelar órdenes en estado BORRADOR o SIMULADA',
+          409,
+        );
+      }
+      if (orden.movimientoSalidaId) {
+        throw new OrdenProduccionError(
+          'La orden no se puede cancelar porque ya tiene una salida de materias primas',
+          409,
+        );
+      }
+
+      const salidaExistente = await MovimientoInventario.findOne({
+        where: {
+          tipoDocumento: 'SA',
+          origen: 'OT',
+          origenId: orden.id,
+        },
+        attributes: ['id'],
+        transaction,
+      });
+      if (salidaExistente) {
+        throw new OrdenProduccionError(
+          'La orden no se puede cancelar porque ya existe un movimiento SA asociado',
+          409,
+        );
+      }
+
+      await orden.update(
+        {
+          estado: 'CANCELADA',
+          fechaCancelacion: new Date(),
+          usuarioCancelacionId: req.usuario.id,
+          motivoCancelacion: req.body.motivoCancelacion.trim(),
+        },
+        { transaction },
+      );
+    });
+
+    return ok(res, await obtenerCompleta(req.params.id), 'Orden cancelada correctamente');
   } catch (error) {
     return manejarError(error, res, next);
   }

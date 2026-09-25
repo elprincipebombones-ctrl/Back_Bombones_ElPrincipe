@@ -11,6 +11,7 @@ const {
   guardarFormulaValidator,
 } = require('../../validators/produccion/formula.validator');
 const {
+  cancelarOrdenValidator,
   cambiarLoteValidator,
   guardarOrdenValidator,
   idOrdenValidator,
@@ -18,6 +19,7 @@ const {
   loteSimulacionValidator,
 } = require('../../validators/produccion/orden-produccion.validator');
 const {
+  cerrarProduccionValidator,
   guardarMermaValidator,
   guardarResultadosValidator,
   idOrdenControlValidator,
@@ -71,6 +73,7 @@ router.get(
   validar,
   formula.obtener,
 );
+
 router.put(
   '/formulas/producto/:productoTerminadoId',
   permiso('produccion.crear', 'produccion.editar'),
@@ -144,6 +147,45 @@ router.delete(
 
 /**
  * @swagger
+ * /api/produccion/ordenes/{id}/cancelar:
+ *   patch:
+ *     tags: [Producción - Órdenes]
+ *     summary: Cancelar una OT que todavía no ha generado salida de materias primas
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [motivoCancelacion]
+ *             properties:
+ *               motivoCancelacion:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Orden cancelada correctamente
+ *       409:
+ *         description: La orden ya no admite cancelación o tiene salida de MP
+ */
+router.patch(
+  '/ordenes/:id/cancelar',
+  permiso('produccion.orden.cancelar'),
+  cancelarOrdenValidator,
+  validar,
+  orden.cancelar,
+);
+
+/**
+ * @swagger
  * /api/produccion/ordenes/{id}/simular:
  *   post:
  *     tags: [Producción - Órdenes]
@@ -208,7 +250,7 @@ router.patch(
  * /api/produccion/control/ordenes:
  *   get:
  *     tags: [Producción - Control]
- *     summary: Listar únicamente órdenes en estado EN_PRODUCCION
+ *     summary: Listar órdenes en producción o finalizadas según el filtro de estado
  *     security:
  *       - bearerAuth: []
  */
@@ -235,6 +277,40 @@ router.get(
   idOrdenControlValidator,
   validar,
   control.obtenerDetalle,
+);
+
+/**
+ * @swagger
+ * /api/produccion/control/ordenes/{id}/cierre/preparar:
+ *   post:
+ *     tags: [Producción - Control]
+ *     summary: Preparar la revisión final, lotes y vencimientos de la OT
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post(
+  '/control/ordenes/:id/cierre/preparar',
+  permiso('produccion.cerrar'),
+  idOrdenControlValidator,
+  validar,
+  control.prepararCierre,
+);
+
+/**
+ * @swagger
+ * /api/produccion/control/ordenes/{id}/cerrar:
+ *   post:
+ *     tags: [Producción - Control]
+ *     summary: Generar la entrada real de PT y finalizar la OT
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post(
+  '/control/ordenes/:id/cerrar',
+  permiso('produccion.cerrar'),
+  cerrarProduccionValidator,
+  validar,
+  control.cerrarProduccion,
 );
 
 /**

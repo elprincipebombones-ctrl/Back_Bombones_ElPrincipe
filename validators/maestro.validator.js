@@ -225,7 +225,11 @@ exports.crearProveedorValidator = [
     .trim()
     .isLength({ max: 30 })
     .withMessage('El teléfono no puede superar los 30 caracteres'),
-  body('nombreContactoTelefono').optional({ nullable: true, checkFalsy: true }).isString().trim().isLength({ max: 150 }),
+  body('nombreContactoTelefono')
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .trim()
+    .isLength({ max: 150 }),
 
   body('email')
     .optional({ nullable: true })
@@ -294,7 +298,11 @@ exports.actualizarProveedorValidator = [
     .trim()
     .isLength({ max: 30 })
     .withMessage('El teléfono no puede superar los 30 caracteres'),
-  body('nombreContactoTelefono').optional({ nullable: true, checkFalsy: true }).isString().trim().isLength({ max: 150 }),
+  body('nombreContactoTelefono')
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .trim()
+    .isLength({ max: 150 }),
 
   body('email')
     .optional({ nullable: true })
@@ -811,6 +819,11 @@ exports.crearBodegaValidator = [
     .withMessage('El responsableId debe ser un UUID válido'),
 
   body('estado').optional().isBoolean().withMessage('El estado debe ser booleano'),
+
+  body('esBodegaPtDefault')
+    .optional()
+    .isBoolean()
+    .withMessage('La bodega predeterminada de PT debe ser un valor booleano'),
 ];
 
 exports.actualizarBodegaValidator = [
@@ -852,6 +865,11 @@ exports.actualizarBodegaValidator = [
     .withMessage('El responsableId debe ser un UUID válido'),
 
   body('estado').optional().isBoolean().withMessage('El estado debe ser booleano'),
+
+  body('esBodegaPtDefault')
+    .optional()
+    .isBoolean()
+    .withMessage('La bodega predeterminada de PT debe ser un valor booleano'),
 ];
 
 exports.idDetalleRecepcionValidator = [

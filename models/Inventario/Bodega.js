@@ -8,33 +8,33 @@ const Bodega = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     codigo: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      unique: true
+      unique: true,
     },
 
     nombre: {
       type: DataTypes.STRING(150),
-      allowNull: false
+      allowNull: false,
     },
 
     tipo: {
       type: DataTypes.STRING(50),
-      allowNull: false
+      allowNull: false,
     },
 
     descripcion: {
       type: DataTypes.TEXT,
-      allowNull: true
+      allowNull: true,
     },
 
     direccion: {
       type: DataTypes.STRING(250),
-      allowNull: true
+      allowNull: true,
     },
 
     responsableId: {
@@ -43,21 +43,28 @@ const Bodega = sequelize.define(
       field: 'responsable_id',
       references: {
         model: 'usuarios',
-        key: 'id'
-      }
+        key: 'id',
+      },
     },
 
     estado: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: true
-    }
+      defaultValue: true,
+    },
+
+    esBodegaPtDefault: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'es_bodega_pt_default',
+    },
   },
   {
     tableName: 'bodegas',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = Bodega;

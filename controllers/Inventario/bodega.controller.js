@@ -1,145 +1,157 @@
+const { Op } = require('sequelize');
+
+const sequelize = require('../../database/database');
 const Bodega = require('../../models/Inventario/Bodega');
 
 const { ok, created, fail } = require('../../utils/response');
 
 exports.listar = async (req, res, next) => {
-    try {
-        const bodegas = await Bodega.findAll({
-            order: [['nombre', 'ASC']]
-        });
+  try {
+    const bodegas = await Bodega.findAll({
+      order: [['nombre', 'ASC']],
+    });
 
-        return ok(res, bodegas);
-    } catch (err) {
-        return next(err);
-    }
+    return ok(res, bodegas);
+  } catch (err) {
+    return next(err);
+  }
 };
 
 exports.obtener = async (req, res, next) => {
-    try {
-        const bodega = await Bodega.findByPk(req.params.id);
+  try {
+    const bodega = await Bodega.findByPk(req.params.id);
 
-        if (!bodega) {
-            return fail(res, 'Bodega no encontrada', 404);
-        }
-
-        return ok(res, bodega);
-    } catch (err) {
-        return next(err);
+    if (!bodega) {
+      return fail(res, 'Bodega no encontrada', 404);
     }
+
+    return ok(res, bodega);
+  } catch (err) {
+    return next(err);
+  }
 };
 
 exports.crear = async (req, res, next) => {
-    try {
-        const {
-            nombre,
-            codigo,
-            tipo,
-            descripcion,
-            direccion,
-            responsableId,
-            estado
-        } = req.body;
+  try {
+    const {
+      nombre,
+      codigo,
+      tipo,
+      descripcion,
+      direccion,
+      responsableId,
+      estado,
+      esBodegaPtDefault,
+    } = req.body;
 
-        if (!nombre) {
-            return fail(res, 'Falta el nombre', 400);
-        }
-
-        if (!codigo) {
-            return fail(res, 'Falta el código', 400);
-        }
-
-        if (!tipo) {
-            return fail(res, 'Falta el tipo de bodega', 400);
-        }
-
-        const bodegaExistente = await Bodega.findOne({
-            where: {
-                codigo
-            }
-        });
-
-        if (bodegaExistente) {
-            return fail(
-                res,
-                'Ya existe una bodega con ese código',
-                409
-            );
-        }
-
-        const bodega = await Bodega.create({
-            nombre,
-            codigo,
-            tipo,
-            descripcion,
-            direccion,
-            responsableId,
-            estado: estado !== undefined ? estado : true
-        });
-
-        return created(res, bodega);
-    } catch (err) {
-        return next(err);
+    if (!nombre) {
+      return fail(res, 'Falta el nombre', 400);
     }
+
+    if (!codigo) {
+      return fail(res, 'Falta el código', 400);
+    }
+
+    if (!tipo) {
+      return fail(res, 'Falta el tipo de bodega', 400);
+    }
+
+    const bodegaExistente = await Bodega.findOne({
+      where: {
+        codigo,
+      },
+    });
+
+    if (bodegaExistente) {
+      return fail(res, 'Ya existe una bodega con ese código', 409);
+    }
+
+    if (esBodegaPtDefault && estado === false) {
+      return fail(res, 'La bodega predeterminada de PT debe estar activa', 422);
+    }
+
+    const bodega = await sequelize.transaction(async (transaction) => {
+      if (esBodegaPtDefault) {
+        await Bodega.update({ esBodegaPtDefault: false }, { where: {}, transaction });
+      }
+
+      return Bodega.create(
+        {
+          nombre,
+          codigo,
+          tipo,
+          descripcion,
+          direccion,
+          responsableId,
+          estado: estado !== undefined ? estado : true,
+          esBodegaPtDefault: Boolean(esBodegaPtDefault),
+        },
+        { transaction },
+      );
+    });
+
+    return created(res, bodega);
+  } catch (err) {
+    return next(err);
+  }
 };
 
 exports.actualizar = async (req, res, next) => {
-    try {
-        const bodega = await Bodega.findByPk(req.params.id);
+  try {
+    const bodega = await Bodega.findByPk(req.params.id);
 
-        if (!bodega) {
-            return fail(res, 'Bodega no encontrada', 404);
-        }
-
-        if (
-            req.body.codigo &&
-            req.body.codigo !== bodega.codigo
-        ) {
-            const bodegaExistente = await Bodega.findOne({
-                where: {
-                    codigo: req.body.codigo
-                }
-            });
-
-            if (
-                bodegaExistente &&
-                bodegaExistente.id !== bodega.id
-            ) {
-                return fail(
-                    res,
-                    'Ya existe una bodega con ese código',
-                    409
-                );
-            }
-        }
-
-        await bodega.update(req.body);
-
-        return ok(
-            res,
-            bodega,
-            'Bodega actualizada'
-        );
-    } catch (err) {
-        return next(err);
+    if (!bodega) {
+      return fail(res, 'Bodega no encontrada', 404);
     }
+
+    if (req.body.codigo && req.body.codigo !== bodega.codigo) {
+      const bodegaExistente = await Bodega.findOne({
+        where: {
+          codigo: req.body.codigo,
+        },
+      });
+
+      if (bodegaExistente && bodegaExistente.id !== bodega.id) {
+        return fail(res, 'Ya existe una bodega con ese código', 409);
+      }
+    }
+
+    await sequelize.transaction(async (transaction) => {
+      if (req.body.esBodegaPtDefault && req.body.estado !== false) {
+        await Bodega.update(
+          { esBodegaPtDefault: false },
+          {
+            where: { id: { [Op.ne]: bodega.id } },
+            transaction,
+          },
+        );
+      }
+
+      const cambios = { ...req.body };
+      if (cambios.estado === false) {
+        cambios.esBodegaPtDefault = false;
+      }
+      await bodega.update(cambios, { transaction });
+    });
+
+    return ok(res, bodega, 'Bodega actualizada');
+  } catch (err) {
+    return next(err);
+  }
 };
 
 exports.eliminar = async (req, res, next) => {
-    try {
-        const bodega = await Bodega.findByPk(req.params.id);
+  try {
+    const bodega = await Bodega.findByPk(req.params.id);
 
-        if (!bodega) {
-            return fail(res, 'Bodega no encontrada', 404);
-        }
-
-        await bodega.destroy();
-
-        return ok(
-            res,
-            null,
-            'Bodega eliminada'
-        );
-    } catch (err) {
-        return next(err);
+    if (!bodega) {
+      return fail(res, 'Bodega no encontrada', 404);
     }
+
+    await bodega.destroy();
+
+    return ok(res, null, 'Bodega eliminada');
+  } catch (err) {
+    return next(err);
+  }
 };

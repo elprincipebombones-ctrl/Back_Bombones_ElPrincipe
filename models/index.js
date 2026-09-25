@@ -17,10 +17,22 @@ const cargarModelos = (directorio) => {
 };
 
 cargarModelos(__dirname);
-db.OperacionInventario.hasMany(db.LineaOperacionInventario, { foreignKey: 'operacionId', as: 'detalles' });
-db.LineaOperacionInventario.belongsTo(db.OperacionInventario, { foreignKey: 'operacionId', as: 'operacion' });
-db.OperacionInventario.hasMany(db.MovimientoInventario, { foreignKey: 'operacionId', as: 'documentos' });
-db.MovimientoInventario.belongsTo(db.OperacionInventario, { foreignKey: 'operacionId', as: 'operacion' });
+db.OperacionInventario.hasMany(db.LineaOperacionInventario, {
+  foreignKey: 'operacionId',
+  as: 'detalles',
+});
+db.LineaOperacionInventario.belongsTo(db.OperacionInventario, {
+  foreignKey: 'operacionId',
+  as: 'operacion',
+});
+db.OperacionInventario.hasMany(db.MovimientoInventario, {
+  foreignKey: 'operacionId',
+  as: 'documentos',
+});
+db.MovimientoInventario.belongsTo(db.OperacionInventario, {
+  foreignKey: 'operacionId',
+  as: 'operacion',
+});
 db.OperacionInventario.belongsTo(db.Bodega, { foreignKey: 'bodegaId', as: 'bodega' });
 db.LineaOperacionInventario.belongsTo(db.Producto, { foreignKey: 'productoId', as: 'producto' });
 db.Cargo.hasMany(db.Usuario, { foreignKey: 'cargoId', as: 'usuarios' });
@@ -257,6 +269,14 @@ db.OrdenProduccion.belongsTo(db.Usuario, {
   foreignKey: 'usuarioSalidaMpId',
   as: 'usuarioSalidaMp',
 });
+db.Usuario.hasMany(db.OrdenProduccion, {
+  foreignKey: 'usuarioCancelacionId',
+  as: 'ordenesProduccionCanceladas',
+});
+db.OrdenProduccion.belongsTo(db.Usuario, {
+  foreignKey: 'usuarioCancelacionId',
+  as: 'usuarioCancelacion',
+});
 db.MovimientoInventario.hasOne(db.OrdenProduccion, {
   foreignKey: 'movimientoSalidaId',
   as: 'ordenProduccionSalida',
@@ -264,6 +284,22 @@ db.MovimientoInventario.hasOne(db.OrdenProduccion, {
 db.OrdenProduccion.belongsTo(db.MovimientoInventario, {
   foreignKey: 'movimientoSalidaId',
   as: 'movimientoSalida',
+});
+db.Usuario.hasMany(db.OrdenProduccion, {
+  foreignKey: 'usuarioFinalizacionId',
+  as: 'ordenesProduccionFinalizadas',
+});
+db.OrdenProduccion.belongsTo(db.Usuario, {
+  foreignKey: 'usuarioFinalizacionId',
+  as: 'usuarioFinalizacion',
+});
+db.MovimientoInventario.hasOne(db.OrdenProduccion, {
+  foreignKey: 'movimientoEntradaId',
+  as: 'ordenProduccionEntrada',
+});
+db.OrdenProduccion.belongsTo(db.MovimientoInventario, {
+  foreignKey: 'movimientoEntradaId',
+  as: 'movimientoEntrada',
 });
 db.OrdenProduccion.hasMany(db.OrdenProduccionDetalle, {
   foreignKey: 'ordenProduccionId',
@@ -377,6 +413,14 @@ db.UnidadMedida.hasMany(db.ResultadoProduccion, {
 db.ResultadoProduccion.belongsTo(db.UnidadMedida, {
   foreignKey: 'unidadMedidaId',
   as: 'unidadMedida',
+});
+db.Bodega.hasMany(db.ResultadoProduccion, {
+  foreignKey: 'bodegaDestinoId',
+  as: 'resultadosProduccionDestino',
+});
+db.ResultadoProduccion.belongsTo(db.Bodega, {
+  foreignKey: 'bodegaDestinoId',
+  as: 'bodegaDestino',
 });
 
 db.OrdenProduccion.hasMany(db.MermaProduccion, {
@@ -710,10 +754,17 @@ db.DetalleMovimiento.belongsTo(db.UnidadMedida, {
   foreignKey: 'unidadMedidaId',
   as: 'unidadMedida',
 });
-db.Proveedor.hasMany(db.DocumentoProveedor, { foreignKey: 'proveedorId', as: 'documentos', onDelete: 'CASCADE' });
+db.Proveedor.hasMany(db.DocumentoProveedor, {
+  foreignKey: 'proveedorId',
+  as: 'documentos',
+  onDelete: 'CASCADE',
+});
 db.DocumentoProveedor.belongsTo(db.Proveedor, { foreignKey: 'proveedorId', as: 'proveedor' });
 
-db.Producto.hasMany(db.ConfiguracionStock, { foreignKey: 'productoId', as: 'configuracionesStock' });
+db.Producto.hasMany(db.ConfiguracionStock, {
+  foreignKey: 'productoId',
+  as: 'configuracionesStock',
+});
 db.ConfiguracionStock.belongsTo(db.Producto, { foreignKey: 'productoId', as: 'producto' });
 db.Bodega.hasMany(db.ConfiguracionStock, { foreignKey: 'bodegaId', as: 'configuracionesStock' });
 db.ConfiguracionStock.belongsTo(db.Bodega, { foreignKey: 'bodegaId', as: 'bodega' });

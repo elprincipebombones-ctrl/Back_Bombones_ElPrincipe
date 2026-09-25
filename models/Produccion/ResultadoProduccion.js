@@ -32,6 +32,22 @@ const ResultadoProduccion = sequelize.define(
       allowNull: false,
       field: 'unidad_medida_id',
     },
+    lotePt: { type: DataTypes.STRING(30), allowNull: true, unique: true, field: 'lote_pt' },
+    fechaVencimientoSugerida: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      field: 'fecha_vencimiento_sugerida',
+    },
+    fechaVencimientoFinal: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      field: 'fecha_vencimiento_final',
+    },
+    bodegaDestinoId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'bodega_destino_id',
+    },
   },
   { tableName: 'resultados_produccion', timestamps: true, underscored: true },
 );
