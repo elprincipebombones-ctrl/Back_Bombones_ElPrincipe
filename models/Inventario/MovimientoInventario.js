@@ -62,7 +62,7 @@ const MovimientoInventario = sequelize.define(
     timestamps: true,
     underscored: true,
     indexes: [
-      { unique: true, fields: ['origen', 'origen_id'] },
+      { unique: true, fields: ['origen', 'origen_id', 'tipo_documento'] },
       { fields: ['tipo_documento'] },
       { fields: ['fecha'] },
       { fields: ['bodega_id'] },

@@ -1,3 +1,6 @@
+const { Op } = require('sequelize');
+
+const sequelize = require('../../database/database');
 const Bodega = require('../../models/Inventario/Bodega');
 
 const { ok, created, fail } = require('../../utils/response');
@@ -30,7 +33,16 @@ exports.obtener = async (req, res, next) => {
 
 exports.crear = async (req, res, next) => {
   try {
-    const { nombre, codigo, tipo, descripcion, direccion, responsableId, estado } = req.body;
+    const {
+      nombre,
+      codigo,
+      tipo,
+      descripcion,
+      direccion,
+      responsableId,
+      estado,
+      esBodegaPtDefault,
+    } = req.body;
 
     if (!nombre) {
       return fail(res, 'Falta el nombre', 400);
@@ -54,14 +66,28 @@ exports.crear = async (req, res, next) => {
       return fail(res, 'Ya existe una bodega con ese código', 409);
     }
 
-    const bodega = await Bodega.create({
-      nombre,
-      codigo,
-      tipo,
-      descripcion,
-      direccion,
-      responsableId,
-      estado: estado !== undefined ? estado : true,
+    if (esBodegaPtDefault && estado === false) {
+      return fail(res, 'La bodega predeterminada de PT debe estar activa', 422);
+    }
+
+    const bodega = await sequelize.transaction(async (transaction) => {
+      if (esBodegaPtDefault) {
+        await Bodega.update({ esBodegaPtDefault: false }, { where: {}, transaction });
+      }
+
+      return Bodega.create(
+        {
+          nombre,
+          codigo,
+          tipo,
+          descripcion,
+          direccion,
+          responsableId,
+          estado: estado !== undefined ? estado : true,
+          esBodegaPtDefault: Boolean(esBodegaPtDefault),
+        },
+        { transaction },
+      );
     });
 
     return created(res, bodega);
@@ -90,7 +116,23 @@ exports.actualizar = async (req, res, next) => {
       }
     }
 
-    await bodega.update(req.body);
+    await sequelize.transaction(async (transaction) => {
+      if (req.body.esBodegaPtDefault && req.body.estado !== false) {
+        await Bodega.update(
+          { esBodegaPtDefault: false },
+          {
+            where: { id: { [Op.ne]: bodega.id } },
+            transaction,
+          },
+        );
+      }
+
+      const cambios = { ...req.body };
+      if (cambios.estado === false) {
+        cambios.esBodegaPtDefault = false;
+      }
+      await bodega.update(cambios, { transaction });
+    });
 
     return ok(res, bodega, 'Bodega actualizada');
   } catch (err) {

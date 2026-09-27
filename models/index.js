@@ -269,6 +269,14 @@ db.OrdenProduccion.belongsTo(db.Usuario, {
   foreignKey: 'usuarioSalidaMpId',
   as: 'usuarioSalidaMp',
 });
+db.Usuario.hasMany(db.OrdenProduccion, {
+  foreignKey: 'usuarioCancelacionId',
+  as: 'ordenesProduccionCanceladas',
+});
+db.OrdenProduccion.belongsTo(db.Usuario, {
+  foreignKey: 'usuarioCancelacionId',
+  as: 'usuarioCancelacion',
+});
 db.MovimientoInventario.hasOne(db.OrdenProduccion, {
   foreignKey: 'movimientoSalidaId',
   as: 'ordenProduccionSalida',
@@ -276,6 +284,22 @@ db.MovimientoInventario.hasOne(db.OrdenProduccion, {
 db.OrdenProduccion.belongsTo(db.MovimientoInventario, {
   foreignKey: 'movimientoSalidaId',
   as: 'movimientoSalida',
+});
+db.Usuario.hasMany(db.OrdenProduccion, {
+  foreignKey: 'usuarioFinalizacionId',
+  as: 'ordenesProduccionFinalizadas',
+});
+db.OrdenProduccion.belongsTo(db.Usuario, {
+  foreignKey: 'usuarioFinalizacionId',
+  as: 'usuarioFinalizacion',
+});
+db.MovimientoInventario.hasOne(db.OrdenProduccion, {
+  foreignKey: 'movimientoEntradaId',
+  as: 'ordenProduccionEntrada',
+});
+db.OrdenProduccion.belongsTo(db.MovimientoInventario, {
+  foreignKey: 'movimientoEntradaId',
+  as: 'movimientoEntrada',
 });
 db.OrdenProduccion.hasMany(db.OrdenProduccionDetalle, {
   foreignKey: 'ordenProduccionId',
@@ -389,6 +413,14 @@ db.UnidadMedida.hasMany(db.ResultadoProduccion, {
 db.ResultadoProduccion.belongsTo(db.UnidadMedida, {
   foreignKey: 'unidadMedidaId',
   as: 'unidadMedida',
+});
+db.Bodega.hasMany(db.ResultadoProduccion, {
+  foreignKey: 'bodegaDestinoId',
+  as: 'resultadosProduccionDestino',
+});
+db.ResultadoProduccion.belongsTo(db.Bodega, {
+  foreignKey: 'bodegaDestinoId',
+  as: 'bodegaDestino',
 });
 
 db.OrdenProduccion.hasMany(db.MermaProduccion, {

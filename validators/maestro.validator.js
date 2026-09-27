@@ -819,6 +819,11 @@ exports.crearBodegaValidator = [
     .withMessage('El responsableId debe ser un UUID válido'),
 
   body('estado').optional().isBoolean().withMessage('El estado debe ser booleano'),
+
+  body('esBodegaPtDefault')
+    .optional()
+    .isBoolean()
+    .withMessage('La bodega predeterminada de PT debe ser un valor booleano'),
 ];
 
 exports.actualizarBodegaValidator = [
@@ -860,6 +865,11 @@ exports.actualizarBodegaValidator = [
     .withMessage('El responsableId debe ser un UUID válido'),
 
   body('estado').optional().isBoolean().withMessage('El estado debe ser booleano'),
+
+  body('esBodegaPtDefault')
+    .optional()
+    .isBoolean()
+    .withMessage('La bodega predeterminada de PT debe ser un valor booleano'),
 ];
 
 exports.idDetalleRecepcionValidator = [

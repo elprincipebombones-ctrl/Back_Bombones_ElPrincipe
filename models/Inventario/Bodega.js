@@ -52,6 +52,13 @@ const Bodega = sequelize.define(
       allowNull: false,
       defaultValue: true,
     },
+
+    esBodegaPtDefault: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'es_bodega_pt_default',
+    },
   },
   {
     tableName: 'bodegas',

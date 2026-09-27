@@ -11,9 +11,11 @@ const {
 const { created, fail, ok } = require('../../utils/response');
 const {
   ControlProduccionError,
+  cerrarProduccion,
   eliminarMerma,
   guardarResultados,
   obtenerDetalleControl,
+  prepararCierre,
   validarYGuardarMerma,
 } = require('../../services/produccion/control-produccion.service');
 
@@ -27,7 +29,8 @@ const manejarError = (error, res, next) => {
 exports.listarOrdenes = async (req, res, next) => {
   try {
     const buscar = String(req.query.buscar || '').trim();
-    const where = { estado: 'EN_PRODUCCION' };
+    const estado = req.query.estado || 'EN_PRODUCCION';
+    const where = { estado };
     if (buscar) {
       where[Op.or] = [
         { numero: { [Op.iLike]: `%${buscar}%` } },
@@ -61,6 +64,39 @@ exports.listarOrdenes = async (req, res, next) => {
     return ok(res, ordenes);
   } catch (error) {
     return next(error);
+  }
+};
+
+exports.prepararCierre = async (req, res, next) => {
+  try {
+    const preparacion = await sequelize.transaction((transaction) =>
+      prepararCierre(req.params.id, transaction),
+    );
+    return ok(res, preparacion);
+  } catch (error) {
+    return manejarError(error, res, next);
+  }
+};
+
+exports.cerrarProduccion = async (req, res, next) => {
+  try {
+    await sequelize.transaction((transaction) =>
+      cerrarProduccion({
+        ordenId: req.params.id,
+        bodegaId: req.body.bodegaId,
+        resultados: req.body.resultados,
+        usuarioId: req.usuario.id,
+        puedeCambiarBodega: req.permisos?.includes('produccion.cambiar_bodega_destino'),
+        transaction,
+      }),
+    );
+    return ok(
+      res,
+      await obtenerDetalleControl(req.params.id),
+      'Producción cerrada y entrada de producto terminado generada correctamente',
+    );
+  } catch (error) {
+    return manejarError(error, res, next);
   }
 };
 

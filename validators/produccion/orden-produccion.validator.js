@@ -16,8 +16,18 @@ const detalles = [
 exports.idOrdenValidator = [param('id').isUUID().withMessage('La orden no es válida')];
 exports.guardarOrdenValidator = detalles;
 exports.listarOrdenesValidator = [
-  query('estado').optional().isIn(['BORRADOR', 'SIMULADA', 'EN_PRODUCCION']),
+  query('estado').optional().isIn(['BORRADOR', 'SIMULADA', 'EN_PRODUCCION', 'CANCELADA']),
   query('buscar').optional().isString().isLength({ max: 50 }),
+];
+exports.cancelarOrdenValidator = [
+  ...exports.idOrdenValidator,
+  body('motivoCancelacion')
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage('El motivo de cancelación es obligatorio')
+    .isLength({ max: 2000 })
+    .withMessage('El motivo de cancelación no puede superar 2000 caracteres'),
 ];
 exports.loteSimulacionValidator = [
   param('id').isUUID().withMessage('La orden no es válida'),

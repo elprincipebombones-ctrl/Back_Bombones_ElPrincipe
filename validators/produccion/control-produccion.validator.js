@@ -1,6 +1,12 @@
 const { body, param, query } = require('express-validator');
 
-exports.listarControlValidator = [query('buscar').optional().isString().isLength({ max: 100 })];
+exports.listarControlValidator = [
+  query('buscar').optional().isString().isLength({ max: 100 }),
+  query('estado')
+    .optional()
+    .isIn(['EN_PRODUCCION', 'FINALIZADA'])
+    .withMessage('El estado de consulta no es válido'),
+];
 
 exports.idOrdenControlValidator = [
   param('id').isUUID().withMessage('La orden de producción no es válida'),
@@ -29,4 +35,20 @@ exports.guardarMermaValidator = [
   body('cantidad').isFloat({ gt: 0 }).withMessage('La cantidad debe ser mayor que cero'),
   body('motivoMermaId').isUUID().withMessage('El motivo de merma no es válido'),
   body('observacion').optional({ nullable: true }).isString().isLength({ max: 2000 }),
+];
+
+exports.cerrarProduccionValidator = [
+  ...exports.idOrdenControlValidator,
+  body('bodegaId').isUUID().withMessage('La bodega de destino no es válida'),
+  body('resultados')
+    .isArray({ min: 1 })
+    .withMessage('Debe confirmar al menos un producto terminado'),
+  body('resultados.*.resultadoProduccionId')
+    .isUUID()
+    .withMessage('Uno de los resultados de producción no es válido'),
+  body('resultados.*.fechaVencimientoFinal')
+    .notEmpty()
+    .withMessage('La fecha de vencimiento final es obligatoria')
+    .isISO8601({ strict: true })
+    .withMessage('La fecha de vencimiento final no es válida'),
 ];
