@@ -70,7 +70,13 @@ module.exports = {
       { id: uuidv4(), nombre: 'Inventario', ruta: '/inventario', icono: 'inventory', orden: 6 },
       { id: uuidv4(), nombre: 'Compras', ruta: '/compras', icono: 'shopping_cart', orden: 7 },
       { id: uuidv4(), nombre: 'Ventas', ruta: '/ventas', icono: 'point_of_sale', orden: 8 },
-      { id: uuidv4(), nombre: 'Configuración', ruta: '/configuracion', icono: 'settings', orden: 9 },
+      {
+        id: uuidv4(),
+        nombre: 'Configuración',
+        ruta: '/configuracion',
+        icono: 'settings',
+        orden: 9,
+      },
     ].map((m) => ({ ...m, estado: true, createdAt: now, updatedAt: now }));
 
     await queryInterface.bulkInsert('menus', menus);

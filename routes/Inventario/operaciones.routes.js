@@ -47,19 +47,45 @@ router.get(
   query('categoriaProductoId').optional().isUUID(),
   query('codigo').optional().isString().isLength({ max: 50 }),
   query('tipoProducto').optional().isIn(['MATERIA_PRIMA', 'PRODUCTO_TERMINADO']),
-  query('estadoStock').optional().isIn(['AGOTADO', 'CRITICO', 'BAJO', 'NORMAL', 'SIN_CONFIGURAR', 'INDETERMINADO']),
+  query('estadoStock')
+    .optional()
+    .isIn(['AGOTADO', 'CRITICO', 'BAJO', 'NORMAL', 'SIN_CONFIGURAR', 'INDETERMINADO']),
   validar,
   wrap(async (req, res) => ok(res, await consultas.existencias(req.query))),
 );
 router.put(
   '/configuraciones-stock/:productoId/:bodegaId',
   permiso('Inventario.Ajustar'),
-  param('productoId').isUUID(), param('bodegaId').isUUID(),
-  body('stockMinimo').custom((v) => { operaciones.miles(v); return true; }),
-  body('puntoReorden').custom((v) => { operaciones.miles(v); return true; }),
-  body('stockMaximo').optional({ nullable: true }).custom((v) => { operaciones.miles(v); return true; }),
-  body('activo').optional().isBoolean(), validar,
-  wrap(async (req, res) => ok(res, await require('../../services/inventario/configuraciones-stock.service').guardar(req.params.productoId, req.params.bodegaId, req.body, req.usuario.id), 'Configuración de stock actualizada.')),
+  param('productoId').isUUID(),
+  param('bodegaId').isUUID(),
+  body('stockMinimo').custom((v) => {
+    operaciones.miles(v);
+    return true;
+  }),
+  body('puntoReorden').custom((v) => {
+    operaciones.miles(v);
+    return true;
+  }),
+  body('stockMaximo')
+    .optional({ nullable: true })
+    .custom((v) => {
+      operaciones.miles(v);
+      return true;
+    }),
+  body('activo').optional().isBoolean(),
+  validar,
+  wrap(async (req, res) =>
+    ok(
+      res,
+      await require('../../services/inventario/configuraciones-stock.service').guardar(
+        req.params.productoId,
+        req.params.bodegaId,
+        req.body,
+        req.usuario.id,
+      ),
+      'Configuración de stock actualizada.',
+    ),
+  ),
 );
 router.get(
   '/kardex',

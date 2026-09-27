@@ -7,42 +7,42 @@ const MateriaPrima = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     codigo: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      unique: true
+      unique: true,
     },
 
     nombre: {
       type: DataTypes.STRING(150),
-      allowNull: false
+      allowNull: false,
     },
 
     descripcion: {
       type: DataTypes.TEXT,
-      allowNull: true
+      allowNull: true,
     },
 
     unidadMedida: {
       type: DataTypes.STRING(30),
       allowNull: true,
-      field: 'unidad_medida'
+      field: 'unidad_medida',
     },
 
     estado: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: true
-    }
+      defaultValue: true,
+    },
   },
   {
     tableName: 'materias_primas',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = MateriaPrima;

@@ -4,7 +4,7 @@ const sequelize = require('../database/database');
 const Permiso = sequelize.define(
   'Permiso',
   {
-    id: { type: DataTypes.UUID,  defaultValue: DataTypes.UUIDV4,  primaryKey: true,   },
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
     nombre: { type: DataTypes.STRING(100), allowNull: false, unique: true },
     descripcion: { type: DataTypes.STRING(255), allowNull: true },
     modulo: { type: DataTypes.STRING(50), allowNull: true },
@@ -15,6 +15,3 @@ const Permiso = sequelize.define(
 );
 
 module.exports = Permiso;
-
-
-

@@ -225,7 +225,11 @@ exports.crearProveedorValidator = [
     .trim()
     .isLength({ max: 30 })
     .withMessage('El teléfono no puede superar los 30 caracteres'),
-  body('nombreContactoTelefono').optional({ nullable: true, checkFalsy: true }).isString().trim().isLength({ max: 150 }),
+  body('nombreContactoTelefono')
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .trim()
+    .isLength({ max: 150 }),
 
   body('email')
     .optional({ nullable: true })
@@ -294,7 +298,11 @@ exports.actualizarProveedorValidator = [
     .trim()
     .isLength({ max: 30 })
     .withMessage('El teléfono no puede superar los 30 caracteres'),
-  body('nombreContactoTelefono').optional({ nullable: true, checkFalsy: true }).isString().trim().isLength({ max: 150 }),
+  body('nombreContactoTelefono')
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .trim()
+    .isLength({ max: 150 }),
 
   body('email')
     .optional({ nullable: true })

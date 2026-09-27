@@ -76,7 +76,7 @@ async function entorno(t) {
     CREATE TABLE role_permissions(rol_id uuid,permiso_id uuid,PRIMARY KEY(rol_id,permiso_id));
     CREATE TABLE categorias_productos(id uuid PRIMARY KEY,codigo text,nombre text,descripcion text,clasificacion_mp text,requiere_lote boolean DEFAULT false,requiere_fecha_vencimiento boolean DEFAULT false,requiere_temperatura boolean DEFAULT false,estado boolean DEFAULT true,created_at timestamptz,updated_at timestamptz);
     CREATE TABLE unidades_medida(id uuid PRIMARY KEY,codigo text,nombre text,simbolo text,estado boolean DEFAULT true,created_at timestamptz,updated_at timestamptz);
-    CREATE TABLE productos(id uuid PRIMARY KEY,codigo text,nombre text,descripcion text,categoria_producto_id uuid,unidad_medida_id uuid,estado boolean DEFAULT true,created_at timestamptz,updated_at timestamptz,tipo_producto text,condicion_termica_id uuid);
+    CREATE TABLE productos(id uuid PRIMARY KEY,codigo text,nombre text,descripcion text,categoria_producto_id uuid,unidad_medida_id uuid,estado boolean DEFAULT true,created_at timestamptz,updated_at timestamptz,tipo_producto text,condicion_termica_id uuid,familia_mp_carnica_id uuid);
     CREATE TABLE bodegas(id uuid PRIMARY KEY,codigo text,nombre text,tipo text,descripcion text,direccion text,responsable_id uuid,estado boolean DEFAULT true,created_at timestamptz,updated_at timestamptz);
     CREATE TABLE movimientos_inventario(id uuid PRIMARY KEY,tipo_documento text,numero_documento text UNIQUE,fecha timestamptz,bodega_id uuid,estado text,origen text,origen_id uuid,usuario_id uuid,observaciones text,created_at timestamptz,updated_at timestamptz,UNIQUE(origen,origen_id));
     CREATE TABLE detalle_movimiento(id uuid PRIMARY KEY,movimiento_inventario_id uuid REFERENCES movimientos_inventario(id),producto_id uuid,unidad_medida_id uuid,cantidad numeric(15,3) CHECK(cantidad>0),sentido text,lote text,lote_proveedor text,fecha_vencimiento date,costo_unitario numeric,costo_total numeric,observaciones text,created_at timestamptz,updated_at timestamptz);
@@ -171,7 +171,7 @@ test('guardar revierte conteo y documentos si falla un ajuste', async (t) => {
     1,
   );
 });
-test('migración reclasifica ajustes y traslados conservando recepción y números', async t => {
+test('migración reclasifica ajustes y traslados conservando recepción y números', async (t) => {
   const pg = await entorno(t);
   await pg.exec(`ALTER TABLE movimientos_inventario DROP CONSTRAINT movimientos_inventario_tipo_documento_check;
     ALTER TABLE movimientos_inventario ALTER COLUMN tipo_documento TYPE varchar(2);
@@ -181,10 +181,21 @@ test('migración reclasifica ajustes y traslados conservando recepción y númer
       ('${id(72)}','SA','LEGADO-2','AJUSTE_CONTEO','${id(6)}'),
       ('${id(73)}','EN','LEGADO-3','TRASLADO','${id(6)}'),
       ('${id(74)}','SA','LEGADO-4','TRASLADO','${id(6)}');`);
-  await require('../database/migrations/20260916000001-tipos-documento-inventario').up(models.sequelize.getQueryInterface(), Sequelize);
-  const rows = (await pg.query('SELECT tipo_documento,numero_documento FROM movimientos_inventario ORDER BY id')).rows;
-  assert.deepEqual(rows.map(r => r.tipo_documento), ['EN','AJN','AJS','TRN','TRS']);
-  assert.deepEqual(rows.map(r => r.numero_documento), ['INICIAL','LEGADO-1','LEGADO-2','LEGADO-3','LEGADO-4']);
+  await require('../database/migrations/20260916000001-tipos-documento-inventario').up(
+    models.sequelize.getQueryInterface(),
+    Sequelize,
+  );
+  const rows = (
+    await pg.query('SELECT tipo_documento,numero_documento FROM movimientos_inventario ORDER BY id')
+  ).rows;
+  assert.deepEqual(
+    rows.map((r) => r.tipo_documento),
+    ['EN', 'AJN', 'AJS', 'TRN', 'TRS'],
+  );
+  assert.deepEqual(
+    rows.map((r) => r.numero_documento),
+    ['INICIAL', 'LEGADO-1', 'LEGADO-2', 'LEGADO-3', 'LEGADO-4'],
+  );
 });
 test('conteo histórico: nota obligatoria, ajustes AJN/AJS, inmutabilidad y aplicación idempotente', async (t) => {
   const pg = await entorno(t);
@@ -466,11 +477,26 @@ test('alertas usan el total por producto y bodega, filtran antes de paginar y re
   assert.equal(listado.filas.length, 2);
   assert.ok(listado.filas.every((f) => f.estadoStock === 'BAJO' && f.cantidadSugerida === '2.000'));
   assert.equal(listado.metadata.resumenAlertas.bajos, 1);
-  assert.equal((await consultas.existencias({ productoId: id(4), bodegaId: id(6), estadoStock: 'NORMAL' })).total, 0);
+  assert.equal(
+    (await consultas.existencias({ productoId: id(4), bodegaId: id(6), estadoStock: 'NORMAL' }))
+      .total,
+    0,
+  );
   await pg.exec(`UPDATE configuraciones_stock SET stock_minimo=10, punto_reorden=10`);
-  assert.equal((await consultas.existencias({ productoId: id(4), bodegaId: id(6) })).filas[0].estadoStock, 'CRITICO');
+  assert.equal(
+    (await consultas.existencias({ productoId: id(4), bodegaId: id(6) })).filas[0].estadoStock,
+    'CRITICO',
+  );
   await pg.exec(`UPDATE configuraciones_stock SET activo=false`);
-  assert.equal((await consultas.existencias({ productoId: id(4), bodegaId: id(6) })).filas[0].estadoStock, 'SIN_CONFIGURAR');
-  await pg.exec(`UPDATE detalle_movimiento SET sentido=NULL; UPDATE movimientos_inventario SET tipo_documento='AJ'`);
-  assert.equal((await consultas.existencias({ productoId: id(4), bodegaId: id(6) })).filas[0].estadoStock, 'INDETERMINADO');
+  assert.equal(
+    (await consultas.existencias({ productoId: id(4), bodegaId: id(6) })).filas[0].estadoStock,
+    'SIN_CONFIGURAR',
+  );
+  await pg.exec(
+    `UPDATE detalle_movimiento SET sentido=NULL; UPDATE movimientos_inventario SET tipo_documento='AJ'`,
+  );
+  assert.equal(
+    (await consultas.existencias({ productoId: id(4), bodegaId: id(6) })).filas[0].estadoStock,
+    'INDETERMINADO',
+  );
 });

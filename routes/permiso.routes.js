@@ -74,7 +74,13 @@ router.post('/', permiso('Permisos.Crear'), crearPermisoValidator, validar, ctrl
  *         schema:
  *           type: integer
  */
-router.put('/:id', permiso('Permisos.Editar'), actualizarPermisoValidator, validar, ctrl.actualizar);
+router.put(
+  '/:id',
+  permiso('Permisos.Editar'),
+  actualizarPermisoValidator,
+  validar,
+  ctrl.actualizar,
+);
 
 /**
  * @swagger

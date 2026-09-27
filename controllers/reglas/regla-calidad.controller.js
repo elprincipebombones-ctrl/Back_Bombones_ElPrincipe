@@ -38,8 +38,8 @@ module.exports = crearCrud({
   },
   antesDeActualizar: async (regla, body) => {
     if (!body.parametroCalidadId && !regla.parametroCalidadId) {
-      const error = (await validarCampo(regla.campoFormatoId)) ||
-        (await validarCampo(body.campoFormatoId));
+      const error =
+        (await validarCampo(regla.campoFormatoId)) || (await validarCampo(body.campoFormatoId));
       if (error) return error;
     }
     if (body.estado === true) {
@@ -50,5 +50,6 @@ module.exports = crearCrud({
     }
     return null;
   },
-  antesDeEliminar: (regla) => (regla.parametroCalidadId ? null : validarCampo(regla.campoFormatoId)),
+  antesDeEliminar: (regla) =>
+    regla.parametroCalidadId ? null : validarCampo(regla.campoFormatoId),
 });

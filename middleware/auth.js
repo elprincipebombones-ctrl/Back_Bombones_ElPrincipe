@@ -59,7 +59,6 @@ const permisosCache = new Map();
 
 const CACHE_TTL = 60 * 1000; // 60 segundos
 
-
 /*
 |--------------------------------------------------------------------------
 | Obtener permisos del rol
@@ -67,7 +66,6 @@ const CACHE_TTL = 60 * 1000; // 60 segundos
 */
 
 const obtenerPermisosRol = async (rolId) => {
-
   const ahora = Date.now();
 
   const cache = permisosCache.get(rolId);
@@ -91,21 +89,19 @@ const obtenerPermisosRol = async (rolId) => {
         as: 'roles',
         attributes: [],
         through: {
-          attributes: []
+          attributes: [],
         },
         where: {
-          id: rolId
-        }
-      }
+          id: rolId,
+        },
+      },
     ],
     where: {
-      estado: true
-    }
+      estado: true,
+    },
   });
 
-  const nombresPermisos = permisos.map(
-    permiso => permiso.nombre
-  );
+  const nombresPermisos = permisos.map((permiso) => permiso.nombre);
 
   /*
   |--------------------------------------------------------------------------
@@ -115,12 +111,11 @@ const obtenerPermisosRol = async (rolId) => {
 
   permisosCache.set(rolId, {
     permisos: nombresPermisos,
-    expiresAt: ahora + CACHE_TTL
+    expiresAt: ahora + CACHE_TTL,
   });
 
   return nombresPermisos;
 };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -129,11 +124,7 @@ const obtenerPermisosRol = async (rolId) => {
 */
 
 module.exports = async (req, res, next) => {
-
   try {
-
-    console.time('AUTH-TOTAL');
-
     /*
     |--------------------------------------------------------------------------
     | 1. Obtener Authorization
@@ -142,20 +133,9 @@ module.exports = async (req, res, next) => {
 
     const header = req.headers.authorization;
 
-    if (
-      !header ||
-      !header.startsWith('Bearer ')
-    ) {
-
-      console.timeEnd('AUTH-TOTAL');
-
-      return fail(
-        res,
-        'Token no proporcionado',
-        401
-      );
+    if (!header || !header.startsWith('Bearer ')) {
+      return fail(res, 'Token no proporcionado', 401);
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -165,7 +145,6 @@ module.exports = async (req, res, next) => {
 
     const token = header.split(' ')[1];
 
-
     /*
     |--------------------------------------------------------------------------
     | 3. Verificar JWT
@@ -173,7 +152,6 @@ module.exports = async (req, res, next) => {
     */
 
     const decoded = verificarToken(token);
-
 
     /*
     |--------------------------------------------------------------------------
@@ -196,39 +174,18 @@ module.exports = async (req, res, next) => {
     |
     */
 
-    console.time('AUTH-USER-DB');
+    const usuario = await Usuario.findByPk(decoded.id, {
+      attributes: ['id', 'nombre', 'correo', 'usuario', 'cargoId', 'estado', 'rolId'],
 
-    const usuario = await Usuario.findByPk(
-      decoded.id,
-      {
-        attributes: [
-          'id',
-          'nombre',
-          'correo',
-          'usuario',
-          'cargoId',
-          'estado',
-          'rolId'
-        ],
+      include: [
+        {
+          model: Rol,
+          as: 'rol',
 
-        include: [
-          {
-            model: Rol,
-            as: 'rol',
-
-            attributes: [
-              'id',
-              'nombre',
-              'descripcion',
-              'estado'
-            ]
-          }
-        ]
-      }
-    );
-
-    console.timeEnd('AUTH-USER-DB');
-
+          attributes: ['id', 'nombre', 'descripcion', 'estado'],
+        },
+      ],
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -237,28 +194,12 @@ module.exports = async (req, res, next) => {
     */
 
     if (!usuario) {
-
-      console.timeEnd('AUTH-TOTAL');
-
-      return fail(
-        res,
-        'Usuario no válido',
-        401
-      );
+      return fail(res, 'Usuario no válido', 401);
     }
-
 
     if (!usuario.estado) {
-
-      console.timeEnd('AUTH-TOTAL');
-
-      return fail(
-        res,
-        'Usuario inactivo',
-        401
-      );
+      return fail(res, 'Usuario inactivo', 401);
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -266,20 +207,9 @@ module.exports = async (req, res, next) => {
     |--------------------------------------------------------------------------
     */
 
-    if (
-      !usuario.rol ||
-      !usuario.rol.estado
-    ) {
-
-      console.timeEnd('AUTH-TOTAL');
-
-      return fail(
-        res,
-        'Rol no válido o inactivo',
-        403
-      );
+    if (!usuario.rol || !usuario.rol.estado) {
+      return fail(res, 'Rol no válido o inactivo', 403);
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -287,14 +217,7 @@ module.exports = async (req, res, next) => {
     |--------------------------------------------------------------------------
     */
 
-    console.time('AUTH-PERMISSIONS');
-
-    const permisos = await obtenerPermisosRol(
-      usuario.rol.id
-    );
-
-    console.timeEnd('AUTH-PERMISSIONS');
-
+    const permisos = await obtenerPermisosRol(usuario.rol.id);
 
     /*
     |--------------------------------------------------------------------------
@@ -306,32 +229,19 @@ module.exports = async (req, res, next) => {
 
     req.permisos = permisos;
 
-
     /*
     |--------------------------------------------------------------------------
     | 9. Continuar
     |--------------------------------------------------------------------------
     */
 
-    console.timeEnd('AUTH-TOTAL');
-
     next();
-
   } catch (err) {
+    console.error('[AUTH ERROR]', err.message);
 
-    console.error(
-      '[AUTH ERROR]',
-      err.message
-    );
-
-    return fail(
-      res,
-      'Token inválido o expirado',
-      401
-    );
+    return fail(res, 'Token inválido o expirado', 401);
   }
 };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -347,9 +257,7 @@ module.exports = async (req, res, next) => {
 */
 
 module.exports.limpiarCachePermisos = (rolId) => {
-
   if (rolId) {
-
     permisosCache.delete(rolId);
 
     return;

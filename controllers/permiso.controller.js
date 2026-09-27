@@ -3,15 +3,16 @@ const { ok, created, fail } = require('../utils/response');
 
 exports.listar = async (req, res, next) => {
   try {
-
-    const permisos = await Permiso.findAll({ order: [['modulo', 'ASC'], ['nombre', 'ASC']] });
+    const permisos = await Permiso.findAll({
+      order: [
+        ['modulo', 'ASC'],
+        ['nombre', 'ASC'],
+      ],
+    });
 
     return ok(res, permisos);
-
   } catch (err) {
-
     return next(err);
-    
   }
 };
 
@@ -26,26 +27,19 @@ exports.obtener = async (req, res, next) => {
 };
 
 exports.crear = async (req, res, next) => {
-  
   try {
-    
-
     const { nombre, descripcion, modulo } = req.body;
 
     const existente = await Permiso.findOne({ where: { nombre } });
     // SELECT * FROM permissions WHERE nombre = 'nombre';
 
-    if (existente) 
-      return fail(res, 'El permiso ya existe', 409);
+    if (existente) return fail(res, 'El permiso ya existe', 409);
 
     const permiso = await Permiso.create({ nombre, descripcion, modulo });
 
     return created(res, permiso);
-
   } catch (err) {
-
     return next(err);
-
   }
 };
 

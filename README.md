@@ -45,15 +45,15 @@ Documentación Swagger: `http://localhost:3000/api/docs`
 
 ## Scripts
 
-| Script | Descripción |
-|---|---|
-| `npm run dev` | Ejecuta con nodemon |
-| `npm run start` | Ejecuta en producción |
-| `npm run migrate` | Ejecuta migraciones |
+| Script                 | Descripción                  |
+| ---------------------- | ---------------------------- |
+| `npm run dev`          | Ejecuta con nodemon          |
+| `npm run start`        | Ejecuta en producción        |
+| `npm run migrate`      | Ejecuta migraciones          |
 | `npm run migrate:undo` | Revierte la última migración |
-| `npm run seed` | Ejecuta todos los seeders |
-| `npm run undo` | Revierte todos los seeders |
-| `npm run lint` | Linter |
+| `npm run seed`         | Ejecuta todos los seeders    |
+| `npm run undo`         | Revierte todos los seeders   |
+| `npm run lint`         | Linter                       |
 
 ## Estructura
 
@@ -75,11 +75,13 @@ swagger.js       Configuración de Swagger
 Base: `/api`
 
 ### Auth
+
 - `POST /api/auth/login` — Devuelve `{ token, refreshToken, usuario, rol, permisos, menus }`
 - `POST /api/auth/refresh` — Renueva tokens
 - `GET  /api/auth/perfil` — Perfil del usuario autenticado
 
 ### CRUD (requieren JWT + permisos)
+
 - `/api/usuarios`
 - `/api/roles`
 - `/api/permisos`

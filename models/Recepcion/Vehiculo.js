@@ -7,67 +7,68 @@ const Vehiculo = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     codigo: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      unique: true
+      unique: true,
     },
 
     placa: {
       type: DataTypes.STRING(20),
       allowNull: false,
-      unique: true
+      unique: true,
     },
 
     tipoVehiculo: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      field: 'tipo_vehiculo'
+      field: 'tipo_vehiculo',
     },
 
     marca: {
       type: DataTypes.STRING(80),
-      allowNull: true
+      allowNull: true,
     },
 
     modelo: {
       type: DataTypes.STRING(80),
-      allowNull: true
+      allowNull: true,
     },
 
     capacidadKg: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
-      field: 'capacidad_kg'
+      field: 'capacidad_kg',
     },
 
     descripcion: {
       type: DataTypes.TEXT,
-      allowNull: true
+      allowNull: true,
     },
 
     estado: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: true
-    }, proveedorId: {
+      defaultValue: true,
+    },
+    proveedorId: {
       type: DataTypes.UUID,
       allowNull: false,
       field: 'proveedor_id',
       references: {
         model: 'proveedores',
-        key: 'id'
-      }
+        key: 'id',
+      },
     },
   },
   {
     tableName: 'vehiculos',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = Vehiculo;

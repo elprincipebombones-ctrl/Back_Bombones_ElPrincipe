@@ -4,10 +4,17 @@ const ctrl = require('../../controllers/recepcion/proveedores.controller');
 const auth = require('../../middleware/auth');
 const permiso = require('../../middleware/permiso');
 const validar = require('../../middleware/validar');
-const { crearProveedorValidator, actualizarProveedorValidator, idValidator } = require('../../validators/maestro.validator');
+const {
+  crearProveedorValidator,
+  actualizarProveedorValidator,
+  idValidator,
+} = require('../../validators/maestro.validator');
 const router = Router();
 const documentos = require('../../services/proveedores/almacenamiento-documentos.service');
-const multipart = (req, res, next) => documentos.upload(req, res, (err) => err ? next(Object.assign(err, { status: err.status || 422 })) : next());
+const multipart = (req, res, next) =>
+  documentos.upload(req, res, (err) =>
+    err ? next(Object.assign(err, { status: err.status || 422 })) : next(),
+  );
 
 router.use(auth);
 
@@ -30,11 +37,7 @@ router.use(auth);
  *       200:
  *         description: Lista de proveedores
  */
-router.get(
-    '/',
-    permiso('Proveedores.Ver'),
-    ctrl.listar
-);
+router.get('/', permiso('Proveedores.Ver'), ctrl.listar);
 
 /**
  * @swagger
@@ -57,14 +60,15 @@ router.get(
  *       404:
  *         description: Proveedor no encontrado
  */
-router.get('/:id/documentos/:documentoId/descarga', permiso('Proveedores.Ver'), idValidator, param('documentoId').isUUID(), validar, ctrl.descargar);
 router.get(
-    '/:id',
-    permiso('Proveedores.Ver'),
-    idValidator,
-    validar,
-    ctrl.obtener
+  '/:id/documentos/:documentoId/descarga',
+  permiso('Proveedores.Ver'),
+  idValidator,
+  param('documentoId').isUUID(),
+  validar,
+  ctrl.descargar,
 );
+router.get('/:id', permiso('Proveedores.Ver'), idValidator, validar, ctrl.obtener);
 
 /**
  * @swagger
@@ -91,12 +95,12 @@ router.get(
  *         description: Proveedor creado
  */
 router.post(
-    '/',
-    permiso('Proveedores.Crear'),
-    multipart,
-    crearProveedorValidator,
-    validar,
-    ctrl.crear
+  '/',
+  permiso('Proveedores.Crear'),
+  multipart,
+  crearProveedorValidator,
+  validar,
+  ctrl.crear,
 );
 
 /**
@@ -133,12 +137,12 @@ router.post(
  *         description: Proveedor no encontrado
  */
 router.put(
-    '/:id',
-    permiso('Proveedores.Editar'),
-    multipart,
-    actualizarProveedorValidator,
-    validar,
-    ctrl.actualizar
+  '/:id',
+  permiso('Proveedores.Editar'),
+  multipart,
+  actualizarProveedorValidator,
+  validar,
+  ctrl.actualizar,
 );
 
 /**
@@ -162,12 +166,6 @@ router.put(
  *       404:
  *         description: Proveedor no encontrado
  */
-router.delete(
-    '/:id',
-    permiso('Proveedores.Eliminar'),
-    idValidator,
-    validar,
-    ctrl.eliminar
-);
+router.delete('/:id', permiso('Proveedores.Eliminar'), idValidator, validar, ctrl.eliminar);
 
 module.exports = router;

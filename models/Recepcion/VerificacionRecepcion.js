@@ -7,7 +7,7 @@ const VerificacionRecepcion = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     recepcionId: {
@@ -17,55 +17,55 @@ const VerificacionRecepcion = sequelize.define(
       field: 'recepcion_id',
       references: {
         model: 'recepciones',
-        key: 'id'
-      }
+        key: 'id',
+      },
     },
 
     certificadoCalidad: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      field: 'certificado_calidad'
+      field: 'certificado_calidad',
     },
 
     plagas: {
       type: DataTypes.BOOLEAN,
-      allowNull: true
+      allowNull: true,
     },
 
     rotuladoCorrecto: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      field: 'rotulado_correcto'
+      field: 'rotulado_correcto',
     },
 
     condicionesEmbalaje: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      field: 'condiciones_embalaje'
+      field: 'condiciones_embalaje',
     },
 
     aparienciaColorTextura: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      field: 'apariencia_color_textura'
+      field: 'apariencia_color_textura',
     },
 
     empaqueEmbalaje: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      field: 'empaque_embalaje'
+      field: 'empaque_embalaje',
     },
 
     olor: {
       type: DataTypes.BOOLEAN,
-      allowNull: true
-    }
+      allowNull: true,
+    },
   },
   {
     tableName: 'verificaciones_recepcion',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = VerificacionRecepcion;

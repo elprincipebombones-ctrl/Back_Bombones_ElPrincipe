@@ -9,7 +9,7 @@ const validar = require('../../middleware/validar');
 const {
   idUnidadMedidaValidator,
   crearUnidadMedidaValidator,
-  actualizarUnidadMedidaValidator
+  actualizarUnidadMedidaValidator,
 } = require('../../validators/maestro.validator');
 
 const router = Router();
@@ -35,10 +35,7 @@ router.use(auth);
  *       200:
  *         description: Lista de unidades de medida
  */
-router.get(
-  '/',
-  ctrl.listar
-);
+router.get('/', ctrl.listar);
 
 /**
  * @swagger
@@ -61,12 +58,7 @@ router.get(
  *       404:
  *         description: Unidad de medida no encontrada
  */
-router.get(
-  '/:id',
-  idUnidadMedidaValidator,
-  validar,
-  ctrl.obtener
-);
+router.get('/:id', idUnidadMedidaValidator, validar, ctrl.obtener);
 
 /**
  * @swagger
@@ -106,12 +98,7 @@ router.get(
  *       201:
  *         description: Unidad de medida creada
  */
-router.post(
-  '/',
-  crearUnidadMedidaValidator,
-  validar,
-  ctrl.crear
-);
+router.post('/', crearUnidadMedidaValidator, validar, ctrl.crear);
 
 /**
  * @swagger
@@ -156,12 +143,7 @@ router.post(
  *       404:
  *         description: Unidad de medida no encontrada
  */
-router.put(
-  '/:id',
-  actualizarUnidadMedidaValidator,
-  validar,
-  ctrl.actualizar
-);
+router.put('/:id', actualizarUnidadMedidaValidator, validar, ctrl.actualizar);
 
 /**
  * @swagger
@@ -184,11 +166,6 @@ router.put(
  *       404:
  *         description: Unidad de medida no encontrada
  */
-router.delete(
-  '/:id',
-  idUnidadMedidaValidator,
-  validar,
-  ctrl.eliminar
-);
+router.delete('/:id', idUnidadMedidaValidator, validar, ctrl.eliminar);
 
 module.exports = router;

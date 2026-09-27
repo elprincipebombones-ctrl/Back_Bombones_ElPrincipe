@@ -5,9 +5,7 @@ const auth = require('../../middleware/auth');
 const permiso = require('../../middleware/permiso');
 const validar = require('../../middleware/validar');
 
-const {
-    idValidator
-} = require('../../validators/maestro.validator');
+const { idValidator } = require('../../validators/maestro.validator');
 
 const router = Router();
 
@@ -32,11 +30,7 @@ router.use(auth);
  *       200:
  *         description: Lista de lugares o áreas
  */
-router.get(
-    '/',
-    permiso('LugarArea.Ver'),
-    ctrl.listar
-);
+router.get('/', permiso('LugarArea.Ver'), ctrl.listar);
 
 /**
  * @swagger
@@ -59,13 +53,7 @@ router.get(
  *       404:
  *         description: Lugar o área no encontrado
  */
-router.get(
-    '/:id',
-    permiso('LugarArea.Ver'),
-    idValidator,
-    validar,
-    ctrl.obtener
-);
+router.get('/:id', permiso('LugarArea.Ver'), idValidator, validar, ctrl.obtener);
 
 /**
  * @swagger
@@ -85,11 +73,7 @@ router.get(
  *       201:
  *         description: Lugar o área creado
  */
-router.post(
-    '/',
-    permiso('LugarArea.Crear'),
-    ctrl.crear
-);
+router.post('/', permiso('LugarArea.Crear'), ctrl.crear);
 
 /**
  * @swagger
@@ -118,13 +102,7 @@ router.post(
  *       404:
  *         description: Lugar o área no encontrado
  */
-router.put(
-    '/:id',
-    permiso('LugarArea.Editar'),
-    idValidator,
-    validar,
-    ctrl.actualizar
-);
+router.put('/:id', permiso('LugarArea.Editar'), idValidator, validar, ctrl.actualizar);
 
 /**
  * @swagger
@@ -147,12 +125,6 @@ router.put(
  *       404:
  *         description: Lugar o área no encontrado
  */
-router.delete(
-    '/:id',
-    permiso('LugarArea.Eliminar'),
-    idValidator,
-    validar,
-    ctrl.eliminar
-);
+router.delete('/:id', permiso('LugarArea.Eliminar'), idValidator, validar, ctrl.eliminar);
 
 module.exports = router;

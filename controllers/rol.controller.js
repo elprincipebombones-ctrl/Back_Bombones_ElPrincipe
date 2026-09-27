@@ -86,7 +86,6 @@
 //   }
 // };
 
-
 const { Rol, Permiso, Menu } = require('../models');
 const { ok, created, fail } = require('../utils/response');
 
@@ -101,7 +100,7 @@ exports.listar = async (req, res, next) => {
       ],
       order: [['nombre', 'ASC']],
     });
-     console.timeEnd('TEST-ROLES');
+    console.timeEnd('TEST-ROLES');
     return ok(res, roles);
   } catch (err) {
     return next(err);
@@ -130,11 +129,11 @@ exports.crear = async (req, res, next) => {
     if (existente) return fail(res, 'El rol ya existe', 409);
 
     const rol = await Rol.create({ nombre, descripcion });
-    
+
     // Promesas en paralelo para no bloquear
     await Promise.all([
       permisos.length ? rol.setPermisos(permisos) : Promise.resolve(),
-      menus.length ? rol.setMenus(menus) : Promise.resolve()
+      menus.length ? rol.setMenus(menus) : Promise.resolve(),
     ]);
 
     const creado = await Rol.findByPk(rol.id, {

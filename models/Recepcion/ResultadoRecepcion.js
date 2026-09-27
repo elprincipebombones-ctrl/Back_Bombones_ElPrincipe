@@ -7,7 +7,7 @@ const ResultadoRecepcion = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     recepcionId: {
@@ -17,31 +17,31 @@ const ResultadoRecepcion = sequelize.define(
       field: 'recepcion_id',
       references: {
         model: 'recepciones',
-        key: 'id'
-      }
+        key: 'id',
+      },
     },
 
     resultado: {
       type: DataTypes.STRING(30),
-      allowNull: false
+      allowNull: false,
     },
 
     observaciones: {
       type: DataTypes.TEXT,
-      allowNull: true
+      allowNull: true,
     },
 
     fechaDecision: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'fecha_decision'
-    }
+      field: 'fecha_decision',
+    },
   },
   {
     tableName: 'resultados_recepcion',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = ResultadoRecepcion;

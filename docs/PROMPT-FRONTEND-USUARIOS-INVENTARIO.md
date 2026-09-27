@@ -75,8 +75,20 @@ El filtro bodegaId del listado es la bodega origen. Body:
   "bodegaId": "UUID-ORIGEN",
   "nota": "Reposición",
   "detalles": [
-    { "productoId": "UUID-PRODUCTO", "bodegaDestinoId": "UUID-DESTINO-1", "cantidad": "4.000", "lote": "L001", "fechaVencimiento": "2027-01-31" },
-    { "productoId": "UUID-PRODUCTO", "bodegaDestinoId": "UUID-DESTINO-2", "cantidad": "2.000", "lote": "L001", "fechaVencimiento": "2027-01-31" }
+    {
+      "productoId": "UUID-PRODUCTO",
+      "bodegaDestinoId": "UUID-DESTINO-1",
+      "cantidad": "4.000",
+      "lote": "L001",
+      "fechaVencimiento": "2027-01-31"
+    },
+    {
+      "productoId": "UUID-PRODUCTO",
+      "bodegaDestinoId": "UUID-DESTINO-2",
+      "cantidad": "2.000",
+      "lote": "L001",
+      "fechaVencimiento": "2027-01-31"
+    }
   ]
 }
 ```

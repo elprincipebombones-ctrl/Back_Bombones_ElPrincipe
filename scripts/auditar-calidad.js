@@ -67,7 +67,10 @@ const ejecutar = async () => {
               desviacion: ultima.desviaciones[0]?.estado,
               acciones: acciones.length,
               accionesCerradas: acciones.filter((accion) => accion.estado === 'CERRADA').length,
-              seguimientos: acciones.reduce((total, accion) => total + accion.seguimientos.length, 0),
+              seguimientos: acciones.reduce(
+                (total, accion) => total + accion.seguimientos.length,
+                0,
+              ),
               evidencias: acciones.reduce((total, accion) => total + accion.evidencias.length, 0),
             }
           : null,

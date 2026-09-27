@@ -1,66 +1,62 @@
 'use strict';
 
 module.exports = {
-
   async up(queryInterface, Sequelize) {
-
     // =====================================================
     // 1. ELIMINAR TABLAS DEL MÓDULO DE RECEPCIÓN
     // =====================================================
     // Primero eliminamos las tablas hijas para evitar
     // conflictos con las llaves foráneas.
-    
+
     await queryInterface.dropTable('resultados_recepcion', {
-      cascade: true
+      cascade: true,
     });
 
     await queryInterface.dropTable('condiciones_ambientales_recepcion', {
-      cascade: true
+      cascade: true,
     });
 
     await queryInterface.dropTable('verificaciones_recepcion', {
-      cascade: true
+      cascade: true,
     });
 
     await queryInterface.dropTable('temperaturas_recepcion', {
-      cascade: true
+      cascade: true,
     });
 
     await queryInterface.dropTable('recepciones_vehiculos', {
-      cascade: true
+      cascade: true,
     });
 
     await queryInterface.dropTable('detalles_recepcion', {
-      cascade: true
+      cascade: true,
     });
 
     await queryInterface.dropTable('recepciones', {
-      cascade: true
+      cascade: true,
     });
-
 
     // =====================================================
     // 2. RECEPCIONES
     // =====================================================
 
     await queryInterface.createTable('recepciones', {
-
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
-        allowNull: false
+        allowNull: false,
       },
 
       numero: {
         type: Sequelize.STRING(50),
         allowNull: false,
-        unique: true
+        unique: true,
       },
 
       fecha_recepcion: {
         type: Sequelize.DATE,
-        allowNull: false
+        allowNull: false,
       },
 
       proveedor_id: {
@@ -69,11 +65,11 @@ module.exports = {
 
         references: {
           model: 'proveedores',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'RESTRICT'
+        onDelete: 'RESTRICT',
       },
 
       bodega_id: {
@@ -82,11 +78,11 @@ module.exports = {
 
         references: {
           model: 'bodegas',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'RESTRICT'
+        onDelete: 'RESTRICT',
       },
 
       lugar_area_id: {
@@ -95,22 +91,22 @@ module.exports = {
 
         references: {
           model: 'lugares_areas',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'RESTRICT'
+        onDelete: 'RESTRICT',
       },
 
       estado: {
         type: Sequelize.STRING(30),
         allowNull: false,
-        defaultValue: 'PENDIENTE'
+        defaultValue: 'PENDIENTE',
       },
 
       observaciones: {
         type: Sequelize.TEXT,
-        allowNull: true
+        allowNull: true,
       },
 
       usuario_recepcion_id: {
@@ -119,39 +115,36 @@ module.exports = {
 
         references: {
           model: 'usuarios',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
+        onDelete: 'SET NULL',
       },
 
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: Sequelize.fn('NOW'),
       },
 
       updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
-      }
-
+        defaultValue: Sequelize.fn('NOW'),
+      },
     });
-
 
     // =====================================================
     // 3. DETALLES DE RECEPCIÓN
     // =====================================================
 
     await queryInterface.createTable('detalles_recepcion', {
-
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
-        allowNull: false
+        allowNull: false,
       },
 
       recepcion_id: {
@@ -160,11 +153,11 @@ module.exports = {
 
         references: {
           model: 'recepciones',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
       },
 
       producto_id: {
@@ -173,11 +166,11 @@ module.exports = {
 
         references: {
           model: 'productos',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'RESTRICT'
+        onDelete: 'RESTRICT',
       },
 
       unidad_medida_id: {
@@ -186,65 +179,62 @@ module.exports = {
 
         references: {
           model: 'unidades_medida',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'RESTRICT'
+        onDelete: 'RESTRICT',
       },
 
       cantidad: {
         type: Sequelize.DECIMAL(15, 3),
-        allowNull: false
+        allowNull: false,
       },
 
       lote: {
         type: Sequelize.STRING(100),
-        allowNull: true
+        allowNull: true,
       },
 
       // NUEVO CAMPO
       lote_proveedor: {
         type: Sequelize.STRING(100),
-        allowNull: true
+        allowNull: true,
       },
 
       fecha_vencimiento: {
         type: Sequelize.DATEONLY,
-        allowNull: true
+        allowNull: true,
       },
 
       observaciones: {
         type: Sequelize.TEXT,
-        allowNull: true
+        allowNull: true,
       },
 
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: Sequelize.fn('NOW'),
       },
 
       updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
-      }
-
+        defaultValue: Sequelize.fn('NOW'),
+      },
     });
-
 
     // =====================================================
     // 4. RECEPCIONES VEHÍCULOS
     // =====================================================
 
     await queryInterface.createTable('recepciones_vehiculos', {
-
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
-        allowNull: false
+        allowNull: false,
       },
 
       recepcion_id: {
@@ -253,11 +243,11 @@ module.exports = {
 
         references: {
           model: 'recepciones',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
       },
 
       vehiculo_id: {
@@ -266,64 +256,61 @@ module.exports = {
 
         references: {
           model: 'vehiculos',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'RESTRICT'
+        onDelete: 'RESTRICT',
       },
 
       temperatura: {
         type: Sequelize.DECIMAL(6, 2),
-        allowNull: true
+        allowNull: true,
       },
 
       precinto: {
         type: Sequelize.STRING(100),
-        allowNull: true
+        allowNull: true,
       },
 
       guia_transporte: {
         type: Sequelize.STRING(100),
-        allowNull: true
+        allowNull: true,
       },
 
       hora: {
         type: Sequelize.TIME,
-        allowNull: true
+        allowNull: true,
       },
 
       vehiculo_conductor_ok: {
         type: Sequelize.BOOLEAN,
-        allowNull: true
+        allowNull: true,
       },
 
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: Sequelize.fn('NOW'),
       },
 
       updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
-      }
-
+        defaultValue: Sequelize.fn('NOW'),
+      },
     });
-
 
     // =====================================================
     // 5. TEMPERATURAS DE RECEPCIÓN
     // =====================================================
 
     await queryInterface.createTable('temperaturas_recepcion', {
-
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
-        allowNull: false
+        allowNull: false,
       },
 
       recepcion_id: {
@@ -332,11 +319,11 @@ module.exports = {
 
         references: {
           model: 'recepciones',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
       },
 
       producto_id: {
@@ -345,54 +332,51 @@ module.exports = {
 
         references: {
           model: 'productos',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'RESTRICT'
+        onDelete: 'RESTRICT',
       },
 
       temperatura: {
         type: Sequelize.DECIMAL(6, 2),
-        allowNull: false
+        allowNull: false,
       },
 
       hora: {
         type: Sequelize.TIME,
-        allowNull: true
+        allowNull: true,
       },
 
       observaciones: {
         type: Sequelize.TEXT,
-        allowNull: true
+        allowNull: true,
       },
 
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: Sequelize.fn('NOW'),
       },
 
       updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
-      }
-
+        defaultValue: Sequelize.fn('NOW'),
+      },
     });
-
 
     // =====================================================
     // 6. VERIFICACIÓN DE RECEPCIÓN
     // =====================================================
 
     await queryInterface.createTable('verificaciones_recepcion', {
-
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
-        allowNull: false
+        allowNull: false,
       },
 
       recepcion_id: {
@@ -402,144 +386,135 @@ module.exports = {
 
         references: {
           model: 'recepciones',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
       },
 
       certificado_calidad: {
         type: Sequelize.BOOLEAN,
-        allowNull: true
+        allowNull: true,
       },
 
       plagas: {
         type: Sequelize.BOOLEAN,
-        allowNull: true
+        allowNull: true,
       },
 
       rotulado_correcto: {
         type: Sequelize.BOOLEAN,
-        allowNull: true
+        allowNull: true,
       },
 
       condiciones_embalaje: {
         type: Sequelize.BOOLEAN,
-        allowNull: true
+        allowNull: true,
       },
 
       apariencia_color_textura: {
         type: Sequelize.BOOLEAN,
-        allowNull: true
+        allowNull: true,
       },
 
       empaque_embalaje: {
         type: Sequelize.BOOLEAN,
-        allowNull: true
+        allowNull: true,
       },
 
       olor: {
         type: Sequelize.BOOLEAN,
-        allowNull: true
+        allowNull: true,
       },
 
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: Sequelize.fn('NOW'),
       },
 
       updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
-      }
-
+        defaultValue: Sequelize.fn('NOW'),
+      },
     });
-
 
     // =====================================================
     // 7. CONDICIONES AMBIENTALES
     // =====================================================
 
-    await queryInterface.createTable(
-      'condiciones_ambientales_recepcion',
-      {
+    await queryInterface.createTable('condiciones_ambientales_recepcion', {
+      id: {
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
+        primaryKey: true,
+        allowNull: false,
+      },
 
-        id: {
-          type: Sequelize.UUID,
-          defaultValue: Sequelize.UUIDV4,
-          primaryKey: true,
-          allowNull: false
+      recepcion_id: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        unique: true,
+
+        references: {
+          model: 'recepciones',
+          key: 'id',
         },
 
-        recepcion_id: {
-          type: Sequelize.UUID,
-          allowNull: false,
-          unique: true,
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
 
-          references: {
-            model: 'recepciones',
-            key: 'id'
-          },
+      temperatura: {
+        type: Sequelize.DECIMAL(6, 2),
+        allowNull: true,
+      },
 
-          onUpdate: 'CASCADE',
-          onDelete: 'CASCADE'
-        },
+      desinfeccion_realizada: {
+        type: Sequelize.BOOLEAN,
+        allowNull: true,
+      },
 
-        temperatura: {
-          type: Sequelize.DECIMAL(6, 2),
-          allowNull: true
-        },
+      producto_desinfeccion: {
+        type: Sequelize.STRING(150),
+        allowNull: true,
+      },
 
-        desinfeccion_realizada: {
-          type: Sequelize.BOOLEAN,
-          allowNull: true
-        },
+      concentracion_desinfeccion: {
+        type: Sequelize.STRING(50),
+        allowNull: true,
+      },
 
-        producto_desinfeccion: {
-          type: Sequelize.STRING(150),
-          allowNull: true
-        },
+      observaciones: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
 
-        concentracion_desinfeccion: {
-          type: Sequelize.STRING(50),
-          allowNull: true
-        },
+      created_at: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.fn('NOW'),
+      },
 
-        observaciones: {
-          type: Sequelize.TEXT,
-          allowNull: true
-        },
-
-        created_at: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.fn('NOW')
-        },
-
-        updated_at: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.fn('NOW')
-        }
-
-      }
-    );
-
+      updated_at: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.fn('NOW'),
+      },
+    });
 
     // =====================================================
     // 8. RESULTADO DE RECEPCIÓN
     // =====================================================
 
     await queryInterface.createTable('resultados_recepcion', {
-
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
-        allowNull: false
+        allowNull: false,
       },
 
       recepcion_id: {
@@ -549,77 +524,68 @@ module.exports = {
 
         references: {
           model: 'recepciones',
-          key: 'id'
+          key: 'id',
         },
 
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
       },
 
       resultado: {
         type: Sequelize.STRING(30),
-        allowNull: false
+        allowNull: false,
       },
 
       observaciones: {
         type: Sequelize.TEXT,
-        allowNull: true
+        allowNull: true,
       },
 
       fecha_decision: {
         type: Sequelize.DATE,
-        allowNull: true
+        allowNull: true,
       },
 
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: Sequelize.fn('NOW'),
       },
 
       updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
-      }
-
+        defaultValue: Sequelize.fn('NOW'),
+      },
     });
-
   },
 
-
   async down(queryInterface) {
-
     // Eliminamos en orden inverso
     await queryInterface.dropTable('resultados_recepcion', {
-      cascade: true
+      cascade: true,
     });
 
-    await queryInterface.dropTable(
-      'condiciones_ambientales_recepcion',
-      { cascade: true }
-    );
+    await queryInterface.dropTable('condiciones_ambientales_recepcion', { cascade: true });
 
     await queryInterface.dropTable('verificaciones_recepcion', {
-      cascade: true
+      cascade: true,
     });
 
     await queryInterface.dropTable('temperaturas_recepcion', {
-      cascade: true
+      cascade: true,
     });
 
     await queryInterface.dropTable('recepciones_vehiculos', {
-      cascade: true
+      cascade: true,
     });
 
     await queryInterface.dropTable('detalles_recepcion', {
-      cascade: true
+      cascade: true,
     });
 
     await queryInterface.dropTable('recepciones', {
-      cascade: true
+      cascade: true,
     });
-
-  }
-
+  },
 };

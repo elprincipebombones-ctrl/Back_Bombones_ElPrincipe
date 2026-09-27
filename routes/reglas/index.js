@@ -48,7 +48,11 @@ for (const recurso of recursos) {
     recurso.ruta,
     registrarCrud({
       controlador: recurso.controlador,
-      validadores: { id: validadores.idValidator, crear: recurso.crear, actualizar: recurso.actualizar },
+      validadores: {
+        id: validadores.idValidator,
+        crear: recurso.crear,
+        actualizar: recurso.actualizar,
+      },
       prefijoPermiso: 'reglas',
     }),
   );

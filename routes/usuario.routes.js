@@ -101,7 +101,13 @@ router.post('/', permiso('Usuarios.Crear'), crearUsuarioValidator, validar, ctrl
  *       200:
  *         description: Usuario actualizado
  */
-router.put('/:id', permiso('Usuarios.Editar'), actualizarUsuarioValidator, validar, ctrl.actualizar);
+router.put(
+  '/:id',
+  permiso('Usuarios.Editar'),
+  actualizarUsuarioValidator,
+  validar,
+  ctrl.actualizar,
+);
 
 /**
  * @swagger

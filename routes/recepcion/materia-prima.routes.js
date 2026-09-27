@@ -1,10 +1,13 @@
-
 const { Router } = require('express');
 const ctrl = require('../../controllers/recepcion/materias-primas.controller');
 const auth = require('../../middleware/auth');
 const permiso = require('../../middleware/permiso');
 const validar = require('../../middleware/validar');
-const { crearMateriaPrimaValidator, actualizarMateriaPrimaValidator, idValidator } = require('../../validators/maestro.validator');
+const {
+  crearMateriaPrimaValidator,
+  actualizarMateriaPrimaValidator,
+  idValidator,
+} = require('../../validators/maestro.validator');
 const router = Router();
 
 router.use(auth);
@@ -28,11 +31,7 @@ router.use(auth);
  *       200:
  *         description: Lista de materias primas
  */
-router.get(
-    '/',
-    permiso('MateriasPrimas.Ver'),
-    ctrl.listar
-);
+router.get('/', permiso('MateriasPrimas.Ver'), ctrl.listar);
 
 /**
  * @swagger
@@ -55,13 +54,7 @@ router.get(
  *       404:
  *         description: Materia prima no encontrada
  */
-router.get(
-    '/:id',
-    permiso('MateriasPrimas.Ver'),
-    idValidator,
-    validar,
-    ctrl.obtener
-);
+router.get('/:id', permiso('MateriasPrimas.Ver'), idValidator, validar, ctrl.obtener);
 
 /**
  * @swagger
@@ -81,11 +74,7 @@ router.get(
  *       201:
  *         description: Materia prima creada
  */
-router.post(
-    '/',
-    permiso('MateriasPrimas.Crear'),
-    ctrl.crear
-);
+router.post('/', permiso('MateriasPrimas.Crear'), ctrl.crear);
 
 /**
  * @swagger
@@ -114,13 +103,7 @@ router.post(
  *       404:
  *         description: Materia prima no encontrada
  */
-router.put(
-    '/:id',
-    permiso('MateriasPrimas.Editar'),
-    idValidator,
-    validar,
-    ctrl.actualizar
-);
+router.put('/:id', permiso('MateriasPrimas.Editar'), idValidator, validar, ctrl.actualizar);
 
 /**
  * @swagger
@@ -143,13 +126,6 @@ router.put(
  *       404:
  *         description: Materia prima no encontrada
  */
-router.delete(
-    '/:id',
-    permiso('MateriasPrimas.Eliminar'),
-    idValidator,
-    validar,
-    ctrl.eliminar
-);
+router.delete('/:id', permiso('MateriasPrimas.Eliminar'), idValidator, validar, ctrl.eliminar);
 
 module.exports = router;
-

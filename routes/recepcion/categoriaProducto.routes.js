@@ -9,7 +9,7 @@ const validar = require('../../middleware/validar');
 const {
   idCategoriaProductoValidator,
   crearCategoriaProductoValidator,
-  actualizarCategoriaProductoValidator
+  actualizarCategoriaProductoValidator,
 } = require('../../validators/maestro.validator');
 
 const router = Router();
@@ -35,11 +35,7 @@ router.use(auth);
  *       200:
  *         description: Lista de categorías de productos
  */
-router.get(
-  '/',
-  permiso('CategoriaProducto.Ver'),
-  ctrl.listar
-);
+router.get('/', permiso('CategoriaProducto.Ver'), ctrl.listar);
 
 /**
  * @swagger
@@ -67,7 +63,7 @@ router.get(
   permiso('CategoriaProducto.Ver'),
   idCategoriaProductoValidator,
   validar,
-  ctrl.obtener
+  ctrl.obtener,
 );
 
 /**
@@ -109,7 +105,7 @@ router.post(
   permiso('CategoriaProducto.Crear'),
   crearCategoriaProductoValidator,
   validar,
-  ctrl.crear
+  ctrl.crear,
 );
 
 /**
@@ -144,7 +140,7 @@ router.put(
   permiso('CategoriaProducto.Editar'),
   actualizarCategoriaProductoValidator,
   validar,
-  ctrl.actualizar
+  ctrl.actualizar,
 );
 
 /**
@@ -173,7 +169,7 @@ router.delete(
   permiso('CategoriaProducto.Eliminar'),
   idCategoriaProductoValidator,
   validar,
-  ctrl.eliminar
+  ctrl.eliminar,
 );
 
 module.exports = router;

@@ -7,18 +7,18 @@ module.exports = {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
-        allowNull: false
+        allowNull: false,
       },
 
       numero: {
         type: Sequelize.STRING(50),
         allowNull: false,
-        unique: true
+        unique: true,
       },
 
       fecha_recepcion: {
         type: Sequelize.DATE,
-        allowNull: false
+        allowNull: false,
       },
 
       proveedor_id: {
@@ -26,10 +26,10 @@ module.exports = {
         allowNull: false,
         references: {
           model: 'proveedores',
-          key: 'id'
+          key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'RESTRICT'
+        onDelete: 'RESTRICT',
       },
 
       bodega_id: {
@@ -37,10 +37,10 @@ module.exports = {
         allowNull: true,
         references: {
           model: 'bodegas',
-          key: 'id'
+          key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'RESTRICT'
+        onDelete: 'RESTRICT',
       },
 
       lugar_area_id: {
@@ -48,21 +48,21 @@ module.exports = {
         allowNull: true,
         references: {
           model: 'lugares_areas',
-          key: 'id'
+          key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'RESTRICT'
+        onDelete: 'RESTRICT',
       },
 
       estado: {
         type: Sequelize.STRING(30),
         allowNull: false,
-        defaultValue: 'PENDIENTE'
+        defaultValue: 'PENDIENTE',
       },
 
       observaciones: {
         type: Sequelize.TEXT,
-        allowNull: true
+        allowNull: true,
       },
 
       usuario_recepcion_id: {
@@ -70,27 +70,27 @@ module.exports = {
         allowNull: true,
         references: {
           model: 'usuarios',
-          key: 'id'
+          key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
+        onDelete: 'SET NULL',
       },
 
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: Sequelize.fn('NOW'),
       },
 
       updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
-      }
+        defaultValue: Sequelize.fn('NOW'),
+      },
     });
   },
 
   async down(queryInterface) {
     await queryInterface.dropTable('recepciones');
-  }
+  },
 };

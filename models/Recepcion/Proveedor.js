@@ -7,71 +7,89 @@ const Proveedor = sequelize.define(
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
 
     tipoDocumento: {
       type: DataTypes.STRING(20),
       allowNull: false,
-      field: 'tipo_documento'
+      field: 'tipo_documento',
     },
 
     numeroDocumento: {
       type: DataTypes.STRING(30),
       allowNull: false,
       unique: true,
-      field: 'numero_documento'
+      field: 'numero_documento',
     },
 
     razonSocial: {
       type: DataTypes.STRING(200),
       allowNull: true,
-      field: 'razon_social'
+      field: 'razon_social',
     },
 
     nombreComercial: {
       type: DataTypes.STRING(200),
       allowNull: true,
-      field: 'nombre_comercial'
+      field: 'nombre_comercial',
     },
 
     telefono: {
       type: DataTypes.STRING(30),
-      allowNull: true
+      allowNull: true,
     },
 
     nombreContactoTelefono: {
       type: DataTypes.STRING(150),
       allowNull: true,
-      field: 'nombre_contacto_telefono'
+      field: 'nombre_contacto_telefono',
     },
 
     email: {
       type: DataTypes.STRING(150),
-      allowNull: true
+      allowNull: true,
+    },
+
+    emailFacturacionElectronica: {
+      type: DataTypes.STRING(254),
+      allowNull: true,
+      field: 'email_facturacion_electronica',
+    },
+    esProveedor: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+      field: 'es_proveedor',
+    },
+    esCliente: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'es_cliente',
     },
 
     direccion: {
       type: DataTypes.STRING(250),
-      allowNull: true
+      allowNull: true,
     },
 
     ciudad: {
       type: DataTypes.STRING(100),
-      allowNull: true
+      allowNull: true,
     },
 
     estado: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: true
-    }
+      defaultValue: true,
+    },
   },
   {
     tableName: 'proveedores',
     timestamps: true,
-    underscored: true
-  }
+    underscored: true,
+  },
 );
 
 module.exports = Proveedor;

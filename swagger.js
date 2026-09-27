@@ -15,7 +15,8 @@ const swaggerSpec = swaggerJSDoc({
       },
       schemas: {
         ParametroCalidad: {
-          type: 'object', required: ['codigo', 'nombre', 'tipoCampoId'],
+          type: 'object',
+          required: ['codigo', 'nombre', 'tipoCampoId'],
           properties: {
             codigo: { type: 'string', example: 'CLORO_AGUA_POTABLE' },
             nombre: { type: 'string', example: 'Cloro agua potable' },
@@ -29,7 +30,8 @@ const swaggerSpec = swaggerJSDoc({
           },
         },
         ReglaParametro: {
-          type: 'object', required: ['parametroCalidadId', 'codigo', 'nombre', 'resultado'],
+          type: 'object',
+          required: ['parametroCalidadId', 'codigo', 'nombre', 'resultado'],
           properties: {
             parametroCalidadId: { type: 'string', format: 'uuid' },
             campoFormatoId: { type: 'string', format: 'uuid', nullable: true, deprecated: true },
@@ -49,9 +51,11 @@ const swaggerSpec = swaggerJSDoc({
 
 const operacion = (summary, requiereBody = false) => ({
   summary,
-  tags: [summary.includes('regla') || summary.includes('condición') || summary.includes('acción')
-    ? 'Reglas de calidad'
-    : 'Calidad'],
+  tags: [
+    summary.includes('regla') || summary.includes('condición') || summary.includes('acción')
+      ? 'Reglas de calidad'
+      : 'Calidad',
+  ],
   security: [{ bearerAuth: [] }],
   ...(requiereBody
     ? {
@@ -101,7 +105,9 @@ const documentarCrud = (ruta, recurso) => {
 swaggerSpec.paths['/api/calidad/parametros'].post.requestBody.content['application/json'].schema = {
   $ref: '#/components/schemas/ParametroCalidad',
 };
-swaggerSpec.paths['/api/reglas/reglas-calidad'].post.requestBody.content['application/json'].schema = {
+swaggerSpec.paths['/api/reglas/reglas-calidad'].post.requestBody.content[
+  'application/json'
+].schema = {
   $ref: '#/components/schemas/ReglaParametro',
 };
 
@@ -141,7 +147,11 @@ swaggerSpec.paths['/api/calidad/inspecciones/{id}/respuestas'] = {
 swaggerSpec.paths['/api/calidad/inspecciones/{id}/respuestas-checklist'] = {
   post: operacionConEjemplo('Guardar checklist y generar desviaciones', {
     respuestas: [
-      { elementoChecklistId: 'uuid-elemento-versionado', resultado: 'NO_CUMPLE', observacion: 'Hallazgo' },
+      {
+        elementoChecklistId: 'uuid-elemento-versionado',
+        resultado: 'NO_CUMPLE',
+        observacion: 'Hallazgo',
+      },
     ],
   }),
 };
@@ -222,7 +232,9 @@ swaggerSpec.paths['/api/calidad/programaciones/{id}'] = {
 swaggerSpec.paths['/api/calidad/programaciones/pendientes'] = {
   get: {
     ...operacion('Consultar formatos programados para una fecha'),
-    parameters: [{ in: 'query', name: 'fecha', required: true, schema: { type: 'string', format: 'date' } }],
+    parameters: [
+      { in: 'query', name: 'fecha', required: true, schema: { type: 'string', format: 'date' } },
+    ],
   },
 };
 swaggerSpec.paths['/api/calidad/desviaciones'] = { get: operacion('Listar desviaciones') };

@@ -5,7 +5,7 @@ const { ok, created, fail } = require('../../utils/response');
 exports.listar = async (req, res, next) => {
   try {
     const unidades = await UnidadMedida.findAll({
-      order: [['nombre', 'ASC']]
+      order: [['nombre', 'ASC']],
     });
 
     return ok(res, unidades);
@@ -30,13 +30,7 @@ exports.obtener = async (req, res, next) => {
 
 exports.crear = async (req, res, next) => {
   try {
-    const {
-      codigo,
-      nombre,
-      simbolo,
-      descripcion,
-      estado
-    } = req.body;
+    const { codigo, nombre, simbolo, descripcion, estado } = req.body;
 
     if (!codigo) {
       return fail(res, 'Falta el código de la unidad de medida', 400);
@@ -52,16 +46,12 @@ exports.crear = async (req, res, next) => {
 
     const unidadExistente = await UnidadMedida.findOne({
       where: {
-        codigo
-      }
+        codigo,
+      },
     });
 
     if (unidadExistente) {
-      return fail(
-        res,
-        'Ya existe una unidad de medida con ese código',
-        409
-      );
+      return fail(res, 'Ya existe una unidad de medida con ese código', 409);
     }
 
     const unidad = await UnidadMedida.create({
@@ -69,7 +59,7 @@ exports.crear = async (req, res, next) => {
       nombre,
       simbolo,
       descripcion,
-      estado: estado !== undefined ? estado : true
+      estado: estado !== undefined ? estado : true,
     });
 
     return created(res, unidad);
@@ -86,35 +76,21 @@ exports.actualizar = async (req, res, next) => {
       return fail(res, 'Unidad de medida no encontrada', 404);
     }
 
-    if (
-      req.body.codigo &&
-      req.body.codigo !== unidad.codigo
-    ) {
+    if (req.body.codigo && req.body.codigo !== unidad.codigo) {
       const unidadExistente = await UnidadMedida.findOne({
         where: {
-          codigo: req.body.codigo
-        }
+          codigo: req.body.codigo,
+        },
       });
 
-      if (
-        unidadExistente &&
-        unidadExistente.id !== unidad.id
-      ) {
-        return fail(
-          res,
-          'Ya existe una unidad de medida con ese código',
-          409
-        );
+      if (unidadExistente && unidadExistente.id !== unidad.id) {
+        return fail(res, 'Ya existe una unidad de medida con ese código', 409);
       }
     }
 
     await unidad.update(req.body);
 
-    return ok(
-      res,
-      unidad,
-      'Unidad de medida actualizada'
-    );
+    return ok(res, unidad, 'Unidad de medida actualizada');
   } catch (err) {
     return next(err);
   }
@@ -130,11 +106,7 @@ exports.eliminar = async (req, res, next) => {
 
     await unidad.destroy();
 
-    return ok(
-      res,
-      null,
-      'Unidad de medida eliminada'
-    );
+    return ok(res, null, 'Unidad de medida eliminada');
   } catch (err) {
     return next(err);
   }
