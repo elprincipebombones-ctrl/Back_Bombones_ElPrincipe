@@ -1,28 +1,22 @@
-const  Vehiculo  = require('../../models/Recepcion/Vehiculo');
+const Vehiculo = require('../../models/Recepcion/Vehiculo');
 const Proveedor = require('../../models/Recepcion/Proveedor');
 
 const { ok, created, fail } = require('../../utils/response');
 
 exports.listar = async (req, res, next) => {
   try {
-
     const vehiculos = await Vehiculo.findAll({
       include: [
         {
           model: Proveedor,
           as: 'proveedor',
-          attributes: [
-            'id',
-            'razonSocial',
-            'numeroDocumento'
-          ]
-        }
+          attributes: ['id', 'razonSocial', 'numeroDocumento'],
+        },
       ],
-      order: [['codigo', 'ASC']]
+      order: [['codigo', 'ASC']],
     });
 
     return ok(res, vehiculos);
-
   } catch (err) {
     return next(err);
   }
@@ -30,19 +24,14 @@ exports.listar = async (req, res, next) => {
 
 exports.obtener = async (req, res, next) => {
   try {
-
     const vehiculo = await Vehiculo.findByPk(req.params.id, {
       include: [
         {
           model: Proveedor,
           as: 'proveedor',
-          attributes: [
-            'id',
-            'razonSocial',
-            'numeroDocumento'
-          ]
-        }
-      ]
+          attributes: ['id', 'razonSocial', 'numeroDocumento'],
+        },
+      ],
     });
 
     if (!vehiculo) {
@@ -50,7 +39,6 @@ exports.obtener = async (req, res, next) => {
     }
 
     return ok(res, vehiculo);
-
   } catch (err) {
     return next(err);
   }
@@ -58,7 +46,6 @@ exports.obtener = async (req, res, next) => {
 
 exports.crear = async (req, res, next) => {
   try {
-
     const {
       codigo,
       placa,
@@ -68,7 +55,7 @@ exports.crear = async (req, res, next) => {
       capacidadKg,
       proveedorId,
       descripcion,
-      estado
+      estado,
     } = req.body;
 
     if (!codigo) {
@@ -89,7 +76,7 @@ exports.crear = async (req, res, next) => {
 
     const proveedor = await Proveedor.findByPk(proveedorId);
 
-    if (!proveedor) {
+    if (!proveedor || !proveedor.esProveedor) {
       return fail(res, 'El proveedor seleccionado no existe', 404);
     }
 
@@ -102,11 +89,10 @@ exports.crear = async (req, res, next) => {
       capacidadKg,
       proveedorId,
       descripcion,
-      estado
+      estado,
     });
 
     return created(res, vehiculo);
-
   } catch (err) {
     return next(err);
   }
@@ -114,7 +100,6 @@ exports.crear = async (req, res, next) => {
 
 exports.actualizar = async (req, res, next) => {
   try {
-
     const vehiculo = await Vehiculo.findByPk(req.params.id);
 
     if (!vehiculo) {
@@ -122,19 +107,16 @@ exports.actualizar = async (req, res, next) => {
     }
 
     if (req.body.proveedorId) {
-
       const proveedor = await Proveedor.findByPk(req.body.proveedorId);
 
-      if (!proveedor) {
+      if (!proveedor || !proveedor.esProveedor) {
         return fail(res, 'El proveedor seleccionado no existe', 404);
       }
-
     }
 
     await vehiculo.update(req.body);
 
     return ok(res, vehiculo, 'Vehículo actualizado');
-
   } catch (err) {
     return next(err);
   }
@@ -142,7 +124,6 @@ exports.actualizar = async (req, res, next) => {
 
 exports.eliminar = async (req, res, next) => {
   try {
-
     const vehiculo = await Vehiculo.findByPk(req.params.id);
 
     if (!vehiculo) {
@@ -152,7 +133,6 @@ exports.eliminar = async (req, res, next) => {
     await vehiculo.destroy();
 
     return ok(res, null, 'Vehículo eliminado');
-
   } catch (err) {
     return next(err);
   }

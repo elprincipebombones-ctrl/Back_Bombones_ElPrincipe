@@ -12,6 +12,8 @@ router.use('/menus', require('./menu.routes'));
 router.use('/materias-primas', require('./recepcion/materia-prima.routes'));
 router.use('/productos', require('./recepcion/producto.routes'));
 router.use('/proveedores', require('./recepcion/proveedor.routes'));
+router.use('/terceros', require('./recepcion/tercero.routes'));
+router.use('/clientes', require('./recepcion/cliente.routes'));
 router.use('/lugar-area', require('./recepcion/lugar-area.routes'));
 router.use('/vehiculos', require('./recepcion/vehiculos.routes'));
 router.use('/categoria-producto', require('./recepcion/categoriaProducto.routes'));
@@ -21,5 +23,6 @@ router.use('/calidad', require('./calidad'));
 router.use('/reglas', require('./reglas'));
 router.use('/unidad-medida', require('./recepcion/unidadMedida.routes'));
 router.use('/produccion', require('./produccion'));
+router.use('/ventas/pedidos', require('./ventas/pedidos.routes'));
 
 module.exports = router;

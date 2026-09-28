@@ -329,6 +329,26 @@ exports.actualizarProveedorValidator = [
   body('estado').optional().isBoolean().withMessage('El estado debe ser booleano'),
 ];
 
+exports.crearTerceroValidator = [
+  ...exports.crearProveedorValidator,
+  body('emailFacturacionElectronica')
+    .optional({ nullable: true, checkFalsy: true })
+    .isEmail()
+    .withMessage('El correo de facturación no es válido'),
+  body('esCliente').optional().isBoolean().withMessage('Cliente debe ser booleano'),
+  body('esProveedor').optional().isBoolean().withMessage('Proveedor debe ser booleano'),
+];
+
+exports.actualizarTerceroValidator = [
+  ...exports.actualizarProveedorValidator,
+  body('emailFacturacionElectronica')
+    .optional({ nullable: true, checkFalsy: true })
+    .isEmail()
+    .withMessage('El correo de facturación no es válido'),
+  body('esCliente').optional().isBoolean().withMessage('Cliente debe ser booleano'),
+  body('esProveedor').optional().isBoolean().withMessage('Proveedor debe ser booleano'),
+];
+
 exports.crearLugarAreaValidator = [
   body('codigo')
     .isString()
