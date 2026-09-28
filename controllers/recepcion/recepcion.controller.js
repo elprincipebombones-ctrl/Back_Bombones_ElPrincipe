@@ -106,7 +106,8 @@ const validarCabecera = async ({ proveedorId, bodegaId, lugarAreaId }, transacti
     Bodega.findByPk(bodegaId, { transaction }),
     lugarAreaId ? LugarArea.findByPk(lugarAreaId, { transaction }) : null,
   ]);
-  if (!proveedor || !proveedor.estado) return 'El proveedor no existe o está inactivo';
+  if (!proveedor || !proveedor.estado || !proveedor.esProveedor)
+    return 'El proveedor no existe o está inactivo';
   if (!bodega || !bodega.estado) return 'La bodega no existe o está inactiva';
   if (lugarAreaId && (!lugar || !lugar.estado)) return 'El lugar o área no existe o está inactivo';
   return null;

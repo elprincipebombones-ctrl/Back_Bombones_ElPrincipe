@@ -76,7 +76,7 @@ exports.crear = async (req, res, next) => {
 
     const proveedor = await Proveedor.findByPk(proveedorId);
 
-    if (!proveedor) {
+    if (!proveedor || !proveedor.esProveedor) {
       return fail(res, 'El proveedor seleccionado no existe', 404);
     }
 
@@ -109,7 +109,7 @@ exports.actualizar = async (req, res, next) => {
     if (req.body.proveedorId) {
       const proveedor = await Proveedor.findByPk(req.body.proveedorId);
 
-      if (!proveedor) {
+      if (!proveedor || !proveedor.esProveedor) {
         return fail(res, 'El proveedor seleccionado no existe', 404);
       }
     }

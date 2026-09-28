@@ -1305,6 +1305,18 @@ db.Usuario.hasMany(db.EvidenciaAccionCorrectiva, {
 
 db.EvidenciaAccionCorrectiva.belongsTo(db.Usuario, { foreignKey: 'subidoPor', as: 'autor' });
 
+db.PedidoVenta.belongsTo(db.Proveedor, { foreignKey: 'clienteId', as: 'cliente' });
+db.PedidoVenta.belongsTo(db.Usuario, { foreignKey: 'usuarioId', as: 'usuario' });
+db.PedidoVenta.hasMany(db.PedidoVentaDetalle, {
+  foreignKey: 'pedidoVentaId',
+  as: 'detalles',
+});
+db.PedidoVentaDetalle.belongsTo(db.Producto, { foreignKey: 'productoId', as: 'producto' });
+db.PedidoVentaDetalle.belongsTo(db.UnidadMedida, {
+  foreignKey: 'unidadMedidaId',
+  as: 'unidadMedida',
+});
+
 db.sequelize = sequelize;
 
 module.exports = db;

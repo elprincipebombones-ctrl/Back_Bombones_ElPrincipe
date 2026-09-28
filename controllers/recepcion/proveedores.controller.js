@@ -12,7 +12,7 @@ const booleano = (v) =>
       : v === false || v === 'false'
         ? false
         : v;
-const presentar = (registro) => {
+const presentar = (registro, ruta = 'proveedores') => {
   const p = registro.toJSON();
   const docs = p.documentos || [];
   const documento = (tipo) => {
@@ -21,19 +21,16 @@ const presentar = (registro) => {
       ? {
           id: d.id,
           nombreOriginal: d.nombreOriginal,
-          url: `/api/proveedores/${p.id}/documentos/${d.id}/descarga`,
+          url: `/api/${ruta}/${p.id}/documentos/${d.id}/descarga`,
           mimeType: d.mimeType,
           tamano: d.tamano,
         }
       : null;
   };
   delete p.documentos;
-  delete p.esCliente;
-  delete p.esProveedor;
-  delete p.emailFacturacionElectronica;
   return { ...p, camaraComercio: documento('CAMARA_COMERCIO'), rut: documento('RUT') };
 };
-const datos = (body) => {
+const datos = (body, incluyeCliente = false, permiteRoles = false) => {
   const permitidos = [
     'tipoDocumento',
     'numeroDocumento',
@@ -45,10 +42,46 @@ const datos = (body) => {
     'direccion',
     'ciudad',
   ];
+  if (incluyeCliente) permitidos.push('emailFacturacionElectronica');
   const out = {};
   for (const k of permitidos) if (body[k] !== undefined) out[k] = texto(body[k]);
   if (body.estado !== undefined) out.estado = booleano(body.estado);
+  if (permiteRoles) {
+    for (const rol of ['esCliente', 'esProveedor']) {
+      if (body[rol] !== undefined) out[rol] = booleano(body[rol]);
+    }
+  }
   return out;
+};
+const esTerceros = (req) => req.baseUrl.endsWith('/terceros') || req.baseUrl.endsWith('/clientes');
+const rutaDocumentos = (req) =>
+  req.baseUrl.endsWith('/clientes')
+    ? 'clientes'
+    : req.baseUrl.endsWith('/terceros')
+      ? 'terceros'
+      : 'proveedores';
+const documentoIgual = (numero) =>
+  sequelize.where(
+    sequelize.fn(
+      'UPPER',
+      sequelize.fn('REGEXP_REPLACE', sequelize.col('numero_documento'), '\\s', '', 'g'),
+    ),
+    numero.replace(/\s/g, '').toUpperCase(),
+  );
+const asegurarRoles = (p) => {
+  if (!p.esCliente && !p.esProveedor) {
+    throw Object.assign(new Error('Debe seleccionar al menos un rol'), { status: 422 });
+  }
+};
+const asegurarFacturacionCliente = (esCliente, correo) => {
+  if (esCliente && !correo?.trim()) {
+    throw Object.assign(
+      new Error('El correo de facturación electrónica es obligatorio para clientes'),
+      {
+        status: 422,
+      },
+    );
+  }
 };
 async function buscar(id, transaction) {
   return Proveedor.findByPk(id, { include, transaction });
@@ -93,29 +126,42 @@ async function guardarDocumentos(proveedor, files, transaction, nuevas, anterior
       );
   }
 }
-exports.listar = async (_req, res, next) => {
+exports.listar = async (req, res, next) => {
   try {
+    const where = req.baseUrl.endsWith('/clientes')
+      ? { esCliente: true, estado: true }
+      : esTerceros(req)
+        ? {}
+        : { esProveedor: true };
+    if (esTerceros(req)) {
+      if (req.query.rol === 'clientes') where.esCliente = true;
+      if (req.query.rol === 'proveedores') where.esProveedor = true;
+      if (req.query.rol === 'ambos') Object.assign(where, { esCliente: true, esProveedor: true });
+      if (req.query.estado === 'activo') where.estado = true;
+      if (req.query.estado === 'inactivo') where.estado = false;
+    }
     const rows = await Proveedor.findAll({
-      where: { esProveedor: true },
+      where,
       include,
       order: [
-        [
-          sequelize.literal(
-            'COALESCE("Proveedor"."razon_social","Proveedor"."nombre_comercial","Proveedor"."numero_documento")',
-          ),
-          'ASC',
-        ],
+        ['razonSocial', 'ASC'],
+        ['numeroDocumento', 'ASC'],
       ],
     });
-    return ok(res, rows.map(presentar));
+    return ok(
+      res,
+      rows.map((row) => presentar(row, rutaDocumentos(req))),
+    );
   } catch (e) {
     next(e);
   }
 };
 exports.obtener = async (req, res, next) => {
   try {
-    const p = await Proveedor.findOne({ where: { id: req.params.id, esProveedor: true }, include });
-    return p ? ok(res, presentar(p)) : fail(res, 'Proveedor no encontrado', 404);
+    const p = await buscar(req.params.id);
+    return p && (req.baseUrl.endsWith('/clientes') ? p.esCliente : esTerceros(req) || p.esProveedor)
+      ? ok(res, presentar(p, rutaDocumentos(req)))
+      : fail(res, 'Tercero no encontrado', 404);
   } catch (e) {
     next(e);
   }
@@ -124,36 +170,54 @@ exports.crear = async (req, res, next) => {
   const nuevas = [];
   try {
     const result = await sequelize.transaction(async (transaction) => {
-      const d = datos(req.body);
-      if (!d.tipoDocumento)
-        throw Object.assign(new Error('Falta el tipo de documento'), { status: 422 });
-      if (!d.numeroDocumento)
-        throw Object.assign(new Error('Falta el número de documento'), { status: 422 });
-      const existente = await Proveedor.findOne({
-        where: { tipoDocumento: d.tipoDocumento, numeroDocumento: d.numeroDocumento },
-        transaction,
-      });
-      if (existente?.esProveedor)
-        throw Object.assign(new Error('Ya existe un proveedor con ese número de documento'), {
-          status: 409,
+      const d = datos(req.body, esTerceros(req), req.baseUrl.endsWith('/terceros'));
+      if (!d.tipoDocumento || !d.numeroDocumento) {
+        throw Object.assign(new Error('Tipo y número de documento son obligatorios'), {
+          status: 422,
         });
-      const p =
-        existente ||
-        (await Proveedor.create(
-          {
-            ...d,
-            razonSocial: d.razonSocial || null,
-            estado: d.estado === undefined ? true : d.estado,
-            esProveedor: true,
-            esCliente: false,
-          },
-          { transaction },
-        ));
-      if (existente) await p.update({ ...d, esProveedor: true }, { transaction });
+      }
+      const roles = req.baseUrl.endsWith('/clientes')
+        ? { esCliente: true, esProveedor: false }
+        : esTerceros(req)
+          ? { esCliente: d.esCliente ?? false, esProveedor: d.esProveedor ?? false }
+          : { esCliente: false, esProveedor: true };
+      asegurarRoles(roles);
+      const existente = await Proveedor.findOne({
+        where: documentoIgual(d.numeroDocumento),
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (existente) {
+        if (req.baseUrl.endsWith('/clientes') && !existente.esCliente) {
+          asegurarFacturacionCliente(
+            true,
+            Object.hasOwn(d, 'emailFacturacionElectronica')
+              ? d.emailFacturacionElectronica
+              : existente.emailFacturacionElectronica,
+          );
+          await existente.update({ ...d, esCliente: true }, { transaction });
+          await guardarDocumentos(existente, req.files, transaction, nuevas, []);
+          return buscar(existente.id, transaction);
+        }
+        if (!esTerceros(req) && !existente.esProveedor) {
+          await existente.update({ ...d, esProveedor: true }, { transaction });
+          await guardarDocumentos(existente, req.files, transaction, nuevas, []);
+          return buscar(existente.id, transaction);
+        }
+        throw Object.assign(
+          new Error('Ya existe un tercero con ese número de documento; edite sus roles'),
+          { status: 409 },
+        );
+      }
+      asegurarFacturacionCliente(roles.esCliente, d.emailFacturacionElectronica);
+      const p = await Proveedor.create(
+        { ...d, ...roles, estado: d.estado ?? true },
+        { transaction },
+      );
       await guardarDocumentos(p, req.files, transaction, nuevas, []);
       return buscar(p.id, transaction);
     });
-    return created(res, presentar(result));
+    return created(res, presentar(result, rutaDocumentos(req)));
   } catch (e) {
     nuevas.forEach(storage.eliminar);
     next(e);
@@ -168,24 +232,55 @@ exports.actualizar = async (req, res, next) => {
         transaction,
         lock: transaction.LOCK.UPDATE,
       });
-      if (!p) throw Object.assign(new Error('Proveedor no encontrado'), { status: 404 });
-      const d = datos(req.body);
+      if (
+        !p ||
+        (req.baseUrl.endsWith('/clientes') && !p.esCliente) ||
+        (!esTerceros(req) && !p.esProveedor)
+      ) {
+        throw Object.assign(new Error('Tercero no encontrado'), { status: 404 });
+      }
+      const d = datos(req.body, esTerceros(req), req.baseUrl.endsWith('/terceros'));
+      asegurarRoles({
+        esCliente: d.esCliente ?? p.esCliente,
+        esProveedor: d.esProveedor ?? p.esProveedor,
+      });
+      asegurarFacturacionCliente(
+        d.esCliente ?? p.esCliente,
+        Object.hasOwn(d, 'emailFacturacionElectronica')
+          ? d.emailFacturacionElectronica
+          : p.emailFacturacionElectronica,
+      );
+      if (p.esProveedor && d.esProveedor === false) {
+        const { Recepcion, Vehiculo } = require('../../models');
+        if (
+          (await Recepcion.count({ where: { proveedorId: p.id }, transaction })) ||
+          (await Vehiculo.count({ where: { proveedorId: p.id }, transaction }))
+        ) {
+          throw Object.assign(
+            new Error('El tercero tiene recepciones o vehículos; conserve el rol proveedor'),
+            {
+              status: 409,
+            },
+          );
+        }
+      }
       if (
         d.numeroDocumento &&
         (await Proveedor.findOne({
-          where: { numeroDocumento: d.numeroDocumento, id: { [Op.ne]: p.id } },
+          where: { [Op.and]: [documentoIgual(d.numeroDocumento), { id: { [Op.ne]: p.id } }] },
           transaction,
         }))
-      )
-        throw Object.assign(new Error('Ya existe un proveedor con ese número de documento'), {
+      ) {
+        throw Object.assign(new Error('Ya existe un tercero con ese número de documento'), {
           status: 409,
         });
+      }
       await p.update(d, { transaction });
       await guardarDocumentos(p, req.files, transaction, nuevas, anteriores);
       return buscar(p.id, transaction);
     });
     anteriores.forEach(storage.eliminar);
-    return ok(res, presentar(result), 'Proveedor actualizado');
+    return ok(res, presentar(result, rutaDocumentos(req)), 'Tercero actualizado');
   } catch (e) {
     nuevas.forEach(storage.eliminar);
     next(e);
@@ -193,6 +288,14 @@ exports.actualizar = async (req, res, next) => {
 };
 exports.descargar = async (req, res, next) => {
   try {
+    const tercero = await Proveedor.findByPk(req.params.id);
+    if (
+      !tercero ||
+      (req.baseUrl.endsWith('/clientes') && !tercero.esCliente) ||
+      (!esTerceros(req) && !tercero.esProveedor)
+    ) {
+      return fail(res, 'Documento no encontrado', 404);
+    }
     const doc = await DocumentoProveedor.findOne({
       where: { id: req.params.documentoId, proveedorId: req.params.id },
     });
@@ -209,15 +312,33 @@ exports.descargar = async (req, res, next) => {
 };
 exports.eliminar = async (req, res, next) => {
   try {
-    const p = await Proveedor.findOne({ where: { id: req.params.id, esProveedor: true }, include });
-    if (!p) return fail(res, 'Proveedor no encontrado', 404);
-    if (p.esCliente) await p.update({ esProveedor: false });
-    else {
-      const claves = p.documentos.map((d) => d.clave);
-      await p.destroy();
-      claves.forEach(storage.eliminar);
+    const p = await buscar(req.params.id);
+    if (!p || (!esTerceros(req) && !p.esProveedor)) return fail(res, 'Tercero no encontrado', 404);
+    const { Recepcion, Vehiculo } = require('../../models');
+    if (req.baseUrl.endsWith('/clientes') && p.esProveedor) {
+      await p.update({ esCliente: false });
+      return ok(res, null, 'Rol cliente retirado');
     }
-    return ok(res, null, 'Proveedor eliminado');
+    if (!esTerceros(req) && p.esCliente) {
+      if (
+        (await Recepcion.count({ where: { proveedorId: p.id } })) ||
+        (await Vehiculo.count({ where: { proveedorId: p.id } }))
+      ) {
+        return fail(res, 'El proveedor tiene recepciones o vehículos; mantenga su rol', 409);
+      }
+      await p.update({ esProveedor: false });
+      return ok(res, null, 'Rol proveedor retirado');
+    }
+    if (
+      (await Recepcion.count({ where: { proveedorId: p.id } })) ||
+      (await Vehiculo.count({ where: { proveedorId: p.id } }))
+    ) {
+      return fail(res, 'El tercero tiene recepciones o vehículos; márquelo inactivo', 409);
+    }
+    const claves = p.documentos.map((d) => d.clave);
+    await p.destroy();
+    claves.forEach(storage.eliminar);
+    return ok(res, null, 'Tercero eliminado');
   } catch (e) {
     next(e);
   }

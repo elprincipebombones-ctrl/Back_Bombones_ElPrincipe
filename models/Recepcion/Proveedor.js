@@ -52,21 +52,9 @@ const Proveedor = sequelize.define(
     },
 
     emailFacturacionElectronica: {
-      type: DataTypes.STRING(254),
+      type: DataTypes.STRING(150),
       allowNull: true,
       field: 'email_facturacion_electronica',
-    },
-    esProveedor: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-      field: 'es_proveedor',
-    },
-    esCliente: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-      field: 'es_cliente',
     },
 
     direccion: {
@@ -83,6 +71,20 @@ const Proveedor = sequelize.define(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
+    },
+
+    esCliente: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'es_cliente',
+    },
+
+    esProveedor: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+      field: 'es_proveedor',
     },
   },
   {
