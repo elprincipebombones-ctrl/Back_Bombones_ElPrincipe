@@ -13,11 +13,16 @@ const OrdenProduccion = sequelize.define(
       allowNull: false,
       defaultValue: 'BORRADOR',
       validate: {
-        isIn: [['BORRADOR', 'SIMULADA', 'EN_PRODUCCION', 'CANCELADA', 'FINALIZADA']],
+        isIn: [
+          ['BORRADOR', 'SIMULADA', 'LISTA_PRODUCCION', 'EN_PRODUCCION', 'CANCELADA', 'FINALIZADA'],
+        ],
       },
     },
     observaciones: { type: DataTypes.TEXT, allowNull: true },
     movimientoSalidaId: { type: DataTypes.UUID, allowNull: true, field: 'movimiento_salida_id' },
+    movimientoPepId: { type: DataTypes.UUID, field: 'movimiento_pep_id' },
+    usuarioInicioId: { type: DataTypes.UUID, field: 'usuario_inicio_id' },
+    fechaInicio: { type: DataTypes.DATE, field: 'fecha_inicio' },
     fechaSalidaMp: { type: DataTypes.DATE, allowNull: true, field: 'fecha_salida_mp' },
     usuarioSalidaMpId: {
       type: DataTypes.UUID,

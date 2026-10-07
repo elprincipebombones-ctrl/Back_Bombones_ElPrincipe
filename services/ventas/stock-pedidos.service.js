@@ -19,7 +19,7 @@ const consulta = `
       END AS signo
     FROM detalle_movimiento d
     JOIN movimientos_inventario m ON m.id = d.movimiento_inventario_id
-    WHERE m.estado = 'APLICADO' AND m.fecha <= CURRENT_TIMESTAMP
+    WHERE m.estado = 'APLICADO' AND m.fecha <= statement_timestamp()
   ), lotes AS (
     SELECT
       producto_id,
@@ -87,7 +87,7 @@ async function productosDisponibles(productoIds = null, transaction = null) {
         disponible: saldo,
         unidad: row.unidad,
       });
-      producto.stockDisponible += saldo;
+      producto.stockDisponible = Number((producto.stockDisponible + saldo).toFixed(6));
     }
   }
   const resultado = [...productos.values()];

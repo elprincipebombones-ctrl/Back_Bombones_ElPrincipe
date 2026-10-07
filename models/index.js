@@ -1317,6 +1317,38 @@ db.PedidoVentaDetalle.belongsTo(db.UnidadMedida, {
   as: 'unidadMedida',
 });
 
+db.OrdenProduccion.belongsTo(db.MovimientoInventario, {
+  foreignKey: 'movimientoPepId',
+  as: 'movimientoPep',
+});
+db.OrdenProduccion.belongsTo(db.Usuario, { foreignKey: 'usuarioInicioId', as: 'usuarioInicio' });
+for (const [model, foreignKey, as] of [
+  [db.OrdenProduccion, 'ordenProduccionId', 'orden'],
+  [db.Producto, 'productoTerminadoId', 'productoTerminado'],
+  [db.UnidadMedida, 'unidadMedidaId', 'unidadMedida'],
+  [db.Usuario, 'usuarioId', 'usuario'],
+  [db.MovimientoInventario, 'movimientoSalidaId', 'movimientoSalida'],
+  [db.MovimientoInventario, 'movimientoEntradaId', 'movimientoEntrada'],
+]) {
+  db.ReporteProduccion.belongsTo(model, { foreignKey, as });
+}
+for (const [model, foreignKey, as] of [
+  [db.OrdenProduccion, 'ordenProduccionId', 'orden'],
+  [db.Producto, 'productoId', 'producto'],
+  [db.UnidadMedida, 'unidadMedidaId', 'unidadMedida'],
+  [db.Bodega, 'bodegaOrigenId', 'bodegaOrigen'],
+  [db.Bodega, 'bodegaDestinoId', 'bodegaDestino'],
+  [db.Usuario, 'usuarioSolicitaId', 'solicitante'],
+  [db.Usuario, 'usuarioApruebaId', 'resolutor'],
+  [db.MovimientoInventario, 'movimientoSalidaId', 'movimientoSalida'],
+  [db.MovimientoInventario, 'movimientoEntradaId', 'movimientoEntrada'],
+]) {
+  db.SolicitudMovimientoOt.belongsTo(model, { foreignKey, as });
+}
+db.OrdenProduccion.hasMany(db.SolicitudMovimientoOt, {
+  foreignKey: 'ordenProduccionId',
+  as: 'solicitudesMp',
+});
 db.sequelize = sequelize;
 
 module.exports = db;

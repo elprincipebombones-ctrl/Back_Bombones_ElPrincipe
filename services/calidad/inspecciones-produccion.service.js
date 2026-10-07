@@ -5,6 +5,7 @@ const {
   OrdenProduccion,
   OrdenProduccionDetalle,
   Producto,
+  ResultadoProduccion,
   TipoInspeccion,
   UnidadMedida,
   Usuario,
@@ -100,9 +101,12 @@ const obtenerContexto = async (ordenId) => {
     formatosPublicados(),
     listarInspecciones(ordenId),
   ]);
+  const resultados = await ResultadoProduccion.findAll({ where: { ordenProduccionId: ordenId } });
   const productos = orden.detalles.map((detalle) => ({
     ...detalle.productoTerminado.toJSON(),
-    lotes: [],
+    lotes: resultados
+      .filter((r) => r.productoTerminadoId === detalle.productoTerminadoId && r.lotePt)
+      .map((r) => ({ lote: r.lotePt, fechaVencimiento: r.fechaVencimientoFinal })),
   }));
   const resumenFormatos = formatos.map((formato) => {
     const ejecuciones = inspecciones.filter(
@@ -154,20 +158,22 @@ const iniciar = async ({ ordenId, formatoId, productoId, lote, usuarioId, transa
       (detalle) => detalle.productoTerminadoId === productoId,
     )?.productoTerminado;
   }
-  if (lote) {
-    throw new ApiError(
-      'Esta OT todavía no tiene lotes de PT generados; inicia la inspección sin lote',
-      422,
-    );
-  }
+  const resultado = producto
+    ? await ResultadoProduccion.findOne({
+        where: { ordenProduccionId: ordenId, productoTerminadoId: producto.id },
+        transaction,
+      })
+    : null;
+  if (lote && lote !== resultado?.lotePt)
+    throw new ApiError('El lote no pertenece al PT de esta OT', 422);
   return Inspeccion.create(
     {
       versionFormatoId: version.id,
       lugarInspeccionId: null,
       ordenProduccionId: orden.id,
       productoId: producto?.id ?? null,
-      lote: null,
-      fechaVencimiento: null,
+      lote: resultado?.lotePt || null,
+      fechaVencimiento: resultado?.fechaVencimientoFinal || null,
       fechaInspeccion: await fechaActual(transaction),
       estado: 'EN_PROCESO',
       iniciadaPor: usuarioId,

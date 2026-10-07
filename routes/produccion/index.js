@@ -19,6 +19,8 @@ const {
   loteSimulacionValidator,
 } = require('../../validators/produccion/orden-produccion.validator');
 const {
+  iniciarProduccionValidator,
+  registrarParcialValidator,
   cerrarProduccionValidator,
   guardarMermaValidator,
   guardarResultadosValidator,
@@ -30,6 +32,7 @@ const {
 const router = Router();
 
 router.use(auth);
+router.use(require('./solicitudes-mp.routes'));
 
 /**
  * @swagger
@@ -388,4 +391,18 @@ router.delete(
   control.eliminarMerma,
 );
 
+router.post(
+  '/control/ordenes/:id/iniciar',
+  permiso('produccion.control.editar'),
+  iniciarProduccionValidator,
+  validar,
+  control.iniciarProduccion,
+);
+router.post(
+  '/control/ordenes/:id/parciales',
+  permiso('produccion.control.editar'),
+  registrarParcialValidator,
+  validar,
+  control.registrarParcial,
+);
 module.exports = router;

@@ -7,7 +7,8 @@ const {
   Producto,
   UnidadMedida,
 } = require('../../models');
-const stock = require('./stock-pedidos.service');
+const { despachar } = require('./despacho-pedidos.service');
+const { normalizarSeleccion, validarSaldos } = require('./seleccion-lotes.service');
 
 const error = (message, status = 422) => Object.assign(new Error(message), { status });
 const incluir = [
@@ -66,6 +67,7 @@ async function prepararDetalles(detalles, transaction, obligatorio = false) {
   return detalles.map((d) => ({
     productoId: d.productoId,
     cantidad: d.cantidad,
+    seleccionLotes: normalizarSeleccion(d),
     unidadMedidaId: porId.get(d.productoId).unidadMedidaId,
   }));
 }
@@ -90,6 +92,7 @@ async function crear(body, usuarioId) {
   return sequelize.transaction(async (transaction) => {
     await clienteValido(body.clienteId, transaction);
     const detalles = await prepararDetalles(body.detalles || [], transaction);
+    await validarSaldos(detalles, transaction);
     const [secuencia] = await sequelize.query(
       "SELECT nextval('pedidos_venta_numero_seq')::bigint AS numero",
       { type: QueryTypes.SELECT, transaction },
@@ -124,6 +127,7 @@ async function actualizar(id, body) {
     if (body.clienteId !== undefined) await clienteValido(body.clienteId, transaction);
     const detalles =
       body.detalles === undefined ? null : await prepararDetalles(body.detalles, transaction);
+    if (detalles) await validarSaldos(detalles, transaction);
     await pedido.update(
       {
         ...(body.clienteId !== undefined ? { clienteId: body.clienteId } : {}),
@@ -146,7 +150,7 @@ async function actualizar(id, body) {
   });
 }
 
-async function confirmar(id) {
+async function confirmar(id, usuarioId) {
   return sequelize.transaction(async (transaction) => {
     const pedido = await PedidoVenta.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
     if (!pedido) throw error('Pedido no encontrado', 404);
@@ -158,17 +162,7 @@ async function confirmar(id) {
     });
     if (!detalles.length) throw error('Agregue al menos un producto antes de confirmar');
     await prepararDetalles(detalles, transaction, true);
-    const disponibles = await stock.productosDisponibles(
-      detalles.map((d) => d.productoId),
-      transaction,
-    );
-    const porId = new Map(disponibles.map((p) => [p.id, p]));
-    const faltantes = detalles.filter((d) => {
-      const p = porId.get(d.productoId);
-      return !p || p.stockIndeterminado || Number(d.cantidad) > p.stockDisponible;
-    });
-    if (faltantes.length)
-      throw error('Stock insuficiente o indeterminado para uno o más productos', 409);
+    await despachar(pedido, detalles, usuarioId, transaction);
     await pedido.update({ estado: 'CONFIRMADO' }, { transaction });
     return obtener(id, transaction);
   });
@@ -181,6 +175,16 @@ async function cancelar(id, motivo, usuarioId) {
     if (!pedido) throw error('Pedido no encontrado', 404);
     if (!['BORRADOR', 'CONFIRMADO'].includes(pedido.estado)) {
       throw error('El pedido ya está cancelado', 409);
+    }
+    const detalles = await PedidoVentaDetalle.findAll({
+      where: { pedidoVentaId: id },
+      transaction,
+    });
+    if (detalles.some((detalle) => detalle.despachos?.length)) {
+      throw error(
+        'El pedido ya fue despachado. Su cancelación requiere registrar la devolución de inventario.',
+        409,
+      );
     }
     await pedido.update(
       {

@@ -15,7 +15,7 @@ const ejecutar = (action) => async (req, res, next) => {
 exports.listar = ejecutar(() => pedidos.listar());
 exports.obtener = ejecutar((req) => pedidos.obtener(req.params.id));
 exports.actualizar = ejecutar((req) => pedidos.actualizar(req.params.id, req.body));
-exports.confirmar = ejecutar((req) => pedidos.confirmar(req.params.id));
+exports.confirmar = ejecutar((req) => pedidos.confirmar(req.params.id, req.usuario.id));
 exports.cancelar = ejecutar((req) =>
   pedidos.cancelar(req.params.id, req.body.motivoCancelacion, req.usuario.id),
 );
