@@ -16,6 +16,8 @@ const {
   Producto,
   UnidadMedida,
 } = require('../../models');
+const { CODIGO_BODEGA_PEP, resolverBodegaPep } = require('./bodega-pep.service');
+const { crearMovimiento } = require('./produccion-parcial.service');
 const { normalizarCantidad } = require('./conversion-unidad.service');
 
 class OrdenProduccionError extends Error {
@@ -101,6 +103,7 @@ const obtenerSaldosLotes = async (productoIds, transaction) => {
      INNER JOIN productos p ON p.id = d.producto_id
      INNER JOIN bodegas b ON b.id = m.bodega_id
      WHERE d.producto_id IN (:productoIds)
+       AND b.codigo <> :codigoPep
        AND m.estado = 'APLICADO'
        AND m.tipo_documento IN ('EN', 'SA')
      GROUP BY d.producto_id, p.codigo, p.nombre, COALESCE(d.lote, d.lote_proveedor),
@@ -112,7 +115,7 @@ const obtenerSaldosLotes = async (productoIds, transaction) => {
      END) > 0
      ORDER BY d.fecha_vencimiento ASC NULLS LAST, COALESCE(d.lote, d.lote_proveedor) ASC`,
     {
-      replacements: { productoIds },
+      replacements: { productoIds, codigoPep: CODIGO_BODEGA_PEP },
       transaction,
       type: QueryTypes.SELECT,
     },
@@ -586,6 +589,7 @@ const confirmarSalidaMp = async (orden, usuarioId, transaction) => {
     throw error;
   }
 
+  const pep = await resolverBodegaPep(transaction);
   const fechaSalida = new Date();
   const movimiento = await MovimientoInventario.create(
     {
@@ -614,12 +618,29 @@ const confirmarSalidaMp = async (orden, usuarioId, transaction) => {
     })),
     { transaction },
   );
+  const entradaPep = await crearMovimiento({
+    tipo: 'EN',
+    bodegaId: pep.id,
+    origen: 'OT_PEP',
+    origenId: orden.id,
+    usuarioId,
+    detalles: salidas.map((salida) => ({
+      productoId: salida.productoId,
+      unidadMedidaId: salida.unidadMedidaId,
+      cantidad: salida.cantidad,
+      lote: salida.lote,
+      loteProveedor: salida.lote,
+      fechaVencimiento: salida.fechaVencimiento,
+    })),
+    transaction,
+  });
   await orden.update(
     {
+      movimientoPepId: entradaPep.id,
       movimientoSalidaId: movimiento.id,
       fechaSalidaMp: fechaSalida,
       usuarioSalidaMpId: usuarioId,
-      estado: 'EN_PRODUCCION',
+      estado: 'LISTA_PRODUCCION',
     },
     { transaction },
   );

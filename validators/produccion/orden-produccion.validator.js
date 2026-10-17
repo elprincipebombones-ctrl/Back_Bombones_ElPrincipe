@@ -16,7 +16,9 @@ const detalles = [
 exports.idOrdenValidator = [param('id').isUUID().withMessage('La orden no es válida')];
 exports.guardarOrdenValidator = detalles;
 exports.listarOrdenesValidator = [
-  query('estado').optional().isIn(['BORRADOR', 'SIMULADA', 'EN_PRODUCCION', 'CANCELADA']),
+  query('estado')
+    .optional()
+    .isIn(['BORRADOR', 'SIMULADA', 'LISTA_PRODUCCION', 'EN_PRODUCCION', 'CANCELADA', 'FINALIZADA']),
   query('buscar').optional().isString().isLength({ max: 50 }),
 ];
 exports.cancelarOrdenValidator = [

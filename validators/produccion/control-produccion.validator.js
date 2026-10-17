@@ -4,7 +4,7 @@ exports.listarControlValidator = [
   query('buscar').optional().isString().isLength({ max: 100 }),
   query('estado')
     .optional()
-    .isIn(['EN_PRODUCCION', 'FINALIZADA'])
+    .isIn(['LISTA_PRODUCCION', 'EN_PRODUCCION', 'FINALIZADA'])
     .withMessage('El estado de consulta no es válido'),
 ];
 
@@ -51,4 +51,19 @@ exports.cerrarProduccionValidator = [
     .withMessage('La fecha de vencimiento final es obligatoria')
     .isISO8601({ strict: true })
     .withMessage('La fecha de vencimiento final no es válida'),
+];
+
+exports.iniciarProduccionValidator = [
+  ...exports.idOrdenControlValidator,
+  body('resultados').isArray({ min: 1 }),
+  body('resultados.*.productoTerminadoId').isUUID(),
+  body('resultados.*.fechaVencimiento')
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .isISO8601({ strict: true }),
+];
+
+exports.registrarParcialValidator = [
+  ...exports.idOrdenControlValidator,
+  body('productoTerminadoId').isUUID(),
+  body('cantidad').isFloat({ gt: 0 }),
 ];

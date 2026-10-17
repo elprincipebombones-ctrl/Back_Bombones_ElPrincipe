@@ -19,6 +19,11 @@ const {
   validarYGuardarMerma,
 } = require('../../services/produccion/control-produccion.service');
 
+const {
+  iniciarProduccion,
+  registrarParcial,
+} = require('../../services/produccion/produccion-parcial.service');
+
 const manejarError = (error, res, next) => {
   if (error instanceof ControlProduccionError || error.status) {
     return fail(res, error.message, error.status || 422, error.details || null);
@@ -29,7 +34,7 @@ const manejarError = (error, res, next) => {
 exports.listarOrdenes = async (req, res, next) => {
   try {
     const buscar = String(req.query.buscar || '').trim();
-    const estado = req.query.estado || 'EN_PRODUCCION';
+    const estado = req.query.estado || { [Op.in]: ['LISTA_PRODUCCION', 'EN_PRODUCCION'] };
     const where = { estado };
     if (buscar) {
       where[Op.or] = [
@@ -93,7 +98,7 @@ exports.cerrarProduccion = async (req, res, next) => {
     return ok(
       res,
       await obtenerDetalleControl(req.params.id),
-      'Producción cerrada y entrada de producto terminado generada correctamente',
+      'Producción finalizada correctamente',
     );
   } catch (error) {
     return manejarError(error, res, next);
@@ -171,6 +176,47 @@ exports.eliminarMerma = async (req, res, next) => {
       eliminarMerma(req.params.id, req.params.mermaId, transaction),
     );
     return ok(res, null, 'Merma eliminada correctamente');
+  } catch (error) {
+    return manejarError(error, res, next);
+  }
+};
+
+exports.iniciarProduccion = async (req, res, next) => {
+  try {
+    await sequelize.transaction((transaction) =>
+      iniciarProduccion({
+        ordenId: req.params.id,
+        resultados: req.body.resultados,
+        usuarioId: req.usuario.id,
+        transaction,
+      }),
+    );
+    return ok(res, await obtenerDetalleControl(req.params.id), 'Producción iniciada');
+  } catch (error) {
+    return manejarError(error, res, next);
+  }
+};
+
+exports.registrarParcial = async (req, res, next) => {
+  try {
+    const reporte = await sequelize.transaction((transaction) =>
+      registrarParcial({
+        ordenId: req.params.id,
+        productoTerminadoId: req.body.productoTerminadoId,
+        cantidad: req.body.cantidad,
+        usuarioId: req.usuario.id,
+        transaction,
+      }),
+    );
+    const detalle = await obtenerDetalleControl(req.params.id);
+    return created(
+      res,
+      {
+        ...detalle,
+        advertenciasPep: reporte.getDataValue('advertenciasPep'),
+      },
+      'Parcial registrado',
+    );
   } catch (error) {
     return manejarError(error, res, next);
   }

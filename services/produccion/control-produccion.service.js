@@ -1,7 +1,5 @@
 const { Op } = require('sequelize');
 
-const sequelize = require('../../database/database');
-
 const {
   Bodega,
   DetalleMovimiento,
@@ -14,11 +12,14 @@ const {
   OrdenProduccionDetalle,
   Producto,
   ResultadoProduccion,
+  SolicitudMovimientoOt,
   TipoInspeccion,
   UnidadMedida,
   Usuario,
   VersionFormato,
 } = require('../../models');
+
+const { listarParciales, saldosPep, siguienteNumero } = require('./produccion-parcial.service');
 
 class ControlProduccionError extends Error {
   constructor(message, status = 422, details = null) {
@@ -34,6 +35,18 @@ const redondearCantidad = (valor) => Number(Number(valor).toFixed(PRECISION_CANT
 const redondearPorcentaje = (valor) => Number(Number(valor).toFixed(4));
 
 const includeDetalleControl = [
+  {
+    model: SolicitudMovimientoOt,
+    as: 'solicitudesMp',
+    where: { estado: 'ATENDIDA' },
+    required: false,
+    include: [
+      { model: Producto, as: 'producto' },
+      { model: UnidadMedida, as: 'unidadMedida' },
+    ],
+  },
+  { model: MovimientoInventario, as: 'movimientoPep', required: false },
+  { model: Usuario, as: 'usuarioInicio', attributes: ['id', 'nombre'], required: false },
   { model: Usuario, as: 'usuario', attributes: ['id', 'nombre', 'correo'] },
   {
     model: Usuario,
@@ -120,7 +133,7 @@ const obtenerOrden = async (id, transaction, lock = false, permitirFinalizada = 
     }
     if (
       ordenBloqueada.estado !== 'EN_PRODUCCION' &&
-      !(permitirFinalizada && ordenBloqueada.estado === 'FINALIZADA')
+      !(permitirFinalizada && ['FINALIZADA', 'LISTA_PRODUCCION'].includes(ordenBloqueada.estado))
     ) {
       throw new ControlProduccionError(
         'El control operativo solo está disponible para órdenes EN PRODUCCIÓN',
@@ -133,7 +146,10 @@ const obtenerOrden = async (id, transaction, lock = false, permitirFinalizada = 
     transaction,
   });
   if (!orden) throw new ControlProduccionError('La orden de producción no existe', 404);
-  if (orden.estado !== 'EN_PRODUCCION' && !(permitirFinalizada && orden.estado === 'FINALIZADA')) {
+  if (
+    orden.estado !== 'EN_PRODUCCION' &&
+    !(permitirFinalizada && ['FINALIZADA', 'LISTA_PRODUCCION'].includes(orden.estado))
+  ) {
     throw new ControlProduccionError(
       'El control operativo solo está disponible para órdenes EN PRODUCCIÓN',
       409,
@@ -162,6 +178,31 @@ const consolidarConsumosMp = (orden) => {
       ),
     });
   }
+  for (const consumo of consumos.values()) {
+    consumo.enviadoInicial = consumo.cantidadConsumida;
+    consumo.adicionalMp = 0;
+    consumo.devueltoMp = 0;
+  }
+  for (const solicitud of orden.solicitudesMp || []) {
+    const consumo = consumos.get(solicitud.productoId) || {
+      productoId: solicitud.productoId,
+      producto: solicitud.producto,
+      unidadMedidaId: solicitud.unidadMedidaId,
+      unidadMedida: solicitud.unidadMedida,
+      cantidadConsumida: 0,
+      enviadoInicial: 0,
+      adicionalMp: 0,
+      devueltoMp: 0,
+    };
+    const cantidad = Number(solicitud.cantidad);
+    if (solicitud.tipo === 'ADICIONAL')
+      consumo.adicionalMp = redondearCantidad(consumo.adicionalMp + cantidad);
+    else consumo.devueltoMp = redondearCantidad(consumo.devueltoMp + cantidad);
+    consumo.cantidadConsumida = redondearCantidad(
+      consumo.enviadoInicial + consumo.adicionalMp - consumo.devueltoMp,
+    );
+    consumos.set(solicitud.productoId, consumo);
+  }
   return [...consumos.values()];
 };
 
@@ -184,6 +225,9 @@ const construirResultados = (orden) => {
       cantidadPlaneada: planeada,
       cantidadProducida: producida,
       diferencia: redondearCantidad(producida - planeada),
+      desviacionPorcentaje: planeada
+        ? redondearPorcentaje(((producida - planeada) / planeada) * 100)
+        : 0,
       unidadMedidaId: detalle.productoTerminado.unidadMedidaId,
       unidadMedida: detalle.productoTerminado.unidadMedida,
       registrado: Boolean(guardado),
@@ -219,7 +263,9 @@ const construirIndicadoresMermas = (mermas, consumosMp, resultados) => {
     const mermaAcumulada = acumuladas.get(`${merma.tipoMerma}|${merma.productoId}`) || 0;
     if (merma.tipoMerma === 'MP') {
       const consumo = consumosMp.find((item) => item.productoId === merma.productoId);
-      const consumidoOt = redondearCantidad(consumo?.cantidadConsumida || 0);
+      const consumidoOt = redondearCantidad(
+        consumo?.consumoTeorico ?? consumo?.cantidadConsumida ?? 0,
+      );
       const porcentajeMerma = consumidoOt
         ? redondearPorcentaje((mermaAcumulada / consumidoOt) * 100)
         : 0;
@@ -237,13 +283,17 @@ const construirIndicadoresMermas = (mermas, consumosMp, resultados) => {
 
     const resultado = resultados.find((item) => item.productoTerminadoId === merma.productoId);
     const planeado = redondearCantidad(resultado?.cantidadPlaneada || 0);
+    const producido = redondearCantidad(resultado?.cantidadProducida || 0);
     return {
       ...datos,
       indicadores: {
         planeado,
-        producido: redondearCantidad(resultado?.cantidadProducida || 0),
+        producido,
         mermaAcumulada,
-        porcentajeMerma: planeado ? redondearPorcentaje((mermaAcumulada / planeado) * 100) : 0,
+        porcentajeMerma:
+          producido + mermaAcumulada > 0
+            ? redondearPorcentaje((mermaAcumulada / (producido + mermaAcumulada)) * 100)
+            : 0,
       },
     };
   });
@@ -261,13 +311,48 @@ const obtenerDetalleControl = async (id, transaction) => {
   ]);
   const resultados = construirResultados(orden);
   const consumosMp = consolidarConsumosMp(orden);
+  const parciales = await listarParciales(orden.id, transaction);
+  if (orden.movimientoPepId) {
+    const saldos = await saldosPep(orden, transaction);
+    for (const consumo of consumosMp) {
+      consumo.enviadoPep = consumo.enviadoInicial;
+      const saldo = saldos
+        .filter((lote) => lote.productoId === consumo.productoId)
+        .reduce((total, lote) => total + Number(lote.saldo), 0);
+      consumo.consumoTeorico = redondearCantidad(consumo.cantidadConsumida - saldo);
+      consumo.mermaMp = redondearCantidad(
+        mermas
+          .filter((m) => m.tipoMerma === 'MP' && m.productoId === consumo.productoId)
+          .reduce((total, m) => total + Number(m.cantidad), 0),
+      );
+      consumo.saldoEstimadoPep = redondearCantidad(saldo - consumo.mermaMp);
+    }
+    for (const resultado of resultados) {
+      resultado.cantidadProducida = redondearCantidad(
+        parciales
+          .filter((p) => p.productoTerminadoId === resultado.productoTerminadoId)
+          .reduce((total, p) => total + Number(p.cantidad), 0),
+      );
+      resultado.diferencia = redondearCantidad(
+        resultado.cantidadProducida - resultado.cantidadPlaneada,
+      );
+      resultado.desviacionPorcentaje = resultado.cantidadPlaneada
+        ? redondearPorcentaje((resultado.diferencia / resultado.cantidadPlaneada) * 100)
+        : 0;
+    }
+  }
   return {
+    parciales,
     orden: {
       id: orden.id,
       numero: orden.numero,
       fecha: orden.fecha,
       estado: orden.estado,
       observaciones: orden.observaciones,
+      movimientoPep: orden.movimientoPep,
+      produccionParcial: Boolean(orden.movimientoPepId),
+      fechaInicio: orden.fechaInicio,
+      usuarioInicio: orden.usuarioInicio,
       responsable: orden.usuario,
       fechaSalidaMp: orden.fechaSalidaMp,
       usuarioSalidaMp: orden.usuarioSalidaMp,
@@ -297,6 +382,8 @@ const obtenerDetalleControl = async (id, transaction) => {
 
 const guardarResultados = async (ordenId, resultados, transaction) => {
   const orden = await obtenerOrden(ordenId, transaction, true);
+  if (orden.movimientoPepId)
+    throw new ControlProduccionError('Use Registrar producción parcial para esta OT', 409);
   const detalles = new Map(orden.detalles.map((detalle) => [detalle.productoTerminadoId, detalle]));
   const repetidos = resultados
     .map((resultado) => resultado.productoTerminadoId)
@@ -315,31 +402,6 @@ const guardarResultados = async (ordenId, resultados, transaction) => {
       throw new ControlProduccionError('La cantidad producida debe ser mayor o igual a cero');
     }
     const cantidadPlaneada = redondearCantidad(detalle.cantidad);
-    const mermaRegistrada = redondearCantidad(
-      (await MermaProduccion.sum('cantidad', {
-        where: {
-          ordenProduccionId: orden.id,
-          tipoMerma: 'PT',
-          productoId: resultado.productoTerminadoId,
-        },
-        transaction,
-      })) || 0,
-    );
-    if (redondearCantidad(cantidadProducida + mermaRegistrada) > cantidadPlaneada) {
-      throw new ControlProduccionError(
-        'La cantidad producida más la merma PT registrada no puede superar la cantidad planeada',
-        422,
-        {
-          planeado: cantidadPlaneada,
-          producido: cantidadProducida,
-          mermaRegistrada,
-          mermaMaximaDisponible: Math.max(
-            0,
-            redondearCantidad(cantidadPlaneada - cantidadProducida),
-          ),
-        },
-      );
-    }
     const valores = {
       cantidadPlaneada,
       cantidadProducida,
@@ -370,7 +432,11 @@ const limiteMerma = async ({ orden, tipoMerma, productoId, transaction }) => {
       throw new ControlProduccionError('La materia prima no fue consumida por esta orden');
     }
     return {
-      limite: Number(consumo.cantidadConsumida),
+      limite: orden.movimientoPepId
+        ? (await saldosPep(orden, transaction))
+            .filter((lote) => lote.productoId === productoId)
+            .reduce((total, lote) => total + Number(lote.saldo), 0)
+        : Number(consumo.cantidadConsumida),
       unidadMedidaId: consumo.unidadMedidaId,
       mensaje: 'la cantidad consumida en la OT',
     };
@@ -391,11 +457,11 @@ const limiteMerma = async ({ orden, tipoMerma, productoId, transaction }) => {
   const planeado = redondearCantidad(detalle.cantidad);
   const producido = redondearCantidad(resultado.cantidadProducida);
   return {
-    limite: Math.max(0, redondearCantidad(planeado - producido)),
+    limite: Infinity,
     planeado,
     producido,
     unidadMedidaId: resultado.unidadMedidaId,
-    mensaje: 'la diferencia entre lo planeado y el producto bueno obtenido',
+    mensaje: 'la producción registrada',
   };
 };
 
@@ -483,21 +549,6 @@ const eliminarMerma = async (ordenId, mermaId, transaction) => {
     transaction,
   });
   if (!eliminados) throw new ControlProduccionError('El registro de merma no existe', 404);
-};
-
-const siguienteNumero = async (secuencia, prefijo, transaction) => {
-  const [filas] = await sequelize.query(`SELECT nextval('${secuencia}') AS consecutivo`, {
-    transaction,
-  });
-  return `${prefijo}-${String(Number(filas[0].consecutivo)).padStart(6, '0')}`;
-};
-
-const fechaVencimientoSugerida = (orden) => {
-  const fechas = (orden.movimientoSalida?.detalles || [])
-    .map((detalle) => detalle.fechaVencimiento)
-    .filter(Boolean)
-    .sort();
-  return fechas[0] || null;
 };
 
 const validarCalidadParaCierre = async (ordenId, transaction) => {
@@ -598,27 +649,10 @@ const validarBaseCierre = async (orden, transaction) => {
     );
   }
 
-  const mermasPt = await MermaProduccion.findAll({
-    where: { ordenProduccionId: orden.id, tipoMerma: 'PT' },
-    attributes: ['productoId', 'cantidad'],
-    transaction,
-  });
-  const mermaPorProducto = new Map();
-  for (const merma of mermasPt) {
-    mermaPorProducto.set(
-      merma.productoId,
-      redondearCantidad((mermaPorProducto.get(merma.productoId) || 0) + Number(merma.cantidad)),
-    );
-  }
   const resultadosInvalidos = (orden.resultadosProduccion || []).filter((resultado) => {
     const producido = Number(resultado.cantidadProducida);
-    const planeado = Number(resultado.cantidadPlaneada);
-    const merma = mermaPorProducto.get(resultado.productoTerminadoId) || 0;
-    return (
-      !Number.isFinite(producido) ||
-      producido <= 0 ||
-      redondearCantidad(producido + merma) > redondearCantidad(planeado)
-    );
+
+    return !Number.isFinite(producido) || producido <= 0;
   });
   if (resultadosInvalidos.length) {
     throw new ControlProduccionError(
@@ -634,7 +668,7 @@ const validarBaseCierre = async (orden, transaction) => {
 const asegurarLotes = async (resultados, transaction) => {
   for (const resultado of resultados) {
     if (!resultado.lotePt) {
-      const lotePt = await siguienteNumero('lotes_pt_numero_seq', 'LOTE', transaction);
+      const lotePt = await siguienteNumero('LOTE', transaction);
       await resultado.update({ lotePt }, { transaction });
     }
   }
@@ -656,7 +690,7 @@ const prepararCierre = async (ordenId, transaction) => {
   }
 
   await asegurarLotes(resultados, transaction);
-  const sugerida = fechaVencimientoSugerida(orden);
+  const sugerida = null;
   const [bodegas, mermasPt] = await Promise.all([
     Bodega.findAll({ where: { estado: true }, order: [['nombre', 'ASC']], transaction }),
     MermaProduccion.findAll({
@@ -676,6 +710,7 @@ const prepararCierre = async (ordenId, transaction) => {
   return {
     ordenId: orden.id,
     numero: orden.numero,
+    produccionParcial: Boolean(orden.movimientoPepId),
     fechaVencimientoSugerida: sugerida,
     bodegaDefault,
     bodegas,
@@ -691,7 +726,7 @@ const prepararCierre = async (ordenId, transaction) => {
       unidadMedida: resultado.unidadMedida,
       lotePt: resultado.lotePt,
       fechaVencimientoSugerida: sugerida,
-      fechaVencimientoFinal: resultado.fechaVencimientoFinal || sugerida,
+      fechaVencimientoFinal: resultado.fechaVencimientoFinal || null,
     })),
   };
 };
@@ -706,6 +741,14 @@ const cerrarProduccion = async ({
 }) => {
   const orden = await obtenerOrden(ordenId, transaction, true);
   const resultados = await validarBaseCierre(orden, transaction);
+  if (orden.movimientoPepId) {
+    await orden.update(
+      { estado: 'FINALIZADA', fechaFinalizacion: new Date(), usuarioFinalizacionId: usuarioId },
+      { transaction },
+    );
+    return null;
+  }
+
   const bodegaDefault = await Bodega.findOne({
     where: { esBodegaPtDefault: true, estado: true },
     transaction,
@@ -739,7 +782,7 @@ const cerrarProduccion = async ({
   if (entradasPorId.size !== resultados.length) {
     throw new ControlProduccionError('Debe confirmar todos los productos terminados de la OT');
   }
-  const sugerida = fechaVencimientoSugerida(orden);
+  const sugerida = null;
   const lotes = new Set();
   for (const resultado of resultados) {
     const entrada = entradasPorId.get(resultado.id);
@@ -756,7 +799,7 @@ const cerrarProduccion = async ({
   }
 
   const fecha = new Date();
-  const numeroDocumento = await siguienteNumero('movimientos_en_numero_seq', 'EN', transaction);
+  const numeroDocumento = await siguienteNumero('EN', transaction);
   const movimiento = await MovimientoInventario.create(
     {
       tipoDocumento: 'EN',
