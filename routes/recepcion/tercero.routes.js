@@ -19,19 +19,19 @@ const multipart = (req, res, next) =>
   });
 
 router.use(auth);
-router.get('/', permiso('Proveedores.Ver'), ctrl.listar);
+router.get('/', permiso('Terceros.Ver'), ctrl.listar);
 router.get(
   '/:id/documentos/:documentoId/descarga',
-  permiso('Proveedores.Ver'),
+  permiso('Terceros.Ver'),
   idValidator,
   param('documentoId').isUUID(),
   validar,
   ctrl.descargar,
 );
-router.get('/:id', permiso('Proveedores.Ver'), idValidator, validar, ctrl.obtener);
+router.get('/:id', permiso('Terceros.Ver'), idValidator, validar, ctrl.obtener);
 router.post(
   '/',
-  permiso('Proveedores.Crear'),
+  permiso('Terceros.Crear'),
   multipart,
   crearTerceroValidator,
   validar,
@@ -39,12 +39,12 @@ router.post(
 );
 router.put(
   '/:id',
-  permiso('Proveedores.Editar'),
+  permiso('Terceros.Editar'),
   multipart,
   actualizarTerceroValidator,
   validar,
   ctrl.actualizar,
 );
-router.delete('/:id', permiso('Proveedores.Eliminar'), idValidator, validar, ctrl.eliminar);
+router.delete('/:id', permiso('Terceros.Eliminar'), idValidator, validar, ctrl.eliminar);
 
 module.exports = router;
