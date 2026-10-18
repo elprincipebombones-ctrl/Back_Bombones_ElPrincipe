@@ -19,7 +19,12 @@ const consulta = `
       END AS signo
     FROM detalle_movimiento d
     JOIN movimientos_inventario m ON m.id = d.movimiento_inventario_id
-    WHERE m.estado = 'APLICADO' AND m.fecha <= statement_timestamp()
+    LEFT JOIN inventario_bloqueos_lote ib ON ib.producto_id=d.producto_id
+      AND ib.bodega_id=m.bodega_id AND ib.unidad_medida_id=d.unidad_medida_id
+      AND ib.lote IS NOT DISTINCT FROM COALESCE(d.lote,d.lote_proveedor)
+      AND ib.fecha_vencimiento IS NOT DISTINCT FROM d.fecha_vencimiento
+      AND ib.estado='CONGELADO'
+    WHERE m.estado = 'APLICADO' AND m.fecha <= statement_timestamp() AND ib.id IS NULL
   ), lotes AS (
     SELECT
       producto_id,

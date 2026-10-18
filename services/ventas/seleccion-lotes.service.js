@@ -1,4 +1,5 @@
 const stock = require('./stock-pedidos.service');
+const { verificarDisponible } = require('../inventario/bloqueos.service');
 const error = (message, status = 422) => Object.assign(new Error(message), { status });
 const clave = (lote) => JSON.stringify([lote.bodegaId, lote.lote, lote.fechaVencimiento]);
 const cantidadValida = (cantidad) =>
@@ -50,7 +51,16 @@ function normalizarSeleccion(detalle) {
   return seleccion;
 }
 
-async function validarSaldos(detalles, transaction) {
+async function validarSaldos(detalles, transaction, contexto = {}) {
+  for (const detalle of detalles) {
+    normalizarSeleccion(detalle);
+    for (const lote of detalle.seleccionLotes)
+      await verificarDisponible(
+        { ...lote, productoId: detalle.productoId, unidadMedidaId: detalle.unidadMedidaId },
+        contexto,
+        transaction,
+      );
+  }
   const productos = await stock.productosDisponibles(
     detalles.map((d) => d.productoId),
     transaction,
@@ -60,7 +70,6 @@ async function validarSaldos(detalles, transaction) {
     const producto = porProducto.get(detalle.productoId);
     if (!producto || producto.stockIndeterminado)
       throw error('Stock insuficiente o indeterminado para uno o más productos', 409);
-    normalizarSeleccion(detalle);
     for (const elegido of detalle.seleccionLotes) {
       const disponible = producto.lotes.find((lote) => clave(lote) === clave(elegido));
       if (!disponible || elegido.cantidad > disponible.disponible) {

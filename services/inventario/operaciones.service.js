@@ -2,6 +2,7 @@ const { QueryTypes } = require('sequelize');
 const { createHash, randomUUID } = require('crypto');
 const models = require('../../models');
 const { sequelize: db } = models;
+const { verificarDisponible } = require('./bloqueos.service');
 const error = (message, status = 422) => Object.assign(new Error(message), { status });
 const texto = (value) => (typeof value === 'string' ? value.trim() || null : null);
 function miles(value, signed = false) {
@@ -286,6 +287,18 @@ async function aplicarConteo(id, nota, usuarioId, transaccion) {
     await op.update({ nota: motivo }, { transaction });
     const entradas = lineas.filter((l) => miles(l.cantidad, true) > 0n),
       salidas = lineas.filter((l) => miles(l.cantidad, true) < 0n);
+    for (const linea of salidas)
+      await verificarDisponible(
+        {
+          productoId: linea.productoId,
+          bodegaId: op.bodegaId,
+          unidadMedidaId: linea.unidadMedidaId,
+          lote: linea.lote,
+          fechaVencimiento: linea.fechaVencimiento,
+        },
+        { usuarioId, operacion: 'AJUSTE_NEGATIVO_INVENTARIO' },
+        transaction,
+      );
     if (entradas.length) await documento(op, entradas, 'AJN', op.bodegaId, usuarioId, transaction);
     if (salidas.length) await documento(op, salidas, 'AJS', op.bodegaId, usuarioId, transaction);
     await op.update(
@@ -322,6 +335,12 @@ async function trasladar(body, usuarioId) {
       throw error('La bodega origen debe ser diferente de cada destino');
     await bodegas([body.bodegaId, ...body.detalles.map((d) => d.bodegaDestinoId)], transaction);
     const lineas = await preparar(body.detalles, 'TRASLADO', transaction);
+    for (const linea of lineas)
+      await verificarDisponible(
+        { ...linea, bodegaId: body.bodegaId },
+        { usuarioId, operacion: 'TRASLADO' },
+        transaction,
+      );
     const acumulado = new Map();
     for (const l of lineas) {
       const actual = await saldo(body.bodegaId, l, transaction);

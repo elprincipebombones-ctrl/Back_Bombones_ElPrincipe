@@ -38,10 +38,24 @@ async function existencias(query) {
       AND (:categoriaProductoId::uuid IS NULL OR p.categoria_producto_id=:categoriaProductoId::uuid)
       AND (:codigo::text IS NULL OR p.codigo ILIKE :codigo)
     GROUP BY p.id,p.codigo,p.nombre,p.descripcion,p.categoria_producto_id,p.estado,p.unidad_medida_id,b.id,b.nombre,b.estado,d.unidad_medida_id,u.simbolo,COALESCE(d.lote,d.lote_proveedor),d.fecha_vencimiento
+  ), disponibilidad AS (
+    SELECT l.*,
+      CASE WHEN l."inventarioDisponible" IS NULL THEN NULL ELSE l."inventarioDisponible"::text END AS "inventarioFisico",
+      CASE WHEN ib.id IS NULL THEN '0.000' WHEN l."inventarioDisponible" IS NULL THEN NULL ELSE l."inventarioDisponible"::text END AS "cantidadCongelada",
+      CASE WHEN ib.id IS NOT NULL AND l."inventarioDisponible" IS NOT NULL THEN 0 ELSE l."inventarioDisponible" END AS "inventarioOperativo",
+      CASE WHEN ib.id IS NOT NULL THEN 'CONGELADO' ELSE 'DISPONIBLE' END AS "estadoDisponibilidad",
+      CASE WHEN ib.id IS NULL THEN NULL ELSE jsonb_build_object(
+        'id',ib.id,'motivo',ib.motivo,'origen',ib.origen,'congeladoEn',ib.congelado_en,
+        'congeladoPor',jsonb_build_object('id',u.id,'nombre',u.nombre)) END AS "bloqueoActivo"
+    FROM lotes l LEFT JOIN inventario_bloqueos_lote ib ON ib.producto_id=l."productoId"
+      AND ib.bodega_id=l."bodegaId" AND ib.unidad_medida_id=l."unidadMedidaId"
+      AND ib.lote IS NOT DISTINCT FROM l.lote
+      AND ib.fecha_vencimiento IS NOT DISTINCT FROM l."fechaVencimiento" AND ib.estado='CONGELADO'
+    LEFT JOIN usuarios u ON u.id=ib.congelado_por_id
   ), totales AS (
-    SELECT "productoId","bodegaId",SUM(COALESCE("inventarioDisponible",0)) AS disponible,
+    SELECT "productoId","bodegaId",SUM(COALESCE("inventarioOperativo",0)) AS disponible,
       SUM("movimientosSinSentido")::int AS pendientes
-    FROM lotes GROUP BY "productoId","bodegaId"
+    FROM disponibilidad GROUP BY "productoId","bodegaId"
   ), estados AS (
     SELECT t.*,c.stock_minimo,c.punto_reorden,c.stock_maximo,
       CASE WHEN t.pendientes>0 THEN 'INDETERMINADO'
@@ -53,14 +67,14 @@ async function existencias(query) {
         ELSE GREATEST(c.punto_reorden-t.disponible,0) END AS sugerida
     FROM totales t LEFT JOIN configuraciones_stock c ON c.producto_id=t."productoId" AND c.bodega_id=t."bodegaId" AND c.activo=true
   ), datos AS (
-    SELECT l.*, CASE WHEN l."inventarioDisponible" IS NULL THEN NULL ELSE l."inventarioDisponible"::text END AS "inventarioDisponibleTexto",
+    SELECT l.*, CASE WHEN l."inventarioOperativo" IS NULL THEN NULL ELSE l."inventarioOperativo"::text END AS "inventarioDisponibleTexto",
       e.stock_minimo::text AS "stockMinimo",e.punto_reorden::text AS "puntoReorden",e.stock_maximo::text AS "stockMaximo",
       e.estado AS "estadoStock",e.sugerida::text AS "cantidadSugerida"
-    FROM lotes l JOIN estados e USING ("productoId","bodegaId")
+    FROM disponibilidad l JOIN estados e USING ("productoId","bodegaId")
   ), filtrados AS (
     SELECT * FROM datos WHERE (:estadoStock::text IS NULL OR "estadoStock"=:estadoStock)
   ) SELECT (SELECT COUNT(*)::int FROM filtrados) AS total,
-    COALESCE((SELECT json_agg(f.datos) FROM (SELECT row_to_json(datos)::jsonb - 'inventarioDisponible' - 'inventarioDisponibleTexto' || jsonb_build_object('inventarioDisponible',"inventarioDisponibleTexto") AS datos FROM filtrados datos ORDER BY codigo,"bodegaId","unidadMedidaId",lote NULLS FIRST,"fechaVencimiento" NULLS FIRST LIMIT :limit OFFSET :offset) f),'[]'::json) AS filas,
+    COALESCE((SELECT json_agg(f.datos) FROM (SELECT row_to_json(datos)::jsonb - 'inventarioDisponible' - 'inventarioOperativo' - 'inventarioDisponibleTexto' || jsonb_build_object('inventarioDisponible',"inventarioDisponibleTexto") AS datos FROM filtrados datos ORDER BY codigo,"bodegaId","unidadMedidaId",lote NULLS FIRST,"fechaVencimiento" NULLS FIRST LIMIT :limit OFFSET :offset) f),'[]'::json) AS filas,
     (SELECT json_build_object('agotados',COUNT(*) FILTER(WHERE estado='AGOTADO'),'criticos',COUNT(*) FILTER(WHERE estado='CRITICO'),'bajos',COUNT(*) FILTER(WHERE estado='BAJO'),'normales',COUNT(*) FILTER(WHERE estado='NORMAL'),'sinConfigurar',COUNT(*) FILTER(WHERE estado='SIN_CONFIGURAR'),'indeterminados',COUNT(*) FILTER(WHERE estado='INDETERMINADO')) FROM estados) AS resumen`,
     { replacements, type: QueryTypes.SELECT },
   );

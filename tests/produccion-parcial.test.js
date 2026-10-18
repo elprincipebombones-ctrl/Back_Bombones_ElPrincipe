@@ -57,6 +57,8 @@ test('PEP: liberación, inicio, parciales FEFO, aislamiento, rollback y trazabil
     'Producto',
     'MovimientoInventario',
     'DetalleMovimiento',
+    'InventarioBloqueoLote',
+    'InventarioEventoAuditoria',
     'OrdenProduccion',
     'OrdenProduccionDetalle',
     'ResultadoProduccion',

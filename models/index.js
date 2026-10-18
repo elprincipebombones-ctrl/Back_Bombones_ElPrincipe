@@ -1349,6 +1349,18 @@ db.OrdenProduccion.hasMany(db.SolicitudMovimientoOt, {
   foreignKey: 'ordenProduccionId',
   as: 'solicitudesMp',
 });
+
+// Inventario: congelamiento histórico de existencias por combinación exacta.
+for (const [model, foreignKey, as] of [
+  [db.Producto, 'productoId', 'producto'],
+  [db.Bodega, 'bodegaId', 'bodega'],
+  [db.UnidadMedida, 'unidadMedidaId', 'unidadMedida'],
+  [db.Usuario, 'congeladoPorId', 'congeladoPor'],
+  [db.Usuario, 'liberadoPorId', 'liberadoPor'],
+]) db.InventarioBloqueoLote.belongsTo(model, { foreignKey, as });
+if (db.Inspeccion) db.InventarioBloqueoLote.belongsTo(db.Inspeccion, { foreignKey: 'inspeccionCalidadId', as: 'inspeccionCalidad' });
+if (db.AccionCorrectiva) db.InventarioBloqueoLote.belongsTo(db.AccionCorrectiva, { foreignKey: 'accionCorrectivaId', as: 'accionCorrectiva' });
+db.InventarioEventoAuditoria.belongsTo(db.InventarioBloqueoLote, { foreignKey: 'bloqueoId', as: 'bloqueo' });
 db.sequelize = sequelize;
 
 module.exports = db;

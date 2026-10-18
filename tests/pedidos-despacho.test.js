@@ -45,6 +45,8 @@ test('Pedidos: despacho por selección explícita, persistencia histórica, stoc
     'Producto',
     'MovimientoInventario',
     'DetalleMovimiento',
+    'InventarioBloqueoLote',
+    'InventarioEventoAuditoria',
     'PedidoVenta',
     'PedidoVentaDetalle',
   ]) {
