@@ -24,6 +24,6 @@ router.use('/reglas', require('./reglas'));
 router.use('/unidad-medida', require('./recepcion/unidadMedida.routes'));
 router.use('/produccion', require('./produccion'));
 router.use('/ventas/pedidos', require('./ventas/pedidos.routes'));
-router.use('/reportes/trazabilidad', require('./reportes/trazabilidad.routes'));
+router.use('/reportes', require('./reportes'));
 
 module.exports = router;

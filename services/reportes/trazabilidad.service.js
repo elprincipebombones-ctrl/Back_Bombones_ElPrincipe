@@ -321,4 +321,34 @@ async function buscar(query) {
   });
 }
 
-module.exports = { buscar, consultar };
+async function recorrerCompleto(query, procesar) {
+  const criterios = parametros(query);
+  return sequelize.transaction(
+    { isolationLevel: Transaction.ISOLATION_LEVELS.REPEATABLE_READ, readOnly: true },
+    async (transaction) => {
+      const resumen = await origen(criterios, transaction);
+      async function* bloques() {
+        for (const bloque of Object.keys(CONSULTAS)) {
+          let pagina = 1;
+          let hayMas = true;
+          while (hayMas) {
+            const filas = await sequelize.query(
+              `${contexto}\nSELECT * FROM (${CONSULTAS[bloque]}) bloque LIMIT 101 OFFSET :offset`,
+              {
+                replacements: { ...criterios, offset: (pagina - 1) * 100 },
+                type: QueryTypes.SELECT,
+                transaction,
+              },
+            );
+            yield { bloque, filas: filas.slice(0, 100), inicio: pagina === 1 };
+            hayMas = filas.length > 100;
+            pagina++;
+          }
+        }
+      }
+      return procesar({ origen: resumen, criterios }, bloques());
+    },
+  );
+}
+
+module.exports = { buscar, consultar, recorrerCompleto };
