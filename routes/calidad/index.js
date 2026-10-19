@@ -629,6 +629,27 @@ router.put(
   validar,
   formato.actualizar,
 );
+router.get(
+  '/formatos/:id/lugares',
+  permiso('calidad.ver'),
+  configuracion.idValidator,
+  validar,
+  formato.listarLugares,
+);
+router.put(
+  '/formatos/:id/lugares',
+  permiso('calidad.editar'),
+  configuracion.guardarLugaresFormatoValidator,
+  validar,
+  formato.guardarLugares,
+);
+router.get(
+  '/formatos/:id/lugares-operativos',
+  permiso('inspecciones.ver'),
+  configuracion.idValidator,
+  validar,
+  formato.listarLugaresOperativos,
+);
 router.delete(
   '/formatos/:id',
   permiso('calidad.eliminar'),

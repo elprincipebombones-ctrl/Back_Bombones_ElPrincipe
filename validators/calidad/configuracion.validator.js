@@ -36,6 +36,11 @@ exports.actualizarFormatoValidator = [
   id('programaId', true, true),
   body('estado').optional().isBoolean(),
 ];
+exports.guardarLugaresFormatoValidator = [
+  param('id').isUUID().withMessage('El formato no es válido'),
+  body('lugarIds').isArray({ max: 1000 }).withMessage('La selección de lugares no es válida'),
+  body('lugarIds.*').isUUID().withMessage('Uno de los lugares seleccionados no es válido'),
+];
 exports.crearVersionValidator = [
   id('formatoCalidadId'),
   body('numeroVersion').optional().isInt({ min: 1 }),
