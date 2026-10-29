@@ -17,6 +17,7 @@ const {
 } = require('../../models');
 const { resolverBodegaPep } = require('./bodega-pep.service');
 const { normalizarCantidad } = require('./conversion-unidad.service');
+const { verificarDisponible } = require('../inventario/bloqueos.service');
 
 const redondear = (valor) => Number(Number(valor).toFixed(6));
 const error = (message, status = 422, details = null) =>
@@ -45,6 +46,14 @@ const crearMovimiento = async ({
   detalles,
   transaction,
 }) => {
+  if (tipo === 'SA') {
+    for (const detalle of detalles)
+      await verificarDisponible(
+        { ...detalle, bodegaId },
+        { usuarioId, operacion: origen || 'SALIDA_INVENTARIO', origenId },
+        transaction,
+      );
+  }
   const movimiento = await MovimientoInventario.create(
     {
       tipoDocumento: tipo,
@@ -133,7 +142,12 @@ const saldosPep = async (orden, transaction) =>
   FROM detalle_movimiento d
   JOIN movimientos_inventario m ON m.id = d.movimiento_inventario_id
   JOIN productos p ON p.id = d.producto_id
-  WHERE m.estado = 'APLICADO' AND (
+  LEFT JOIN inventario_bloqueos_lote ib ON ib.producto_id=d.producto_id
+    AND ib.bodega_id=m.bodega_id AND ib.unidad_medida_id=d.unidad_medida_id
+    AND ib.lote IS NOT DISTINCT FROM COALESCE(d.lote,d.lote_proveedor)
+    AND ib.fecha_vencimiento IS NOT DISTINCT FROM d.fecha_vencimiento
+    AND ib.estado='CONGELADO'
+  WHERE m.estado = 'APLICADO' AND ib.id IS NULL AND (
     m.id = :entrada OR (m.origen = 'PRODUCCION_PARCIAL' AND m.tipo_documento = 'SA'
       AND m.origen_id IN (SELECT id FROM reportes_produccion WHERE orden_produccion_id = :ordenId))
     OR m.id IN (

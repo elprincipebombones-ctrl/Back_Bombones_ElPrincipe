@@ -18,7 +18,11 @@ async function despachar(pedido, detalles, usuarioId, transaction) {
     transaction,
     lock: transaction.LOCK.UPDATE,
   });
-  const porProducto = await validarSaldos(detalles, transaction);
+  const porProducto = await validarSaldos(detalles, transaction, {
+    usuarioId,
+    operacion: 'DESPACHO_VENTA',
+    pedidoId: pedido.id,
+  });
   const porBodega = new Map();
   const fecha = new Date();
   for (const detalle of detalles) {

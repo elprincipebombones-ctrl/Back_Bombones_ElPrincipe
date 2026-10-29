@@ -19,6 +19,7 @@ const {
 const { CODIGO_BODEGA_PEP, resolverBodegaPep } = require('./bodega-pep.service');
 const { crearMovimiento } = require('./produccion-parcial.service');
 const { normalizarCantidad } = require('./conversion-unidad.service');
+const { verificarDisponible } = require('../inventario/bloqueos.service');
 
 class OrdenProduccionError extends Error {
   constructor(message, status = 422) {
@@ -102,10 +103,16 @@ const obtenerSaldosLotes = async (productoIds, transaction) => {
      INNER JOIN movimientos_inventario m ON m.id = d.movimiento_inventario_id
      INNER JOIN productos p ON p.id = d.producto_id
      INNER JOIN bodegas b ON b.id = m.bodega_id
+     LEFT JOIN inventario_bloqueos_lote ib ON ib.producto_id=d.producto_id
+       AND ib.bodega_id=m.bodega_id AND ib.unidad_medida_id=d.unidad_medida_id
+       AND ib.lote IS NOT DISTINCT FROM COALESCE(d.lote,d.lote_proveedor)
+       AND ib.fecha_vencimiento IS NOT DISTINCT FROM d.fecha_vencimiento
+       AND ib.estado='CONGELADO'
      WHERE d.producto_id IN (:productoIds)
        AND b.codigo <> :codigoPep
        AND m.estado = 'APLICADO'
        AND m.tipo_documento IN ('EN', 'SA')
+       AND ib.id IS NULL
      GROUP BY d.producto_id, p.codigo, p.nombre, COALESCE(d.lote, d.lote_proveedor),
               m.bodega_id, b.codigo, b.nombre, d.fecha_vencimiento
      HAVING SUM(CASE
@@ -553,6 +560,13 @@ const confirmarSalidaMp = async (orden, usuarioId, transaction) => {
     });
   });
   const salidas = [...consolidadas.values()];
+
+  for (const salida of salidas)
+    await verificarDisponible(
+      salida,
+      { usuarioId, operacion: 'CONSUMO_PRODUCCION', ordenProduccionId: orden.id },
+      transaction,
+    );
 
   for (const clave of [...consolidadas.keys()].sort()) {
     await sequelize.query(`SELECT pg_advisory_xact_lock(hashtextextended(:clave, 0))`, {

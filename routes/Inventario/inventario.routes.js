@@ -13,6 +13,7 @@ const service = require('../../services/inventario/informes.service');
 const validar = require('../../middleware/validar');
 const router = Router();
 router.use(require('../../middleware/auth'), require('../../middleware/permiso')('Inventario.Ver'));
+router.use('/bloqueos', require('./bloqueos.routes'));
 router.use(require('./operaciones.routes'));
 router.get('/catalogos', async (_req, res, next) => {
   try {

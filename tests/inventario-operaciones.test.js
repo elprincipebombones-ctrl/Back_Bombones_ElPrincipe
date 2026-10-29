@@ -70,17 +70,18 @@ async function entorno(t) {
   t.mock.method(models.sequelize.connectionManager, 'releaseConnection', async () => {});
   t.after(() => pg.close());
   await pg.exec(`
-    CREATE TABLE usuarios(id uuid PRIMARY KEY);
+    CREATE TABLE usuarios(id uuid PRIMARY KEY,nombre text);
     CREATE TABLE roles(id uuid PRIMARY KEY,nombre text);
     CREATE TABLE permissions(id uuid PRIMARY KEY,nombre text UNIQUE,descripcion text,modulo text,estado boolean,"createdAt" timestamptz,"updatedAt" timestamptz);
     CREATE TABLE role_permissions(rol_id uuid,permiso_id uuid,PRIMARY KEY(rol_id,permiso_id));
     CREATE TABLE categorias_productos(id uuid PRIMARY KEY,codigo text,nombre text,descripcion text,clasificacion_mp text,requiere_lote boolean DEFAULT false,requiere_fecha_vencimiento boolean DEFAULT false,requiere_temperatura boolean DEFAULT false,estado boolean DEFAULT true,created_at timestamptz,updated_at timestamptz);
     CREATE TABLE unidades_medida(id uuid PRIMARY KEY,codigo text,nombre text,simbolo text,estado boolean DEFAULT true,created_at timestamptz,updated_at timestamptz);
     CREATE TABLE productos(id uuid PRIMARY KEY,codigo text,nombre text,descripcion text,categoria_producto_id uuid,unidad_medida_id uuid,estado boolean DEFAULT true,created_at timestamptz,updated_at timestamptz,tipo_producto text,condicion_termica_id uuid,familia_mp_carnica_id uuid);
-    CREATE TABLE bodegas(id uuid PRIMARY KEY,codigo text,nombre text,tipo text,descripcion text,direccion text,responsable_id uuid,estado boolean DEFAULT true,created_at timestamptz,updated_at timestamptz);
+    CREATE TABLE bodegas(id uuid PRIMARY KEY,codigo text,nombre text,tipo text,descripcion text,direccion text,responsable_id uuid,estado boolean DEFAULT true,es_bodega_pt_default boolean DEFAULT false,created_at timestamptz,updated_at timestamptz);
     CREATE TABLE movimientos_inventario(id uuid PRIMARY KEY,tipo_documento text,numero_documento text UNIQUE,fecha timestamptz,bodega_id uuid,estado text,origen text,origen_id uuid,usuario_id uuid,observaciones text,created_at timestamptz,updated_at timestamptz,UNIQUE(origen,origen_id));
     CREATE TABLE detalle_movimiento(id uuid PRIMARY KEY,movimiento_inventario_id uuid REFERENCES movimientos_inventario(id),producto_id uuid,unidad_medida_id uuid,cantidad numeric(15,3) CHECK(cantidad>0),sentido text,lote text,lote_proveedor text,fecha_vencimiento date,costo_unitario numeric,costo_total numeric,observaciones text,created_at timestamptz,updated_at timestamptz);
     CREATE TABLE configuraciones_stock(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),producto_id uuid,bodega_id uuid,stock_minimo numeric(15,3),punto_reorden numeric(15,3),stock_maximo numeric(15,3),activo boolean DEFAULT true,usuario_id uuid,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now(),UNIQUE(producto_id,bodega_id));
+    CREATE TABLE inventario_bloqueos_lote(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),producto_id uuid,bodega_id uuid,unidad_medida_id uuid,lote text,fecha_vencimiento date,estado text,motivo text,origen text,inspeccion_calidad_id uuid,accion_correctiva_id uuid,congelado_por_id uuid,congelado_en timestamptz DEFAULT now(),liberado_por_id uuid,liberado_en timestamptz,nota_liberacion text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
     INSERT INTO usuarios VALUES('${id(1)}');
     INSERT INTO roles VALUES('${id(1)}','Administrador');
     INSERT INTO categorias_productos(id,codigo,nombre,clasificacion_mp) VALUES('${id(2)}','CAT','Categoría','NO_PERECEDERA');

@@ -92,7 +92,7 @@ async function crear(body, usuarioId) {
   return sequelize.transaction(async (transaction) => {
     await clienteValido(body.clienteId, transaction);
     const detalles = await prepararDetalles(body.detalles || [], transaction);
-    await validarSaldos(detalles, transaction);
+    await validarSaldos(detalles, transaction, { usuarioId, operacion: 'RESERVA_VENTA' });
     const [secuencia] = await sequelize.query(
       "SELECT nextval('pedidos_venta_numero_seq')::bigint AS numero",
       { type: QueryTypes.SELECT, transaction },
