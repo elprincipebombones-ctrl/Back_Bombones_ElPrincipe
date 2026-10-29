@@ -8,6 +8,7 @@ const {
   CategoriaLugarInspeccion,
   Usuario,
   Desviacion,
+  FormatoLugarInspeccion,
 } = require('../../models');
 const { ok, created, fail } = require('../../utils/response');
 const { ApiError } = require('../../utils/ApiError');
@@ -59,6 +60,17 @@ exports.crear = async (req, res, next) => {
     });
     if (!lugar) {
       throw new ApiError('Selecciona un lugar activo para iniciar la inspección', 422);
+    }
+    const lugarAsignado = await FormatoLugarInspeccion.findOne({
+      where: {
+        formatoCalidadId,
+        lugarInspeccionId,
+        estado: true,
+      },
+      transaction,
+    });
+    if (!lugarAsignado) {
+      throw new ApiError('El lugar seleccionado no está asignado a este formato', 422);
     }
     const fechaInspeccion = await fechaActual(transaction);
     const inspeccion = await Inspeccion.create(

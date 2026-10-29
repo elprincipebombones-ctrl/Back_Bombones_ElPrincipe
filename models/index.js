@@ -786,6 +786,23 @@ db.FormatoCalidad.belongsTo(db.ProgramaCalidad, {
   foreignKey: 'programaId',
   as: 'programa',
 });
+db.FormatoCalidad.hasMany(db.FormatoLugarInspeccion, {
+  foreignKey: 'formatoCalidadId',
+  as: 'asignacionesLugares',
+  onDelete: 'CASCADE',
+});
+db.FormatoLugarInspeccion.belongsTo(db.FormatoCalidad, {
+  foreignKey: 'formatoCalidadId',
+  as: 'formato',
+});
+db.LugarInspeccion.hasMany(db.FormatoLugarInspeccion, {
+  foreignKey: 'lugarInspeccionId',
+  as: 'asignacionesFormatos',
+});
+db.FormatoLugarInspeccion.belongsTo(db.LugarInspeccion, {
+  foreignKey: 'lugarInspeccionId',
+  as: 'lugar',
+});
 
 db.FormatoCalidad.hasMany(db.ProgramacionFormato, {
   foreignKey: 'formatoCalidadId',
