@@ -711,11 +711,13 @@ db.MovimientoInventario.belongsTo(db.Usuario, {
   as: 'usuario',
 });
 
-db.Recepcion.hasOne(db.MovimientoInventario, {
+db.DetalleRecepcion.belongsTo(db.Bodega, { foreignKey: 'bodegaId', as: 'bodega' });
+
+db.Recepcion.hasMany(db.MovimientoInventario, {
   foreignKey: 'origenId',
   constraints: false,
   scope: { origen: 'RECEPCION' },
-  as: 'movimientoInventario',
+  as: 'movimientosInventario',
 });
 
 db.MovimientoInventario.belongsTo(db.Recepcion, {
@@ -1374,10 +1376,22 @@ for (const [model, foreignKey, as] of [
   [db.UnidadMedida, 'unidadMedidaId', 'unidadMedida'],
   [db.Usuario, 'congeladoPorId', 'congeladoPor'],
   [db.Usuario, 'liberadoPorId', 'liberadoPor'],
-]) db.InventarioBloqueoLote.belongsTo(model, { foreignKey, as });
-if (db.Inspeccion) db.InventarioBloqueoLote.belongsTo(db.Inspeccion, { foreignKey: 'inspeccionCalidadId', as: 'inspeccionCalidad' });
-if (db.AccionCorrectiva) db.InventarioBloqueoLote.belongsTo(db.AccionCorrectiva, { foreignKey: 'accionCorrectivaId', as: 'accionCorrectiva' });
-db.InventarioEventoAuditoria.belongsTo(db.InventarioBloqueoLote, { foreignKey: 'bloqueoId', as: 'bloqueo' });
+])
+  db.InventarioBloqueoLote.belongsTo(model, { foreignKey, as });
+if (db.Inspeccion)
+  db.InventarioBloqueoLote.belongsTo(db.Inspeccion, {
+    foreignKey: 'inspeccionCalidadId',
+    as: 'inspeccionCalidad',
+  });
+if (db.AccionCorrectiva)
+  db.InventarioBloqueoLote.belongsTo(db.AccionCorrectiva, {
+    foreignKey: 'accionCorrectivaId',
+    as: 'accionCorrectiva',
+  });
+db.InventarioEventoAuditoria.belongsTo(db.InventarioBloqueoLote, {
+  foreignKey: 'bloqueoId',
+  as: 'bloqueo',
+});
 db.sequelize = sequelize;
 
 module.exports = db;

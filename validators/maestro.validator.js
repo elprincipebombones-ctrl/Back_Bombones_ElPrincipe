@@ -454,6 +454,7 @@ exports.crearCategoriaProductoValidator = [
     .withMessage('El nombre debe tener entre 2 y 150 caracteres'),
 
   body('codigo')
+    .optional()
     .isString()
     .withMessage('El código debe ser un texto')
     .isLength({
@@ -805,6 +806,7 @@ exports.actualizarRecepcionValidator = [
 
 exports.crearBodegaValidator = [
   body('codigo')
+    .optional()
     .trim()
     .notEmpty()
     .withMessage('El código es obligatorio')

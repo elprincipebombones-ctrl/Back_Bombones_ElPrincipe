@@ -1,3 +1,4 @@
+const { siguienteCodigoMaestro } = require('../../utils/codigo-maestro');
 const { Op } = require('sequelize');
 
 const sequelize = require('../../database/database');
@@ -33,37 +34,15 @@ exports.obtener = async (req, res, next) => {
 
 exports.crear = async (req, res, next) => {
   try {
-    const {
-      nombre,
-      codigo,
-      tipo,
-      descripcion,
-      direccion,
-      responsableId,
-      estado,
-      esBodegaPtDefault,
-    } = req.body;
+    const { nombre, tipo, descripcion, direccion, responsableId, estado, esBodegaPtDefault } =
+      req.body;
 
     if (!nombre) {
       return fail(res, 'Falta el nombre', 400);
     }
 
-    if (!codigo) {
-      return fail(res, 'Falta el código', 400);
-    }
-
     if (!tipo) {
       return fail(res, 'Falta el tipo de bodega', 400);
-    }
-
-    const bodegaExistente = await Bodega.findOne({
-      where: {
-        codigo,
-      },
-    });
-
-    if (bodegaExistente) {
-      return fail(res, 'Ya existe una bodega con ese código', 409);
     }
 
     if (esBodegaPtDefault && estado === false) {
@@ -71,6 +50,7 @@ exports.crear = async (req, res, next) => {
     }
 
     const bodega = await sequelize.transaction(async (transaction) => {
+      const codigo = await siguienteCodigoMaestro('bodega', sequelize, transaction);
       if (esBodegaPtDefault) {
         await Bodega.update({ esBodegaPtDefault: false }, { where: {}, transaction });
       }
@@ -104,18 +84,6 @@ exports.actualizar = async (req, res, next) => {
       return fail(res, 'Bodega no encontrada', 404);
     }
 
-    if (req.body.codigo && req.body.codigo !== bodega.codigo) {
-      const bodegaExistente = await Bodega.findOne({
-        where: {
-          codigo: req.body.codigo,
-        },
-      });
-
-      if (bodegaExistente && bodegaExistente.id !== bodega.id) {
-        return fail(res, 'Ya existe una bodega con ese código', 409);
-      }
-    }
-
     await sequelize.transaction(async (transaction) => {
       if (req.body.esBodegaPtDefault && req.body.estado !== false) {
         await Bodega.update(
@@ -128,6 +96,7 @@ exports.actualizar = async (req, res, next) => {
       }
 
       const cambios = { ...req.body };
+      delete cambios.codigo;
       if (cambios.estado === false) {
         cambios.esBodegaPtDefault = false;
       }

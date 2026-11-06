@@ -4,6 +4,10 @@ const uuidOpcional = (campo, mensaje) =>
   body(campo).optional({ nullable: true }).isUUID().withMessage(mensaje);
 
 const detalle = (prefijo = '') => [
+  body(`${prefijo}bodegaId`)
+    .optional({ nullable: true })
+    .isUUID()
+    .withMessage('La bodega del producto no es válida'),
   body(`${prefijo}productoId`).isUUID().withMessage('El producto es obligatorio'),
   body(`${prefijo}unidadMedidaId`)
     .optional({ nullable: true })
@@ -73,7 +77,7 @@ exports.idTemperaturaRecepcionValidator = [
 exports.crearRecepcionValidator = [
   body('fechaRecepcion').isISO8601().withMessage('La fecha de recepción es obligatoria'),
   body('proveedorId').isUUID().withMessage('El proveedor es obligatorio'),
-  body('bodegaId').isUUID().withMessage('La bodega es obligatoria'),
+  body('bodegaId').optional({ nullable: true }).isUUID().withMessage('La bodega no es válida'),
   uuidOpcional('lugarAreaId', 'El lugar o área no es válido'),
   body('observaciones').optional({ nullable: true }).isString(),
   body('detalles').isArray({ min: 1 }).withMessage('Debe registrar al menos un producto'),
@@ -87,13 +91,14 @@ exports.crearRecepcionValidator = [
 exports.actualizarRecepcionValidator = [
   body('fechaRecepcion').optional().isISO8601(),
   body('proveedorId').optional().isUUID(),
-  body('bodegaId').optional().isUUID(),
+  body('bodegaId').optional({ nullable: true }).isUUID(),
   uuidOpcional('lugarAreaId', 'El lugar o área no es válido'),
   body('observaciones').optional({ nullable: true }).isString(),
 ];
 
 exports.crearDetalleRecepcionValidator = detalle();
 exports.actualizarDetalleRecepcionValidator = [
+  body('bodegaId').optional().isUUID(),
   body('productoId').optional().isUUID(),
   body('unidadMedidaId').optional().isUUID(),
   body('cantidadSolicitada').optional({ nullable: true }).isFloat({ gt: 0 }),

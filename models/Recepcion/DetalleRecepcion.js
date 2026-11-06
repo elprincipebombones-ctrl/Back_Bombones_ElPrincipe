@@ -20,6 +20,8 @@ const DetalleRecepcion = sequelize.define(
       allowNull: false,
     },
 
+    bodegaId: { type: DataTypes.UUID, allowNull: false, field: 'bodega_id' },
+
     unidadMedidaId: {
       type: DataTypes.UUID,
       allowNull: false,

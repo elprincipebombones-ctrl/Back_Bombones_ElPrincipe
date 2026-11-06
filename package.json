@@ -18,7 +18,8 @@
     "test:campos-accion": "node scripts/probar-campos-accion-correctiva.js",
     "test:recepcion": "node --test tests/recepcion.service.test.js",
     "test:clientes": "node --test --test-concurrency=1 tests/clientes.test.js",
-    "test:inventario": "node --test --test-concurrency=1 tests/inventario-auth.test.js tests/inventario-operaciones.test.js tests/inventario-bloqueos.test.js"
+    "test:inventario": "node --test --test-concurrency=1 tests/inventario-auth.test.js tests/inventario-operaciones.test.js tests/inventario-bloqueos.test.js",
+    "test:mejoras": "node --test --test-concurrency=1 tests/recepcion.service.test.js tests/mejoras-consistencia.test.js tests/maestros-codigos.test.js"
   },
   "keywords": [
     "express",

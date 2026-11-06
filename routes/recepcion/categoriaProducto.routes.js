@@ -82,11 +82,12 @@ router.get(
  *             type: object
  *             required:
  *               - nombre
- *               - codigo
  *             properties:
  *               codigo:
  *                 type: string
- *                 example: MP-CAR
+ *                 readOnly: true
+ *                 description: Código interno generado automáticamente
+ *                 example: CP-000001
  *               nombre:
  *                 type: string
  *                 example: Materia Prima Cárnica

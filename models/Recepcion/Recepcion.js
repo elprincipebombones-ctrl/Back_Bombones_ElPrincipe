@@ -35,7 +35,7 @@ const Recepcion = sequelize.define(
 
     bodegaId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
 
     lugarAreaId: {

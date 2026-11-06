@@ -1,4 +1,5 @@
 const {
+  sequelize,
   Recepcion,
   DetalleRecepcion,
   Producto,
@@ -21,17 +22,20 @@ const include = [
   { model: UnidadMedida, as: 'unidadMedida' },
 ];
 
-const recepcionEditable = async (recepcionId) => {
-  const recepcion = await Recepcion.findByPk(recepcionId);
-  if (!recepcion) return { error: 'Recepción no encontrada', status: 404 };
-  if (recepcion.estado !== 'EN_PROCESO') {
-    return { error: 'La recepción finalizada es de solo lectura', status: 409 };
-  }
-  return { recepcion };
-};
+const conRecepcionEditable = async (recepcionId, operacion) =>
+  sequelize.transaction(async (transaction) => {
+    const recepcion = await Recepcion.findByPk(recepcionId, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!recepcion) throw Object.assign(new Error('Recepción no encontrada'), { status: 404 });
+    if (recepcion.estado !== 'EN_PROCESO')
+      throw Object.assign(new Error('La recepción finalizada es de solo lectura'), { status: 409 });
+    return operacion(transaction);
+  });
 
-const buscarDetalle = (recepcionId, id) =>
-  DetalleRecepcion.findOne({ where: { id, recepcionId }, include });
+const buscarDetalle = (recepcionId, id, transaction) =>
+  DetalleRecepcion.findOne({ where: { id, recepcionId }, include, transaction });
 
 exports.listar = async (req, res, next) => {
   try {
@@ -59,50 +63,50 @@ exports.obtener = async (req, res, next) => {
 
 exports.crear = async (req, res, next) => {
   try {
-    const estado = await recepcionEditable(req.params.recepcionId);
-    if (estado.error) return fail(res, estado.error, estado.status);
-    const [datos] = await validarDetalles([req.body]);
-    const detalle = await DetalleRecepcion.create({
-      ...datos,
-      recepcionId: req.params.recepcionId,
+    const detalle = await conRecepcionEditable(req.params.recepcionId, async (transaction) => {
+      const [datos] = await validarDetalles([req.body], transaction);
+      const registro = await DetalleRecepcion.create(
+        { ...datos, recepcionId: req.params.recepcionId },
+        { transaction },
+      );
+      return buscarDetalle(req.params.recepcionId, registro.id, transaction);
     });
-    return created(res, await buscarDetalle(req.params.recepcionId, detalle.id));
-  } catch (err) {
-    return next(err);
+    return created(res, detalle);
+  } catch (error) {
+    return next(error);
   }
 };
 
 exports.actualizar = async (req, res, next) => {
   try {
-    const estado = await recepcionEditable(req.params.recepcionId);
-    if (estado.error) return fail(res, estado.error, estado.status);
-    const detalle = await buscarDetalle(req.params.recepcionId, req.params.id);
-    if (!detalle) return fail(res, 'Detalle no encontrado en la recepción', 404);
-    const candidato = {
-      productoId: req.body.productoId ?? detalle.productoId,
-      unidadMedidaId: req.body.unidadMedidaId ?? detalle.unidadMedidaId,
-      cantidadSolicitada:
-        req.body.cantidadSolicitada === undefined
-          ? detalle.cantidadSolicitada
-          : req.body.cantidadSolicitada,
-      cantidadRecibida: req.body.cantidadRecibida ?? detalle.cantidadRecibida,
-      costoUnitario: req.body.costoUnitario ?? detalle.costoUnitario,
-      loteProveedor:
-        req.body.loteProveedor === undefined ? detalle.loteProveedor : req.body.loteProveedor,
-      fechaVencimiento:
-        req.body.fechaVencimiento === undefined
-          ? detalle.fechaVencimiento
-          : req.body.fechaVencimiento,
-      observaciones:
-        req.body.observaciones === undefined ? detalle.observaciones : req.body.observaciones,
-    };
-    const [datos] = await validarDetalles([candidato]);
-    await detalle.update(datos);
-    return ok(
-      res,
-      await buscarDetalle(req.params.recepcionId, detalle.id),
-      'Producto de recepción actualizado',
-    );
+    const resultado = await conRecepcionEditable(req.params.recepcionId, async (transaction) => {
+      const detalle = await buscarDetalle(req.params.recepcionId, req.params.id, transaction);
+      if (!detalle)
+        throw Object.assign(new Error('Detalle no encontrado en la recepción'), { status: 404 });
+      const candidato = {
+        bodegaId: req.body.bodegaId ?? detalle.bodegaId,
+        productoId: req.body.productoId ?? detalle.productoId,
+        unidadMedidaId: req.body.unidadMedidaId ?? detalle.unidadMedidaId,
+        cantidadSolicitada:
+          req.body.cantidadSolicitada === undefined
+            ? detalle.cantidadSolicitada
+            : req.body.cantidadSolicitada,
+        cantidadRecibida: req.body.cantidadRecibida ?? detalle.cantidadRecibida,
+        costoUnitario: req.body.costoUnitario ?? detalle.costoUnitario,
+        loteProveedor:
+          req.body.loteProveedor === undefined ? detalle.loteProveedor : req.body.loteProveedor,
+        fechaVencimiento:
+          req.body.fechaVencimiento === undefined
+            ? detalle.fechaVencimiento
+            : req.body.fechaVencimiento,
+        observaciones:
+          req.body.observaciones === undefined ? detalle.observaciones : req.body.observaciones,
+      };
+      const [datos] = await validarDetalles([candidato], transaction);
+      await detalle.update(datos, { transaction });
+      return buscarDetalle(req.params.recepcionId, detalle.id, transaction);
+    });
+    return ok(res, resultado, 'Producto de recepción actualizado');
   } catch (err) {
     return next(err);
   }
@@ -110,13 +114,14 @@ exports.actualizar = async (req, res, next) => {
 
 exports.eliminar = async (req, res, next) => {
   try {
-    const estado = await recepcionEditable(req.params.recepcionId);
-    if (estado.error) return fail(res, estado.error, estado.status);
-    const detalle = await buscarDetalle(req.params.recepcionId, req.params.id);
-    if (!detalle) return fail(res, 'Detalle no encontrado en la recepción', 404);
-    await detalle.destroy();
+    await conRecepcionEditable(req.params.recepcionId, async (transaction) => {
+      const detalle = await buscarDetalle(req.params.recepcionId, req.params.id, transaction);
+      if (!detalle)
+        throw Object.assign(new Error('Detalle no encontrado en la recepción'), { status: 404 });
+      await detalle.destroy({ transaction });
+    });
     return ok(res, null, 'Producto retirado de la recepción');
-  } catch (err) {
-    return next(err);
+  } catch (error) {
+    return next(error);
   }
 };

@@ -66,6 +66,7 @@ router.get('/:id', permiso('Bodegas.Ver'), idValidator, validar, ctrl.obtener);
  *   post:
  *     tags: [Bodegas]
  *     summary: Crear una bodega
+ *     description: El servidor asigna un código interno BD consecutivo. No se solicita un código al usuario.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -74,6 +75,16 @@ router.get('/:id', permiso('Bodegas.Ver'), idValidator, validar, ctrl.obtener);
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [nombre, tipo]
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *               tipo:
+ *                 type: string
+ *               codigo:
+ *                 type: string
+ *                 readOnly: true
+ *                 example: BD-000001
  *     responses:
  *       201:
  *         description: Bodega creada

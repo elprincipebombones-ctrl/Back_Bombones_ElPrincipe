@@ -154,10 +154,30 @@ exports.catalogos = async (_req, res, next) => {
 exports.listar = async (req, res, next) => {
   try {
     const where = {
-      estado: req.query.estado || { [Op.ne]: 'CANCELADA' },
+      ...(req.query.estado === 'TODAS'
+        ? {}
+        : {
+            estado:
+              !req.query.estado || req.query.estado === 'ACTIVAS'
+                ? { [Op.ne]: 'CANCELADA' }
+                : req.query.estado,
+          }),
     };
     if (req.query.buscar) {
       where.numero = { [Op.iLike]: `%${String(req.query.buscar).trim()}%` };
+    }
+    if (req.query.fechaDesde || req.query.fechaHasta) {
+      where.fecha = {
+        ...(req.query.fechaDesde ? { [Op.gte]: req.query.fechaDesde } : {}),
+        ...(req.query.fechaHasta ? { [Op.lte]: req.query.fechaHasta } : {}),
+      };
+    }
+    if (req.query.productoId) {
+      const detalles = await OrdenProduccionDetalle.findAll({
+        where: { productoTerminadoId: req.query.productoId },
+        attributes: ['ordenProduccionId'],
+      });
+      where.id = { [Op.in]: detalles.map((d) => d.ordenProduccionId) };
     }
     const ordenes = await OrdenProduccion.findAll({
       where,

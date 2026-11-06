@@ -16,6 +16,7 @@ const camposConfiguracion = [
 exports.idValidator = [param('id').isUUID()];
 exports.crearCampoValidator = [
   body('codigo')
+    .optional()
     .trim()
     .isLength({ min: 2, max: 80 })
     .matches(/^[A-Z0-9_-]+$/),

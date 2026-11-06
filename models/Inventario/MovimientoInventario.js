@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');
 const sequelize = require('../../database/database');
 
 const MovimientoInventario = sequelize.define(
@@ -62,7 +62,16 @@ const MovimientoInventario = sequelize.define(
     timestamps: true,
     underscored: true,
     indexes: [
-      { unique: true, fields: ['origen', 'origen_id', 'tipo_documento'] },
+      {
+        unique: true,
+        fields: ['origen_id', 'tipo_documento', 'bodega_id'],
+        where: { origen: 'RECEPCION' },
+      },
+      {
+        unique: true,
+        fields: ['origen', 'origen_id', 'tipo_documento'],
+        where: { origen: { [Op.ne]: 'RECEPCION' } },
+      },
       { fields: ['tipo_documento'] },
       { fields: ['fecha'] },
       { fields: ['bodega_id'] },

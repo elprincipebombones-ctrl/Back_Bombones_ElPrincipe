@@ -16,6 +16,15 @@ const router = Router();
 
 router.use(auth);
 
+router.put(
+  '/:id/bodegas',
+  permiso('Recepcion.Editar'),
+  idRecepcionValidator,
+  require('express-validator').body('bodegaId').isUUID(),
+  validar,
+  ctrl.asignarBodega,
+);
+
 router.use('/', require('./detalleRecepcion.routes'));
 router.use('/', require('./recepcionVehiculo.routes'));
 router.use('/', require('./verificacionRecepcion.routes'));
@@ -103,7 +112,6 @@ router.get('/:id', permiso('Recepcion.Ver'), idRecepcionValidator, validar, ctrl
  *             required:
  *               - fechaRecepcion
  *               - proveedorId
- *               - bodegaId
  *               - detalles
  *             properties:
  *               fechaRecepcion:
@@ -114,6 +122,8 @@ router.get('/:id', permiso('Recepcion.Ver'), idRecepcionValidator, validar, ctrl
  *                 type: string
  *                 format: uuid
  *               bodegaId:
+ *                 description: Bodega opcional para los detalles que no indiquen un destino individual
+ *                 nullable: true
  *                 type: string
  *                 format: uuid
  *               lugarAreaId:

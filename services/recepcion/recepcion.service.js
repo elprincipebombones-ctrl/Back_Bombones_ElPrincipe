@@ -1,5 +1,6 @@
 const sequelize = require('../../database/database');
 const {
+  Bodega,
   Recepcion,
   DetalleRecepcion,
   Producto,
@@ -47,7 +48,11 @@ const siguienteNumero = async (secuencia, prefijo, transaction, database = seque
   return `${prefijo}-${String(consecutivo).padStart(6, '0')}`;
 };
 
-const validarDetalles = async (detalles, transaction, models = { Producto, CategoriaProducto }) => {
+const validarDetalles = async (
+  detalles,
+  transaction,
+  models = { Producto, CategoriaProducto, Bodega },
+) => {
   if (!Array.isArray(detalles) || detalles.length === 0) {
     throw new RecepcionError('La recepción debe tener al menos un producto');
   }
@@ -59,6 +64,11 @@ const validarDetalles = async (detalles, transaction, models = { Producto, Categ
   });
   const productosPorId = new Map(productos.map((producto) => [producto.id, producto]));
 
+  const bodegas = await models.Bodega.findAll({
+    where: { id: [...new Set(detalles.map((d) => d.bodegaId).filter(Boolean))], estado: true },
+    transaction,
+  });
+  const bodegasActivas = new Set(bodegas.map((b) => b.id));
   return detalles.map((detalle, index) => {
     const producto = productosPorId.get(detalle.productoId);
     if (!producto || !producto.estado) {
@@ -103,7 +113,13 @@ const validarDetalles = async (detalles, transaction, models = { Producto, Categ
       );
     }
 
+    if (!bodegasActivas.has(detalle.bodegaId)) {
+      throw new RecepcionError(
+        `La bodega del producto ${producto.nombre} es obligatoria y debe estar activa`,
+      );
+    }
     return {
+      bodegaId: detalle.bodegaId,
       productoId: producto.id,
       unidadMedidaId: producto.unidadMedidaId,
       cantidadSolicitada,
@@ -139,6 +155,7 @@ const finalizarRecepcion = async ({
   usuarioId,
   database = sequelize,
   models = {
+    Bodega,
     Recepcion,
     DetalleRecepcion,
     Producto,
@@ -182,9 +199,6 @@ const finalizarRecepcion = async ({
     if (recepcion.estado !== 'EN_PROCESO') {
       throw new RecepcionError('La recepción ya está terminada', 409);
     }
-    if (!recepcion.bodegaId) {
-      throw new RecepcionError('La recepción debe tener una bodega antes de finalizar');
-    }
     if (!usuarioId) {
       throw new RecepcionError('No fue posible identificar al usuario que finaliza', 401);
     }
@@ -207,7 +221,7 @@ const finalizarRecepcion = async ({
     );
     if (rechazoRecepcionCompleta) {
       await recepcion.update({ estado: 'RECHAZADA', tieneNovedades: true }, { transaction });
-      return { recepcion, movimiento: null, recepcionParcial: false };
+      return { recepcion, movimiento: null, movimientos: [], recepcionParcial: false };
     }
 
     const detalleIdsRechazados = new Set(
@@ -285,45 +299,60 @@ const finalizarRecepcion = async ({
     const detallesRecibidos = detalles.filter((detalle) => !detalleIdsRechazados.has(detalle.id));
     if (detallesRecibidos.length === 0) {
       await recepcion.update({ estado: 'RECHAZADA', tieneNovedades: true }, { transaction });
-      return { recepcion, movimiento: null, recepcionParcial: false };
+      return { recepcion, movimiento: null, movimientos: [], recepcionParcial: false };
     }
 
-    const numeroDocumento = await siguienteNumero(
-      'movimientos_en_numero_seq',
-      'EN',
+    const bodegasIds = [...new Set(detallesRecibidos.map((d) => d.bodegaId))];
+    if (bodegasIds.some((id) => !id))
+      throw new RecepcionError('Cada producto recibido debe tener una bodega');
+    const bodegas = await models.Bodega.findAll({
+      where: { id: bodegasIds, estado: true },
       transaction,
-      database,
-    );
-    const movimiento = await models.MovimientoInventario.create(
-      {
-        tipoDocumento: 'EN',
-        numeroDocumento,
-        fecha: new Date(),
-        bodegaId: recepcion.bodegaId,
-        estado: 'APLICADO',
-        origen: 'RECEPCION',
-        origenId: recepcion.id,
-        usuarioId,
-        observaciones: `Entrada generada por la recepción ${recepcion.numero}`,
-      },
-      { transaction },
-    );
-
-    await models.DetalleMovimiento.bulkCreate(
-      detallesRecibidos.map((detalle) => ({
-        movimientoInventarioId: movimiento.id,
-        productoId: detalle.productoId,
-        unidadMedidaId: detalle.unidadMedidaId,
-        cantidad: detalle.cantidadRecibida,
-        lote: detalle.loteProveedor,
-        loteProveedor: detalle.loteProveedor,
-        fechaVencimiento: detalle.fechaVencimiento,
-        costoUnitario: detalle.costoUnitario,
-        costoTotal: calcularCostoTotal(detalle.cantidadRecibida, detalle.costoUnitario),
-        observaciones: detalle.observaciones,
-      })),
-      { transaction },
-    );
+      lock: transaction.LOCK.SHARE,
+    });
+    if (bodegas.length !== bodegasIds.length)
+      throw new RecepcionError('Una bodega de destino no existe o está inactiva');
+    const movimientos = [];
+    for (const bodegaId of bodegasIds) {
+      const numeroDocumento = await siguienteNumero(
+        'movimientos_en_numero_seq',
+        'EN',
+        transaction,
+        database,
+      );
+      const movimiento = await models.MovimientoInventario.create(
+        {
+          tipoDocumento: 'EN',
+          numeroDocumento,
+          fecha: new Date(),
+          bodegaId,
+          estado: 'APLICADO',
+          origen: 'RECEPCION',
+          origenId: recepcion.id,
+          usuarioId,
+          observaciones: `Entrada generada por la recepción ${recepcion.numero}`,
+        },
+        { transaction },
+      );
+      await models.DetalleMovimiento.bulkCreate(
+        detallesRecibidos
+          .filter((d) => d.bodegaId === bodegaId)
+          .map((detalle) => ({
+            movimientoInventarioId: movimiento.id,
+            productoId: detalle.productoId,
+            unidadMedidaId: detalle.unidadMedidaId,
+            cantidad: detalle.cantidadRecibida,
+            lote: detalle.loteProveedor,
+            loteProveedor: detalle.loteProveedor,
+            fechaVencimiento: detalle.fechaVencimiento,
+            costoUnitario: detalle.costoUnitario,
+            costoTotal: calcularCostoTotal(detalle.cantidadRecibida, detalle.costoUnitario),
+            observaciones: detalle.observaciones,
+          })),
+        { transaction },
+      );
+      movimientos.push(movimiento);
+    }
 
     await recepcion.update(
       {
@@ -334,7 +363,8 @@ const finalizarRecepcion = async ({
     );
     return {
       recepcion,
-      movimiento,
+      movimiento: movimientos.length === 1 ? movimientos[0] : null,
+      movimientos,
       recepcionParcial: detallesRecibidos.length < detalles.length,
     };
   });

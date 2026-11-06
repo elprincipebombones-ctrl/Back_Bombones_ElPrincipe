@@ -10,7 +10,7 @@ const { presentarTarea } = require('./tareas-accion-correctiva.service');
 
 const CONSULTA_RESUMEN = `
   WITH parametros AS (
-    SELECT COALESCE(CAST(:fecha AS DATE), CURRENT_DATE) AS fecha
+    SELECT COALESCE(CAST(:fecha AS DATE), (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::date) AS fecha
   ),
   programadas AS (
     SELECT
@@ -75,6 +75,43 @@ const CONSULTA_RESUMEN = `
 
 const numero = (valor) => Number(valor ?? 0);
 
+const CONSULTA_GRAFICOS = `
+  WITH dias AS (
+    SELECT fecha::date FROM generate_series(
+      COALESCE(CAST(:fecha AS date), (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::date) - 6,
+      COALESCE(CAST(:fecha AS date), (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::date), interval '1 day'
+    ) fecha
+  ), serie AS (
+    SELECT d.fecha,
+      COUNT(pf.id)::int AS programadas,
+      COUNT(pf.id) FILTER (WHERE EXISTS (
+        SELECT 1 FROM inspecciones i JOIN versiones_formato vf ON vf.id = i.version_formato_id
+        WHERE vf.formato_calidad_id = pf.formato_calidad_id AND i.fecha_inspeccion = d.fecha
+      ))::int AS ejecutadas
+    FROM dias d LEFT JOIN programaciones_formato pf ON pf.activo = true
+      AND d.fecha >= pf.fecha_inicio AND (pf.fecha_fin IS NULL OR d.fecha <= pf.fecha_fin)
+      AND EXISTS (SELECT 1 FROM dias_programacion dp WHERE dp.programacion_formato_id = pf.id
+        AND dp.dia_semana = EXTRACT(ISODOW FROM d.fecha)::int)
+    GROUP BY d.fecha
+  )
+  SELECT (SELECT json_agg(serie ORDER BY fecha) FROM serie) AS serie_semanal,
+    json_build_object(
+      'pendientes', COUNT(*) FILTER (WHERE estado = 'PENDIENTE'),
+      'en_proceso', COUNT(*) FILTER (WHERE estado = 'EN_PROCESO'),
+      'por_aprobar', COUNT(*) FILTER (WHERE estado = 'PENDIENTE_APROBACION'),
+      'cerradas', COUNT(*) FILTER (WHERE estado = 'CERRADA')
+    ) AS acciones_por_estado
+  FROM acciones_correctivas
+`;
+
+const obtenerGraficos = async (fecha, database = sequelize) => {
+  const [datos] = await database.query(CONSULTA_GRAFICOS, {
+    replacements: { fecha: fecha || null },
+    type: QueryTypes.SELECT,
+  });
+  return datos;
+};
+
 const obtenerResumen = async (fecha, usuario) => {
   const [resultado] = await sequelize.query(CONSULTA_RESUMEN, {
     replacements: { fecha: fecha || null },
@@ -107,6 +144,7 @@ const obtenerResumen = async (fecha, usuario) => {
   ]);
 
   return {
+    ...(await obtenerGraficos(fecha)),
     programadas: numero(resultado.programadas),
     ejecutadas: numero(resultado.ejecutadas),
     pendientes: numero(resultado.pendientes),
@@ -119,4 +157,4 @@ const obtenerResumen = async (fecha, usuario) => {
   };
 };
 
-module.exports = { obtenerResumen };
+module.exports = { obtenerResumen, obtenerGraficos, CONSULTA_GRAFICOS };

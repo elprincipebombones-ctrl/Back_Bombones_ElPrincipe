@@ -1,3 +1,5 @@
+const sequelize = require('../../database/database');
+const { siguienteCodigoMaestro } = require('../../utils/codigo-maestro');
 const CategoriaProducto = require('../../models/Recepcion/CategoriaProducto');
 const { ok, created, fail } = require('../../utils/response');
 
@@ -31,7 +33,6 @@ exports.crear = async (req, res, next) => {
   try {
     const {
       nombre,
-      codigo,
       descripcion,
       clasificacionMp,
       requiereLote,
@@ -44,19 +45,7 @@ exports.crear = async (req, res, next) => {
       return fail(res, 'Falta el nombre', 400);
     }
 
-    if (!codigo) {
-      return fail(res, 'Falta el código', 400);
-    }
-
-    const categoriaExistente = await CategoriaProducto.findOne({
-      where: {
-        codigo,
-      },
-    });
-
-    if (categoriaExistente) {
-      return fail(res, 'Ya existe una categoría de producto con ese código', 409);
-    }
+    const codigo = await siguienteCodigoMaestro('categoriaProducto', sequelize);
 
     const categoriaProducto = await CategoriaProducto.create({
       nombre,
@@ -83,19 +72,9 @@ exports.actualizar = async (req, res, next) => {
       return fail(res, 'Categoría de producto no encontrada', 404);
     }
 
-    if (req.body.codigo && req.body.codigo !== categoriaProducto.codigo) {
-      const categoriaExistente = await CategoriaProducto.findOne({
-        where: {
-          codigo: req.body.codigo,
-        },
-      });
-
-      if (categoriaExistente && categoriaExistente.id !== categoriaProducto.id) {
-        return fail(res, 'Ya existe una categoría de producto con ese código', 409);
-      }
-    }
-
-    await categoriaProducto.update(req.body);
+    const cambios = { ...req.body };
+    delete cambios.codigo;
+    await categoriaProducto.update(cambios);
 
     return ok(res, categoriaProducto, 'Categoría de producto actualizada');
   } catch (err) {

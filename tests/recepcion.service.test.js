@@ -72,12 +72,14 @@ const modelosValidacion = (productos) => ({
   Producto: {
     findAll: async () => productos,
   },
+  Bodega: { findAll: async () => [{ id: 'bodega-1', estado: true }] },
   CategoriaProducto: {},
 });
 
 test('MP cárnica exige lote y vencimiento y toma la unidad del producto', async () => {
   const pollo = producto('pollo', carnica, 'kg');
   const base = {
+    bodegaId: 'bodega-1',
     productoId: pollo.id,
     cantidadRecibida: 98,
     costoUnitario: 12500.25,
@@ -102,7 +104,14 @@ test('MP no cárnica exige lote y vencimiento', async () => {
   const productoNoCarnico = producto('no-carnico', noCarnica);
   await assert.rejects(
     validarDetalles(
-      [{ productoId: productoNoCarnico.id, cantidadRecibida: 20, costoUnitario: 1000 }],
+      [
+        {
+          bodegaId: 'bodega-1',
+          productoId: productoNoCarnico.id,
+          cantidadRecibida: 20,
+          costoUnitario: 1000,
+        },
+      ],
       null,
       modelosValidacion([productoNoCarnico]),
     ),
@@ -112,6 +121,7 @@ test('MP no cárnica exige lote y vencimiento', async () => {
     validarDetalles(
       [
         {
+          bodegaId: 'bodega-1',
           productoId: productoNoCarnico.id,
           cantidadRecibida: 20,
           costoUnitario: 1000,
@@ -130,6 +140,7 @@ test('insumo exige lote y permite vencimiento vacío', async () => {
   const [detalle] = await validarDetalles(
     [
       {
+        bodegaId: 'bodega-1',
         productoId: productoInsumo.id,
         cantidadSolicitada: 20,
         cantidadRecibida: 20,
@@ -150,6 +161,7 @@ test('material de empaque exige lote y vencimiento', async () => {
     validarDetalles(
       [
         {
+          bodegaId: 'bodega-1',
           productoId: material.id,
           cantidadRecibida: 10,
           costoUnitario: 1000,
@@ -166,6 +178,7 @@ test('material de empaque exige lote y vencimiento', async () => {
 test('exige costo unitario positivo en cada producto', async () => {
   const productoInsumo = producto('insumo-costo', insumo);
   const base = {
+    bodegaId: 'bodega-1',
     productoId: productoInsumo.id,
     cantidadRecibida: 5,
     loteProveedor: 'INS-COSTO',
@@ -199,6 +212,7 @@ const escenarioFinalizacion = ({
     detalles: [
       {
         id: 'detalle-pollo',
+        bodegaId: 'bodega-1',
         productoId: 'pollo',
         unidadMedidaId: 'kg',
         cantidadRecibida: 98,
@@ -209,6 +223,7 @@ const escenarioFinalizacion = ({
       },
       {
         id: 'detalle-insumo',
+        bodegaId: 'bodega-1',
         productoId: 'caja',
         unidadMedidaId: 'und',
         cantidadRecibida: 25,
@@ -221,6 +236,7 @@ const escenarioFinalizacion = ({
     temperaturas: [
       {
         detalleRecepcionId: 'detalle-pollo',
+        bodegaId: 'bodega-1',
         productoId: 'pollo',
         temperatura: 3.5,
       },
@@ -274,6 +290,7 @@ const escenarioFinalizacion = ({
     Recepcion: { findByPk: async () => recepcion },
     DetalleRecepcion: {},
     Producto: {},
+    Bodega: { findAll: async () => [{ id: 'bodega-1', estado: true }] },
     CategoriaProducto: {},
     CondicionTermica: {},
     TemperaturaRecepcion: {},
@@ -282,7 +299,7 @@ const escenarioFinalizacion = ({
     MovimientoInventario: {
       findOne: async () => state.movimientos[0] || null,
       create: async (datos) => {
-        const movimiento = { id: 'movimiento-1', ...datos };
+        const movimiento = { id: `movimiento-${state.movimientos.length + 1}`, ...datos };
         state.movimientos.push(movimiento);
         return movimiento;
       },
@@ -314,6 +331,88 @@ test('finaliza mezcla de productos en un solo EN con varios detalles', async () 
   assert.equal(escenario.state.detallesMovimiento[0].costoTotal, '1225024.50');
   assert.equal(escenario.recepcion.estado, 'TERMINADA');
   assert.equal(escenario.recepcion.tieneNovedades, false);
+});
+
+test('agrupa productos por bodega y genera una entrada por destino', async () => {
+  const escenario = escenarioFinalizacion();
+  escenario.recepcion.bodegaId = null;
+  escenario.recepcion.detalles[1].bodegaId = 'bodega-2';
+  escenario.recepcion.detalles.push({
+    ...escenario.recepcion.detalles[1],
+    id: 'detalle-extra',
+    cantidadRecibida: 10,
+  });
+  escenario.models.Bodega.findAll = async () => [{ id: 'bodega-1' }, { id: 'bodega-2' }];
+  const resultado = await finalizarRecepcion({
+    recepcionId: 'recepcion-1',
+    usuarioId: 'usuario-1',
+    ...escenario,
+  });
+  assert.equal(resultado.movimientos.length, 2);
+  assert.equal(resultado.movimiento, null);
+  assert.deepEqual(
+    resultado.movimientos.map((m) => m.bodegaId),
+    ['bodega-1', 'bodega-2'],
+  );
+  assert.equal(
+    escenario.state.detallesMovimiento.filter((d) => d.movimientoInventarioId === 'movimiento-1')
+      .length,
+    1,
+  );
+  assert.equal(
+    escenario.state.detallesMovimiento.filter((d) => d.movimientoInventarioId === 'movimiento-2')
+      .length,
+    2,
+  );
+});
+
+test('no finaliza si un producto no tiene bodega o su destino está inactivo', async () => {
+  const escenario = escenarioFinalizacion();
+  escenario.recepcion.detalles[0].bodegaId = null;
+  await assert.rejects(
+    finalizarRecepcion({ recepcionId: 'recepcion-1', usuarioId: 'usuario-1', ...escenario }),
+    /Cada producto/,
+  );
+  escenario.recepcion.detalles[0].bodegaId = 'bodega-inactiva';
+  await assert.rejects(
+    finalizarRecepcion({ recepcionId: 'recepcion-1', usuarioId: 'usuario-1', ...escenario }),
+    /inactiva/,
+  );
+  assert.equal(escenario.state.movimientos.length, 0);
+  assert.equal(escenario.recepcion.estado, 'EN_PROCESO');
+});
+
+test('revierte todas las bodegas si falla la segunda entrada', async () => {
+  const escenario = escenarioFinalizacion();
+  escenario.recepcion.detalles[1].bodegaId = 'bodega-2';
+  escenario.models.Bodega.findAll = async () => [{ id: 'bodega-1' }, { id: 'bodega-2' }];
+  const guardar = escenario.models.DetalleMovimiento.bulkCreate;
+  escenario.models.DetalleMovimiento.bulkCreate = async (datos) => {
+    if (escenario.state.movimientos.length === 2) throw new Error('Fallo segunda bodega');
+    return guardar(datos);
+  };
+  await assert.rejects(
+    finalizarRecepcion({ recepcionId: 'recepcion-1', usuarioId: 'usuario-1', ...escenario }),
+    /segunda bodega/,
+  );
+  assert.equal(escenario.state.movimientos.length, 0);
+  assert.equal(escenario.state.detallesMovimiento.length, 0);
+  assert.equal(escenario.recepcion.estado, 'EN_PROCESO');
+});
+
+test('validar detalles exige una bodega activa por producto', async () => {
+  const productoEmpaque = producto('bolsa', {
+    requiereLote: false,
+    requiereFechaVencimiento: false,
+  });
+  await assert.rejects(
+    validarDetalles(
+      [{ productoId: 'bolsa', cantidadRecibida: 5, costoUnitario: 100 }],
+      null,
+      modelosValidacion([productoEmpaque]),
+    ),
+    /bodega/,
+  );
 });
 
 test('impide finalizar dos veces y no duplica el movimiento', async () => {

@@ -5,9 +5,9 @@ const id = (campo, opcional = false, nullable = false) => {
   if (opcional) regla = regla.optional({ nullable });
   return regla.isUUID();
 };
-const codigo = (opcional = false) => {
+const codigo = () => {
   let regla = body('codigo');
-  if (opcional) regla = regla.optional();
+  regla = regla.optional();
   return regla
     .trim()
     .isLength({ min: 2, max: 30 })
