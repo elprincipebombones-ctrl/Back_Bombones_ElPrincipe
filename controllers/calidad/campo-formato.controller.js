@@ -71,7 +71,6 @@ const heredarParametro = async (body) => {
     valorMinimo: parametro.valorMinimo,
     valorMaximo: parametro.valorMaximo,
     precisionDecimal: parametro.precisionDecimal,
-    codigo: body.codigo || parametro.codigo,
     etiqueta: body.etiqueta || parametro.nombre,
     // Estas columnas se conservan como snapshot para versiones históricas. En la
     // ejecución, la fuente vigente es el parámetro y sus escenarios.

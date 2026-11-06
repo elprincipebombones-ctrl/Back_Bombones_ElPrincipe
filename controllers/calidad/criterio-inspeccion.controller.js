@@ -85,11 +85,9 @@ exports.obtener = async (req, res, next) => {
   }
 };
 exports.crear = async (req, res, next) => {
+  delete req.body.codigo;
   try {
     const resultado = await sequelize.transaction(async (transaction) => {
-      if (await CriterioInspeccion.findOne({ where: { codigo: req.body.codigo }, transaction })) {
-        return { error: 'Ya existe un criterio con ese código' };
-      }
       const error = await validarReferencias(req.body, transaction);
       if (error) return { error };
       const { tipoAccionIds, ...datosEntrada } = req.body;
@@ -109,6 +107,7 @@ exports.crear = async (req, res, next) => {
   }
 };
 exports.actualizar = async (req, res, next) => {
+  delete req.body.codigo;
   try {
     const resultado = await sequelize.transaction(async (transaction) => {
       const criterio = await CriterioInspeccion.findByPk(req.params.id, { transaction });

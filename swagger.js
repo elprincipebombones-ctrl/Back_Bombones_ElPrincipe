@@ -16,9 +16,14 @@ const swaggerSpec = swaggerJSDoc({
       schemas: {
         ParametroCalidad: {
           type: 'object',
-          required: ['codigo', 'nombre', 'tipoCampoId'],
+          required: ['nombre', 'tipoCampoId'],
           properties: {
-            codigo: { type: 'string', example: 'CLORO_AGUA_POTABLE' },
+            codigo: {
+              type: 'string',
+              readOnly: true,
+              description: 'Código interno automático; los históricos se conservan',
+              example: 'CA-000001',
+            },
             nombre: { type: 'string', example: 'Cloro agua potable' },
             tipoCampoId: { type: 'string', format: 'uuid' },
             unidadMedidaId: { type: 'string', format: 'uuid', nullable: true },
@@ -31,11 +36,16 @@ const swaggerSpec = swaggerJSDoc({
         },
         ReglaParametro: {
           type: 'object',
-          required: ['parametroCalidadId', 'codigo', 'nombre', 'resultado'],
+          required: ['parametroCalidadId', 'nombre', 'resultado'],
           properties: {
             parametroCalidadId: { type: 'string', format: 'uuid' },
             campoFormatoId: { type: 'string', format: 'uuid', nullable: true, deprecated: true },
-            codigo: { type: 'string', example: 'CLORO_BAJO' },
+            codigo: {
+              type: 'string',
+              readOnly: true,
+              description: 'Código interno automático; los históricos se conservan',
+              example: 'CA-000002',
+            },
             nombre: { type: 'string', example: 'Cloro por debajo del rango' },
             resultado: { type: 'string', enum: ['CUMPLE', 'NO_CUMPLE'] },
             nivelSeveridadId: { type: 'string', format: 'uuid', nullable: true },

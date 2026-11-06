@@ -129,7 +129,11 @@ const obtenerRecepcionesOrigen = async (consumos, database) => {
       ur.id AS "usuarioRecepcionId", ur.nombre AS "usuarioRecepcionNombre", ur.correo AS "usuarioRecepcionCorreo"
     FROM detalles_recepcion dr JOIN recepciones r ON r.id=dr.recepcion_id
     JOIN proveedores pr ON pr.id=r.proveedor_id JOIN unidades_medida u ON u.id=dr.unidad_medida_id
-    LEFT JOIN movimientos_inventario m ON m.origen='RECEPCION' AND m.origen_id=r.id AND m.estado='APLICADO'
+    LEFT JOIN movimientos_inventario m ON m.origen='RECEPCION' AND m.origen_id=r.id
+      AND m.estado='APLICADO' AND m.bodega_id=dr.bodega_id
+      AND EXISTS (SELECT 1 FROM detalle_movimiento dm WHERE dm.movimiento_inventario_id=m.id
+        AND dm.producto_id=dr.producto_id AND dm.lote_proveedor IS NOT DISTINCT FROM dr.lote_proveedor
+        AND dm.fecha_vencimiento IS NOT DISTINCT FROM dr.fecha_vencimiento)
     LEFT JOIN usuarios ur ON ur.id=r.usuario_recepcion_id
     WHERE dr.producto_id IN (:productos) AND r.estado='TERMINADA'
     ORDER BY r.fecha_recepcion, r.numero, dr.id`,

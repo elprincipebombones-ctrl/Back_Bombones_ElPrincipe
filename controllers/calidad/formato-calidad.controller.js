@@ -71,10 +71,7 @@ exports.crear = async (req, res, next) => {
   const transaccion = await sequelize.transaction();
   try {
     const { versionInicial, ...datosFormato } = req.body;
-    if (await FormatoCalidad.findOne({ where: { codigo: datosFormato.codigo } })) {
-      await transaccion.rollback();
-      return fail(res, 'Ya existe un formato con ese código', 409);
-    }
+    delete datosFormato.codigo;
     if (!(await TipoInspeccion.findByPk(datosFormato.tipoInspeccionId))) {
       await transaccion.rollback();
       return fail(res, 'Tipo de inspección no encontrado', 422);
@@ -107,6 +104,7 @@ exports.crear = async (req, res, next) => {
 
 exports.actualizar = async (req, res, next) => {
   try {
+    delete req.body.codigo;
     const formato = await FormatoCalidad.findByPk(req.params.id);
     if (!formato) return fail(res, 'Formato de calidad no encontrado', 404);
     if (req.body.tipoInspeccionId && !(await TipoInspeccion.findByPk(req.body.tipoInspeccionId))) {
@@ -204,11 +202,7 @@ exports.guardarLugares = async (req, res, next) => {
       });
       if (lugares.length !== lugarIds.length) {
         await transaction.rollback();
-        return fail(
-          res,
-          'Uno o más lugares seleccionados están inactivos o no existen',
-          422,
-        );
+        return fail(res, 'Uno o más lugares seleccionados están inactivos o no existen', 422);
       }
     }
 

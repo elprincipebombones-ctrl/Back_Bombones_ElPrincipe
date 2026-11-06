@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const { ok, created, fail } = require('../../utils/response');
+const { siguienteCodigoCalidad } = require('../../utils/codigo-calidad');
 
 module.exports = ({
   modelo,
@@ -42,6 +43,9 @@ module.exports = ({
 
   const crear = async (req, res, next) => {
     try {
+      if (modelo.rawAttributes.codigo) {
+        req.body.codigo = await siguienteCodigoCalidad(modelo.sequelize);
+      }
       if (antesDeCrear) {
         const mensaje = await antesDeCrear(req.body);
         if (mensaje) return fail(res, mensaje, 409);
@@ -61,6 +65,7 @@ module.exports = ({
 
   const actualizar = async (req, res, next) => {
     try {
+      if (modelo.rawAttributes.codigo) delete req.body.codigo;
       const registro = await modelo.findByPk(req.params.id);
       if (!registro) return fail(res, `${nombre} no encontrado`, 404);
       if (antesDeActualizar) {

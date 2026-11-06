@@ -19,13 +19,14 @@ const CONSULTAS = {
     JOIN productos p ON p.id = d.producto_id
     LEFT JOIN unidades_medida u ON u.id = d.unidad_medida_id
     JOIN proveedores pv ON pv.id = rc.proveedor_id
-    LEFT JOIN bodegas b ON b.id = rc.bodega_id
+    LEFT JOIN bodegas b ON b.id = d.bodega_id
     LEFT JOIN resultados_recepcion rr ON rr.recepcion_id = rc.id
     LEFT JOIN verificaciones_recepcion vr ON vr.recepcion_id = rc.id
     LEFT JOIN LATERAL (
       SELECT DISTINCT dm.lote FROM detalle_movimiento dm
       JOIN movimientos_inventario m ON m.id = dm.movimiento_inventario_id
-      WHERE m.origen = 'RECEPCION' AND m.origen_id = rc.id
+      WHERE m.origen = 'RECEPCION' AND m.origen_id = rc.id AND m.bodega_id = d.bodega_id
+        AND dm.fecha_vencimiento IS NOT DISTINCT FROM d.fecha_vencimiento
         AND dm.producto_id = d.producto_id AND dm.lote_proveedor IS NOT DISTINCT FROM d.lote_proveedor
     ) mi ON true
     WHERE EXISTS (SELECT 1 FROM pares pr WHERE pr.producto_id = d.producto_id AND pr.lote = mi.lote)

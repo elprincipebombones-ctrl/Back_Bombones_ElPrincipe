@@ -18,8 +18,31 @@ exports.guardarOrdenValidator = detalles;
 exports.listarOrdenesValidator = [
   query('estado')
     .optional()
-    .isIn(['BORRADOR', 'SIMULADA', 'LISTA_PRODUCCION', 'EN_PRODUCCION', 'CANCELADA', 'FINALIZADA']),
+    .isIn([
+      'ACTIVAS',
+      'TODAS',
+      'BORRADOR',
+      'SIMULADA',
+      'LISTA_PRODUCCION',
+      'EN_PRODUCCION',
+      'CANCELADA',
+      'FINALIZADA',
+    ]),
   query('buscar').optional().isString().isLength({ max: 50 }),
+  query('productoId').optional().isUUID(),
+  query('fechaDesde')
+    .optional()
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .isISO8601({ strict: true }),
+  query('fechaHasta')
+    .optional()
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .isISO8601({ strict: true })
+    .custom((hasta, { req }) => {
+      if (req.query.fechaDesde && hasta < req.query.fechaDesde)
+        throw new Error('La fecha final debe ser igual o posterior a la inicial');
+      return true;
+    }),
 ];
 exports.cancelarOrdenValidator = [
   ...exports.idOrdenValidator,
