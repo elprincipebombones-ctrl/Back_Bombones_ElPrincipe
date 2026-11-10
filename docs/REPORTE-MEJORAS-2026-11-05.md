@@ -8,7 +8,7 @@
 | Inventario | El cierre de recepción genera una entrada por bodega, solo con productos aceptados. Todas las entradas se confirman o revierten en una única transacción. Se validan destinos activos y se protege la repetición del cierre. |
 | Históricos | La migración completa las bodegas de los detalles existentes usando su recepción. Conserva los códigos y los movimientos anteriores. |
 | Trazabilidad | Los reportes utilizan la bodega del detalle y vinculan cada producto con la entrada de su destino, lote y vencimiento. |
-| Códigos de calidad | Se retiran las columnas, campos y etiquetas de códigos internos. El backend genera `CA-000001`, `CA-000002`, etc., usando una secuencia compartida. Al editar se conserva el código original. Los códigos semánticos existentes del motor de calidad permanecen intactos. |
+| Códigos de calidad | Los catálogos mantienen códigos internos automáticos y ocultos. **Excepción desde el 10 de noviembre:** los formatos de calidad vuelven a mostrar un código manual y obligatorio. Los códigos históricos no se renumeran y los códigos semánticos existentes del motor de calidad permanecen intactos. |
 | Lugares de inspección | La agrupación antes llamada “Categorías” se presenta como “Puntos de muestreo”. El panel dependiente indica “Lugares de inspección en [nombre]”. Se ajustan creación, edición, selección, búsquedas y mensajes vacíos. Las categorías de elementos de checklist conservan su significado. |
 | Textos de calidad | Una función compartida traduce condiciones como `MAYOR_QUE` a texto legible, incluyendo escenarios, editor y acciones correctivas. Se corrigen títulos de formularios, mensajes y rangos sin configurar. |
 | Aprobación | Los requisitos faltantes muestran una X; los completos mantienen su comprobación. |
@@ -29,7 +29,7 @@
 
 - Compilación de desarrollo y comprobación de TypeScript y plantillas Angular correctas.
 - Compilación de producción correcta. Se mantienen avisos sobre el tamaño del estilo de Control de producción y la dependencia CommonJS de SweetAlert2.
-- Frontend: **39 pruebas aprobadas en 11 archivos**, mediante `npm run test:mejoras`, incluyendo las verificaciones del login y las nuevas de Maestros.
+- Frontend: **46 pruebas aprobadas en 14 archivos**, mediante `npm run test:mejoras`, incluyendo las verificaciones de login, Maestros, Roles, Lugares y código manual de formatos.
 - Backend: **72 pruebas de regresión aprobadas** en recepción, inventario, órdenes, despachos y trazabilidad. Después se ejecutaron **39 pruebas aprobadas** de recepción, consistencia y trazabilidad con los casos adicionales. Estos conjuntos se superponen; no deben sumarse. En la ampliación de Maestros se ejecutaron **34 pruebas aprobadas**, incluyendo cuatro nuevas de códigos y migración, junto con recepción y consistencia.
 - La migración y las consultas de los gráficos se verificaron en PostgreSQL embebido aislado (PGlite), sin modificar la base configurada del proyecto.
 - Se probaron destinos múltiples, bodega faltante o inactiva, reversión al fallar la segunda entrada, cierre repetido, códigos históricos, asignación concurrente de consecutivos, filtros combinados y campos protegidos.
@@ -127,6 +127,37 @@ Programas utiliza el mismo estilo compartido de búsqueda que Tipos de inspecci�
 Se toma Inspecciones como referencia para los márgenes, el aviso informativo azul, los bordes, las tarjetas y las sombras. Se retiran las negritas de los nombres de formatos y de las filas del historial; los detalles, etiquetas, requisitos y resúmenes utilizan pesos moderados. La etiqueta superior de Calidad y los encabezados de columnas conservan su jerarquía visual. Los estados usan textos legibles y mantienen los colores compartidos.
 
 Se limita el estilo de las etiquetas de encabezado para evitar que afecte a otros textos o estados. Las celdas del historial conservan su comportamiento de tabla. En pantallas pequeñas, los encabezados desplegables muestran fecha, inicio, responsable, estado y cantidad de acciones, con etiquetas y distribución adaptable, en lugar de ocultar esos datos. Se conservan las tareas, evidencias, mediciones y aprobaciones. Compilación de producción correcta, con los avisos anteriores de Control de producción y SweetAlert2. La revisión visual renderizada mantiene la limitación documentada anteriormente.
+
+## Ampliación del 10 de noviembre de 2026: Lugares, Roles y códigos de formatos
+
+### Lugares de inspección
+
+Se conserva el CRUD con creación, consulta, edición y activación/inactivación, según la preferencia confirmada por el usuario. La desactivación mantiene los registros y sus relaciones históricas. No se incorpora borrado definitivo.
+
+La tabla anterior utilizaba una cuadrícula con ancho mínimo superior al espacio disponible dentro de un panel con desbordamiento oculto. Esto podía recortar las acciones. Se reemplaza por una tabla HTML con desplazamiento horizontal dentro de su contenedor, acciones etiquetadas y mensajes al pasar el puntero. La distribución pasa a una sola columna hasta 1200 px, y los nombres largos de puntos de muestreo pueden ajustarse sin desplazar sus controles. Se respetan los permisos de crear y editar, y se impide activar un lugar mientras su punto de muestreo esté inactivo.
+
+### Búsqueda de permisos en Roles
+
+El formulario de creación y edición del rol incorpora “Buscar permisos disponibles”, con búsqueda por nombre, código, descripción o módulo. Ignora tildes y diferencias de mayúsculas; permite combinar palabras y limpiar el término. Oculta los grupos sin coincidencias y muestra un mensaje cuando no encuentra permisos.
+
+Los permisos ya elegidos se conservan aunque queden ocultos por la búsqueda y se envían al guardar. Cuando hay una búsqueda activa, “Seleccionar visibles” solo selecciona o retira los resultados mostrados del módulo, conservando las demás selecciones. El contador sigue indicando el total elegido.
+
+### Código manual solo en formatos de calidad
+
+- El código vuelve al formulario, a la tabla de formatos y al detalle. Se carga el valor existente al editar y el usuario puede modificarlo explícitamente.
+- Es obligatorio al crear y al guardar desde el formulario. Se validan entre 2 y 30 caracteres: letras mayúsculas, números, guion y guion bajo. Se mantiene la unicidad; un código duplicado produce un conflicto de validación y revierte la creación.
+- El controlador conserva el código enviado. El modelo de formato queda excluido de la generación automática, también en creaciones múltiples. Los demás modelos y catálogos conservan su generación automática y su presentación anterior.
+- Las actualizaciones parciales de estado permiten omitir el código para conservar el existente. Enviar uno vacío o inválido se rechaza. No se renumeran los históricos.
+- Se actualiza OpenAPI para documentar el código como un campo manual obligatorio al crear, sin la marca de solo lectura.
+- No se requieren nuevas migraciones: la columna obligatoria y su restricción de unicidad ya existen. Frontend y backend deben actualizarse juntos para restaurar este comportamiento.
+
+### Verificación
+
+- Frontend: **46 pruebas aprobadas en 14 archivos**, incluyendo siete nuevas de búsqueda y conservación de permisos, validación y edición del código, y controles CRUD de lugares con permisos y conservación de históricos.
+- Backend: **38 pruebas aprobadas** en códigos manuales de formatos, códigos internos de Maestros, recepción y consistencia. Se cubren códigos ausentes o inválidos, conservación de los demás códigos automáticos, creación con versión inicial, edición, actualizaciones de estado y rechazo de duplicados.
+- Compilación de producción y comprobación de TypeScript y plantillas correctas. Permanecen los avisos previos de tamaño de estilos de Control de producción y la dependencia CommonJS SweetAlert2.
+- ESLint sin errores ni advertencias en los archivos JavaScript afectados; comprobación de diferencias sin errores de espacios. OpenAPI verificado al cargar su especificación.
+- Las verificaciones se ejecutan con datos aislados y componentes en DOM de pruebas. No se realizó despliegue, migración ni modificación de datos en la base configurada. No se realizó una inspección visual renderizada de esta ampliación; queda pendiente esa comprobación.
 
 ## Hallazgos adicionales y límites de la revisión
 

@@ -67,7 +67,6 @@ test('las validaciones de calidad permiten crear sin código y las fechas de ór
   const { validationResult } = require('express-validator');
   const validadores = [
     require('../validators/calidad/catalogos.validator').crearCatalogoValidator,
-    require('../validators/calidad/configuracion.validator').crearFormatoValidator,
     require('../validators/calidad/checklists.validator').crearCriterioValidator,
     require('../validators/calidad/campos-accion.validator').crearCampoValidator,
     require('../validators/reglas/reglas.validator').crearReglaValidator,

@@ -2,14 +2,15 @@ const sequelize = require('../../database/database');
 const { siguienteCodigoCalidad } = require('../../utils/codigo-calidad');
 
 module.exports = (nombre, atributos, tableName, opciones = {}) => {
+  const { codigoAutomatico = true, ...opcionesModelo } = opciones;
   const modelo = sequelize.define(nombre, atributos, {
     tableName,
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
-    ...opciones,
+    ...opcionesModelo,
   });
-  if (atributos.codigo) {
+  if (atributos.codigo && codigoAutomatico) {
     const asignarCodigo = async (registro, options) => {
       if (registro.isNewRecord && !registro.codigo) {
         registro.codigo = await siguienteCodigoCalidad(sequelize, options.transaction);

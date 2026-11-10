@@ -8,6 +8,20 @@ const codigo = () => {
     .isLength({ min: 2, max: 30 })
     .matches(/^[A-Z0-9_-]+$/);
 };
+const codigoFormato = (opcional = false) => {
+  let regla = body('codigo');
+  if (opcional) regla = regla.optional();
+  return regla
+    .isString()
+    .withMessage('El código del formato es obligatorio')
+    .bail()
+    .trim()
+    .isLength({ min: 2, max: 30 })
+    .withMessage('El código debe tener entre 2 y 30 caracteres')
+    .bail()
+    .matches(/^[A-Z0-9_-]+$/)
+    .withMessage('Usa mayúsculas, números, guiones o guiones bajos en el código');
+};
 const id = (campo, opcional = false, nullable = false) => {
   let regla = body(campo);
   if (opcional) regla = regla.optional({ nullable });
@@ -17,7 +31,7 @@ const id = (campo, opcional = false, nullable = false) => {
 exports.idValidator = [param('id').isUUID()];
 exports.formatoIdValidator = [param('formatoId').isUUID()];
 exports.crearFormatoValidator = [
-  codigo(),
+  codigoFormato(),
   body('nombre').trim().isLength({ min: 2, max: 100 }),
   body('descripcion').optional({ nullable: true }).isLength({ max: 255 }),
   id('tipoInspeccionId'),
@@ -29,7 +43,7 @@ exports.crearFormatoValidator = [
 ];
 exports.actualizarFormatoValidator = [
   param('id').isUUID(),
-  codigo(true),
+  codigoFormato(true),
   body('nombre').optional().trim().isLength({ min: 2, max: 100 }),
   body('descripcion').optional({ nullable: true }).isLength({ max: 255 }),
   id('tipoInspeccionId', true),
