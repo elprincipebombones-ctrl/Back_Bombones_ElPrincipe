@@ -14,6 +14,26 @@ const swaggerSpec = swaggerJSDoc({
         bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       },
       schemas: {
+        FormatoCalidad: {
+          type: 'object',
+          required: ['codigo', 'nombre', 'tipoInspeccionId'],
+          properties: {
+            codigo: {
+              type: 'string',
+              minLength: 2,
+              maxLength: 30,
+              pattern: '^[A-Z0-9_-]+$',
+              description: 'Código obligatorio digitado por el usuario. Debe ser único.',
+              example: 'F-CAL-001',
+            },
+            nombre: { type: 'string', minLength: 2, maxLength: 100 },
+            descripcion: { type: 'string', maxLength: 255, nullable: true },
+            tipoInspeccionId: { type: 'string', format: 'uuid' },
+            programaId: { type: 'string', format: 'uuid', nullable: true },
+            estado: { type: 'boolean' },
+            versionInicial: { type: 'object' },
+          },
+        },
         ParametroCalidad: {
           type: 'object',
           required: ['nombre', 'tipoCampoId'],
@@ -111,6 +131,15 @@ const documentarCrud = (ruta, recurso) => {
   ['/api/reglas/condiciones-regla', 'condiciones de regla'],
   ['/api/reglas/acciones-regla', 'acciones de regla'],
 ].forEach(([ruta, recurso]) => documentarCrud(ruta, recurso));
+
+swaggerSpec.paths['/api/calidad/formatos'].post.requestBody.content['application/json'].schema = {
+  $ref: '#/components/schemas/FormatoCalidad',
+};
+swaggerSpec.paths['/api/calidad/formatos/{id}'].put.requestBody.content['application/json'].schema =
+  {
+    type: 'object',
+    properties: swaggerSpec.components.schemas.FormatoCalidad.properties,
+  };
 
 swaggerSpec.paths['/api/calidad/parametros'].post.requestBody.content['application/json'].schema = {
   $ref: '#/components/schemas/ParametroCalidad',
