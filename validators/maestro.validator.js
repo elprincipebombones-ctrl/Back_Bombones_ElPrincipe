@@ -232,7 +232,7 @@ exports.crearProveedorValidator = [
     .isLength({ max: 150 }),
 
   body('email')
-    .optional({ nullable: true })
+    .optional({ nullable: true, checkFalsy: true })
     .isEmail()
     .withMessage('El correo electrónico no es válido')
     .normalizeEmail(),
@@ -305,7 +305,7 @@ exports.actualizarProveedorValidator = [
     .isLength({ max: 150 }),
 
   body('email')
-    .optional({ nullable: true })
+    .optional({ nullable: true, checkFalsy: true })
     .isEmail()
     .withMessage('El correo electrónico no es válido')
     .normalizeEmail(),
