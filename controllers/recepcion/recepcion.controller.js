@@ -18,6 +18,7 @@ const {
   MovimientoInventario,
   DetalleMovimiento,
   AccionMejoraRecepcion,
+  DocumentoRecepcion,
 } = require('../../models');
 const { ok, created, fail } = require('../../utils/response');
 const {
@@ -29,6 +30,7 @@ const {
 } = require('../../services/recepcion/recepcion.service');
 
 const includeCompleto = [
+  { model: DocumentoRecepcion, as: 'documentos' },
   { model: Proveedor, as: 'proveedor' },
   { model: Bodega, as: 'bodega' },
   { model: LugarArea, as: 'lugarArea' },

@@ -70,7 +70,7 @@ async function entorno(t) {
   t.mock.method(models.sequelize.connectionManager, 'releaseConnection', async () => {});
   t.after(() => pg.close());
   await pg.exec(`
-    CREATE TABLE usuarios(id uuid PRIMARY KEY,nombre text);
+    CREATE TABLE usuarios(id uuid PRIMARY KEY,nombre text,usuario text,correo text);
     CREATE TABLE roles(id uuid PRIMARY KEY,nombre text);
     CREATE TABLE permissions(id uuid PRIMARY KEY,nombre text UNIQUE,descripcion text,modulo text,estado boolean,"createdAt" timestamptz,"updatedAt" timestamptz);
     CREATE TABLE role_permissions(rol_id uuid,permiso_id uuid,PRIMARY KEY(rol_id,permiso_id));
@@ -82,7 +82,7 @@ async function entorno(t) {
     CREATE TABLE detalle_movimiento(id uuid PRIMARY KEY,movimiento_inventario_id uuid REFERENCES movimientos_inventario(id),producto_id uuid,unidad_medida_id uuid,cantidad numeric(15,3) CHECK(cantidad>0),sentido text,lote text,lote_proveedor text,fecha_vencimiento date,costo_unitario numeric,costo_total numeric,observaciones text,created_at timestamptz,updated_at timestamptz);
     CREATE TABLE configuraciones_stock(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),producto_id uuid,bodega_id uuid,stock_minimo numeric(15,3),punto_reorden numeric(15,3),stock_maximo numeric(15,3),activo boolean DEFAULT true,usuario_id uuid,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now(),UNIQUE(producto_id,bodega_id));
     CREATE TABLE inventario_bloqueos_lote(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),producto_id uuid,bodega_id uuid,unidad_medida_id uuid,lote text,fecha_vencimiento date,estado text,motivo text,origen text,inspeccion_calidad_id uuid,accion_correctiva_id uuid,congelado_por_id uuid,congelado_en timestamptz DEFAULT now(),liberado_por_id uuid,liberado_en timestamptz,nota_liberacion text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
-    INSERT INTO usuarios VALUES('${id(1)}');
+    INSERT INTO usuarios VALUES('${id(1)}','Operador de inventario','operador','operador@example.com');
     INSERT INTO roles VALUES('${id(1)}','Administrador');
     INSERT INTO categorias_productos(id,codigo,nombre,clasificacion_mp) VALUES('${id(2)}','CAT','Categoría','NO_PERECEDERA');
     INSERT INTO unidades_medida(id,codigo,nombre,simbolo) VALUES('${id(3)}','KG','Kilogramos','kg');
@@ -229,6 +229,9 @@ test('conteo histórico: nota obligatoria, ajustes AJN/AJS, inmutabilidad y apli
   await assert.rejects(operaciones.aplicarConteo(op.id, ' ', id(1)), (e) => e.status === 422);
   const aplicado = await operaciones.aplicarConteo(op.id, 'Diferencia verificada en conteo', id(1));
   assert.equal(aplicado.estado, 'APLICADO');
+  assert.equal(aplicado.usuarioAplicacion.usuario, 'operador');
+  assert.equal(aplicado.usuarioAplicacion.nombre, 'Operador de inventario');
+  assert.equal(aplicado.usuarioAplicacion.password, undefined);
   assert.equal(aplicado.documentos.length, 2);
   assert.deepEqual(aplicado.documentos.map((d) => d.tipoDocumento).sort(), ['AJN', 'AJS']);
   assert.ok(
@@ -460,7 +463,10 @@ test('kardex paginado conserva saldo y exporta cantidades como números', async 
   await exportar(res, k, 'xlsx', 'kardex');
   const workbook = new (require('exceljs').Workbook)();
   await workbook.xlsx.load(buffer);
-  assert.equal(workbook.getWorksheet('Informe').getCell('I2').value, 7);
+  const sheet = workbook.getWorksheet('Informe');
+  const saldoColumna = sheet.getRow(1).values.indexOf('Saldo');
+  assert.equal(sheet.getRow(2).getCell(saldoColumna).value, 7);
+  assert.ok(sheet.getRow(1).values.includes('Tipo dcto.'));
   await exportar(res, k, 'pdf', 'kardex');
   assert.equal(buffer.subarray(0, 5).toString(), '%PDF-');
 });
@@ -499,5 +505,73 @@ test('alertas usan el total por producto y bodega, filtran antes de paginar y re
   assert.equal(
     (await consultas.existencias({ productoId: id(4), bodegaId: id(6) })).filas[0].estadoStock,
     'INDETERMINADO',
+  );
+});
+
+test('kardex incluye entradas, salidas, ajustes y traslados, conservando todos sus documentos', async (t) => {
+  const pg = await entorno(t);
+  const casos = [
+    ['SA', 2, null],
+    ['AJN', 3, null],
+    ['AJS', 1, null],
+    ['TRN', 4, null],
+    ['TRS', 2, null],
+    ['AJ', 0.5, 'ENTRADA'],
+    ['AJ', 0.25, 'SALIDA'],
+    ['TR', 0.75, 'ENTRADA'],
+    ['TR', 0.5, 'SALIDA'],
+  ];
+  for (const [i, [tipo, cantidad, sentido]] of casos.entries()) {
+    const n = 60 + i;
+    await pg.query(
+      'INSERT INTO movimientos_inventario(id,tipo_documento,numero_documento,fecha,bodega_id,estado) VALUES($1,$2,$3,$4,$5,$6)',
+      [id(n), tipo, 'PRUEBA-' + n, '2026-01-15T12:00:00Z', id(6), 'APLICADO'],
+    );
+    await pg.query(
+      'INSERT INTO detalle_movimiento(id,movimiento_inventario_id,producto_id,unidad_medida_id,cantidad,sentido) VALUES($1,$2,$3,$4,$5,$6)',
+      [id(160 + i), id(n), id(4), id(3), cantidad, sentido],
+    );
+  }
+  const query = {
+    productoId: id(4),
+    bodegaId: id(6),
+    fechaDesde: '2026-01-01',
+    fechaHasta: '2026-01-31',
+  };
+  const k = await consultas.kardex(query);
+  assert.equal(k.total, 9);
+  assert.deepEqual(
+    k.filas.map((r) => r.tipoDocumento),
+    casos.map(([tipo]) => tipo),
+  );
+  assert.equal(k.saldos[0].saldoInicial, '10.000');
+  assert.equal(k.saldos[0].entradas, '8.250');
+  assert.equal(k.saldos[0].salidas, '5.750');
+  assert.equal(k.saldos[0].saldoFinal, '12.500');
+  assert.equal(k.filas.at(-1).saldo, '12.500');
+  const exportacion = await consultas.kardex({ ...query, limite: 1, pagina: 2 }, true);
+  assert.equal(exportacion.filas.length, 9);
+  const { exportar } = require('../services/inventario/exportar.service');
+  let buffer;
+  await exportar(
+    {
+      type() {},
+      attachment() {},
+      send(value) {
+        buffer = value;
+      },
+    },
+    exportacion,
+    'xlsx',
+    'kardex',
+  );
+  const book = new (require('exceljs').Workbook)();
+  await book.xlsx.load(buffer);
+  const sheet = book.getWorksheet('Informe');
+  const tipoColumna = sheet.getRow(1).values.indexOf('Tipo dcto.');
+  assert.equal(sheet.rowCount, 10);
+  assert.deepEqual(
+    Array.from({ length: 9 }, (_, i) => sheet.getRow(i + 2).getCell(tipoColumna).value),
+    casos.map(([tipo]) => tipo),
   );
 });

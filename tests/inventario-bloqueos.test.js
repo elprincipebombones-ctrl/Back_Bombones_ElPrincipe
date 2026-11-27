@@ -34,7 +34,7 @@ async function entorno(t) {
     CREATE TABLE permissions(id uuid PRIMARY KEY,nombre text UNIQUE,descripcion text,modulo text,estado boolean,"createdAt" timestamptz,"updatedAt" timestamptz);
     CREATE TABLE role_permissions(rol_id uuid,permiso_id uuid,PRIMARY KEY(rol_id,permiso_id));
     CREATE TABLE categorias_productos(id uuid PRIMARY KEY,codigo text,nombre text);
-    CREATE TABLE productos(id uuid PRIMARY KEY,codigo text,nombre text,categoria_producto_id uuid,unidad_medida_id uuid,estado boolean DEFAULT true);
+    CREATE TABLE productos(id uuid PRIMARY KEY,codigo text,nombre text,categoria_producto_id uuid,unidad_medida_id uuid,estado boolean DEFAULT true,tipo_producto text DEFAULT 'MP');
     CREATE TABLE bodegas(id uuid PRIMARY KEY,codigo text,nombre text,tipo text,descripcion text,direccion text,responsable_id uuid,estado boolean DEFAULT true,es_bodega_pt_default boolean DEFAULT false,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
     CREATE TABLE unidades_medida(id uuid PRIMARY KEY,codigo text,nombre text,simbolo text,estado boolean DEFAULT true);
     CREATE TABLE inspecciones(id uuid PRIMARY KEY);

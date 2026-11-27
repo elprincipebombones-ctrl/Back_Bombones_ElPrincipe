@@ -1,14 +1,11 @@
 const { QueryTypes } = require('sequelize');
 const { sequelize, Producto } = require('../../models');
 const { periodo } = require('./informes.service');
+const { tipoProducto } = require('./tipo-producto');
 const direccion = `CASE WHEN m.tipo_documento IN ('EN','AJN','TRN') THEN 1 WHEN m.tipo_documento IN ('SA','AJS','TRS') THEN -1 WHEN d.sentido='ENTRADA' THEN 1 WHEN d.sentido='SALIDA' THEN -1 ELSE 0 END`;
 function filtros(query) {
-  if (query.tipoProducto)
-    throw Object.assign(
-      new Error('Filtro MP/PT pendiente de integrar los cambios del maestro de productos'),
-      { status: 409 },
-    );
   return {
+    tipoProducto: tipoProducto(query.tipoProducto),
     bodegaId: query.bodegaId || null,
     productoId: query.productoId || null,
     categoriaProductoId: query.categoriaProductoId || null,
@@ -36,6 +33,7 @@ async function existencias(query) {
     JOIN unidades_medida u ON u.id=COALESCE(d.unidad_medida_id,p.unidad_medida_id)
     WHERE (:bodegaId::uuid IS NULL OR b.id=:bodegaId::uuid) AND (:productoId::uuid IS NULL OR p.id=:productoId::uuid)
       AND (:categoriaProductoId::uuid IS NULL OR p.categoria_producto_id=:categoriaProductoId::uuid)
+      AND (:tipoProducto::text IS NULL OR p.tipo_producto=:tipoProducto)
       AND (:codigo::text IS NULL OR p.codigo ILIKE :codigo)
     GROUP BY p.id,p.codigo,p.nombre,p.descripcion,p.categoria_producto_id,p.estado,p.unidad_medida_id,b.id,b.nombre,b.estado,d.unidad_medida_id,u.simbolo,COALESCE(d.lote,d.lote_proveedor),d.fecha_vencimiento
   ), disponibilidad AS (
@@ -83,7 +81,7 @@ async function existencias(query) {
     pagina: Number(query.pagina || 1),
     limite: replacements.limit,
     metadata: {
-      filtroTipoProducto: false,
+      filtroTipoProducto: true,
       fechaConsulta: new Date().toISOString(),
       agrupacion: 'producto/bodega/unidad/lote/vencimiento',
       resumenAlertas: r.resumen,

@@ -5,8 +5,9 @@ const columnas = (detalle) =>
     ? [
         ['fecha', 'Fecha'],
         ['numeroDocumento', 'Documento'],
+        ['tipoDocumento', 'Tipo dcto.'],
         ['bodega', 'Bodega'],
-        ['codigo', 'C?digo'],
+        ['codigo', 'Código'],
         ['unidad', 'Unidad'],
         ['lote', 'Lote'],
         ['entradas', 'Entradas'],
@@ -18,9 +19,11 @@ const columnas = (detalle) =>
       ? [
           ['fecha', 'Fecha'],
           ['numeroDocumento', 'Documento'],
+          ['tipoDocumento', 'Tipo dcto.'],
           ['codigo', 'Código'],
           ['nombre', 'Producto'],
           ['bodega', 'Bodega'],
+          ['origen', 'Origen'],
           ['sentido', 'Sentido'],
           ['cantidad', 'Cantidad'],
           ['unidad', 'Unidad'],
@@ -30,6 +33,8 @@ const columnas = (detalle) =>
           ['codigo', 'Código'],
           ['nombre', 'Producto'],
           ['descripcion', 'Descripción'],
+          ['categoria', 'Categoría'],
+          ['tipoProducto', 'Tipo MP/PT'],
           ['clasificacion', 'Clasificación'],
           ['unidad', 'Unidad'],
           ['frecuencia', 'Frecuencia'],
@@ -39,7 +44,6 @@ const columnas = (detalle) =>
           ['movimientoNeto', 'Neto'],
           ['promedioMensual', 'Prom. mes'],
           ['stockSeguridad', 'Stock seguridad'],
-          ['movimientosSinSentido', 'Sin sentido'],
         ];
 async function exportar(res, data, formato, detalle) {
   const cols = columnas(detalle);

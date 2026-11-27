@@ -106,6 +106,7 @@ async function obtener(id, transaction) {
   const op = await models.OperacionInventario.findByPk(id, {
     include: [
       { model: models.Bodega, as: 'bodega' },
+      { model: models.Usuario, as: 'usuarioAplicacion', attributes: ['id', 'usuario', 'nombre', 'correo'] },
       {
         model: models.LineaOperacionInventario,
         as: 'detalles',

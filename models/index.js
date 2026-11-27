@@ -17,6 +17,9 @@ const cargarModelos = (directorio) => {
 };
 
 cargarModelos(__dirname);
+db.Recepcion.hasMany(db.DocumentoRecepcion, { foreignKey: 'recepcionId', as: 'documentos' });
+db.DocumentoRecepcion.belongsTo(db.Recepcion, { foreignKey: 'recepcionId', as: 'recepcion' });
+db.OperacionInventario.belongsTo(db.Usuario, { foreignKey: 'aplicadoPor', as: 'usuarioAplicacion' });
 db.OperacionInventario.hasMany(db.LineaOperacionInventario, {
   foreignKey: 'operacionId',
   as: 'detalles',

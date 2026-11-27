@@ -1,5 +1,6 @@
 const { QueryTypes } = require('sequelize');
 const { sequelize } = require('../../models');
+const { tipoProducto } = require('./tipo-producto');
 const error = (message) => Object.assign(new Error(message), { status: 422 });
 function periodo(desde, hasta) {
   const parse = (value) => {
@@ -25,11 +26,12 @@ const base = `WITH movimientos AS (
   FROM productos p JOIN categorias_productos c ON c.id=p.categoria_producto_id
   WHERE (:productoId::uuid IS NULL OR p.id=:productoId::uuid)
     AND (:categoriaProductoId::uuid IS NULL OR c.id=:categoriaProductoId::uuid)
+    AND (:tipoProducto::text IS NULL OR p.tipo_producto=:tipoProducto)
     AND (:codigo::text IS NULL OR p.codigo ILIKE :codigo)
 ), datos AS (`;
 const enPeriodo = `m.fecha >= (:fechaDesde::date::timestamp AT TIME ZONE 'America/Bogota') AND m.fecha < ((:fechaHasta::date + 1)::timestamp AT TIME ZONE 'America/Bogota')`;
 const columnas = `p.id AS "productoId", p.codigo, p.nombre, p.descripcion, p.categoria,
-  NULL::text AS "tipoProducto", p.clasificacion_mp AS clasificacion`;
+  p.tipo_producto AS "tipoProducto", p.clasificacion_mp AS clasificacion`;
 function metricas(row, meses) {
   for (const key of [
     'entradas',
@@ -42,7 +44,7 @@ function metricas(row, meses) {
     if (row[key] !== undefined) row[key] = Number(row[key]);
   }
   if (row.salidas !== undefined) {
-    row.movimientoNeto = row.entradas - row.salidas;
+    row.movimientoNeto = Number((row.entradas - row.salidas).toFixed(3));
     row.promedioMensual = Number((row.salidas / meses).toFixed(3));
     row.stockSeguridad = Number((row.salidas / meses / 0.5).toFixed(3));
     row.inventarioDisponible = row.movimientosSinSentido ? null : row.saldoConocido;
@@ -50,11 +52,6 @@ function metricas(row, meses) {
   return row;
 }
 async function informe(query, detalle = false, exportar = false) {
-  if (query.tipoProducto)
-    throw Object.assign(
-      new Error('Filtro MP/PT pendiente de integrar el maestro de productos existente'),
-      { status: 409 },
-    );
   const { dias, meses } = periodo(query.fechaDesde, query.fechaHasta);
   const pagina = Number(query.pagina || 1),
     limite = Number(query.limite || 50);
@@ -64,7 +61,7 @@ async function informe(query, detalle = false, exportar = false) {
     bodegaId: query.bodegaId || null,
     productoId: query.productoId || null,
     categoriaProductoId: query.categoriaProductoId || null,
-    tipoProducto: query.tipoProducto || null,
+    tipoProducto: tipoProducto(query.tipoProducto),
     codigo: query.codigo ? `%${query.codigo}%` : null,
     limit: exportar ? 10001 : limite,
     offset: exportar ? 0 : (pagina - 1) * limite,
@@ -77,11 +74,11 @@ async function informe(query, detalle = false, exportar = false) {
     COUNT(m.id) FILTER (WHERE m.direccion IS NULL) AS "movimientosSinSentido"
     FROM productos_filtrados p LEFT JOIN movimientos m ON m.producto_id=p.id AND m.fecha<=CURRENT_TIMESTAMP
     JOIN unidades_medida u ON u.id=COALESCE(m.unidad_medida_id,p.unidad_medida_id)
-    GROUP BY p.id,p.codigo,p.nombre,p.descripcion,p.categoria,p.clasificacion_mp,u.id,u.simbolo`;
+    GROUP BY p.id,p.codigo,p.nombre,p.descripcion,p.categoria,p.clasificacion_mp,p.tipo_producto,u.id,u.simbolo`;
   const filas = `SELECT ${columnas}, m.id AS "detalleId", m.movimiento_inventario_id AS "movimientoInventarioId",
     m.fecha, m.tipo_documento AS "tipoDocumento",m.numero_documento AS "numeroDocumento",
     m.bodega_id AS "bodegaId",b.nombre AS bodega,m.direccion AS sentido,m.cantidad,
-    m.unidad_medida_id AS "unidadMedidaId",u.simbolo AS unidad,m.lote,m.lote_proveedor AS "loteProveedor",
+    m.unidad_medida_id AS "unidadMedidaId",u.simbolo AS unidad,COALESCE(m.lote,m.lote_proveedor) AS lote,m.lote_proveedor AS "loteProveedor",
     m.fecha_vencimiento AS "fechaVencimiento",m.origen,m.origen_id AS "origenId",m.observaciones
     FROM movimientos m JOIN productos_filtrados p ON p.id=m.producto_id
     JOIN bodegas b ON b.id=m.bodega_id JOIN unidades_medida u ON u.id=m.unidad_medida_id WHERE ${enPeriodo}`;

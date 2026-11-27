@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { PGlite } = require('@electric-sql/pglite');
 const { injectReplacements } = require('sequelize/lib/utils/sql');
 const { sequelize, Usuario } = require('../models');
-const { informe, periodo } = require('../services/inventario/informes.service');
+const { informe, periodo, metricas } = require('../services/inventario/informes.service');
 const { loginValidator } = require('../validators/auth.validator');
 const { validationResult } = require('express-validator');
 const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -109,8 +109,8 @@ test('informes sobre PostgreSQL real embebido: saldos, filtros, frecuencia y uni
     INSERT INTO categorias_productos VALUES ('${id(1)}','Insumos','NO_PERECEDERA');
     INSERT INTO unidades_medida VALUES ('${id(2)}','kg'),('${id(3)}','und');
     INSERT INTO bodegas VALUES ('${id(4)}','Principal'),('${id(5)}','Secundaria');
-    INSERT INTO productos VALUES ('${id(6)}','MP01','Cacao','Cacao natural','${id(1)}','${id(2)}','MATERIA_PRIMA'),
-      ('${id(7)}','PT01','Bombón',null,'${id(1)}','${id(3)}','PRODUCTO_TERMINADO');`);
+    INSERT INTO productos VALUES ('${id(6)}','MP01','Cacao','Cacao natural','${id(1)}','${id(2)}','MP'),
+      ('${id(7)}','PT01','Bombón',null,'${id(1)}','${id(3)}','PT');`);
   const movimiento = async (
     n,
     tipo,
@@ -154,18 +154,48 @@ test('informes sobre PostgreSQL real embebido: saldos, filtros, frecuencia y uni
   assert.equal(mp.promedioMensual, 30);
   assert.equal(mp.stockSeguridad, 60);
   assert.equal(result.filas.find((r) => r.codigo === 'PT01').inventarioDisponible, 0);
-  await assert.rejects(
-    informe({ ...filtro, tipoProducto: 'PRODUCTO_TERMINADO' }),
-    (error) => error.status === 409,
-  );
+  const pt = await informe({ ...filtro, tipoProducto: 'PT' });
+  assert.equal(pt.total, 1);
+  assert.equal(pt.filas[0].codigo, 'PT01');
+  assert.equal(pt.filas[0].tipoProducto, 'PT');
+  assert.equal((await informe({ ...filtro, tipoProducto: 'PRODUCTO_TERMINADO' })).total, 1);
+  assert.equal((await informe({ ...filtro, tipoProducto: 'MP' })).filas[0].codigo, 'MP01');
+  assert.equal((await informe({ ...filtro, tipoProducto: 'PT' }, true)).total, 0);
+  assert.equal((await informe({ ...filtro, tipoProducto: 'PT' }, false, true)).total, 1);
   assert.equal((await informe({ ...filtro, codigo: "' OR true --" })).total, 0);
   const todos = await informe({ ...filtro, bodegaId: undefined });
   assert.equal(todos.filas.filter((r) => r.codigo === 'MP01').length, 2);
   const detalle = await informe(filtro, true);
   assert.equal(detalle.total, 3);
   assert.equal((await informe({ ...filtro, pagina: 99 })).total, 2);
+  await movimiento(17, 'AJN', '2026-01-15T12:00:00Z', [2.5]);
+  await movimiento(18, 'AJS', '2026-01-16T12:00:00Z', [0.5]);
+  const ajustado = (await informe(filtro)).filas.find((r) => r.codigo === 'MP01');
+  assert.equal(ajustado.entradas, 17.5);
+  assert.equal(ajustado.salidas, 30.5);
+  assert.equal(ajustado.movimientoNeto, -13);
+  assert.equal(ajustado.frecuencia, 2);
+  assert.equal(ajustado.inventarioDisponible, 82);
+  assert.equal(ajustado.promedioMensual, 30.5);
+  assert.equal(ajustado.stockSeguridad, 61);
   await movimiento(16, 'AJ', '2025-12-10T12:00:00Z', [7]);
   assert.equal((await informe(filtro)).filas[0].inventarioDisponible, null);
+});
+
+test('las métricas conservan decimales, períodos parciales y saldos pendientes', () => {
+  const row = metricas(
+    { entradas: '0.300', salidas: '0.100', saldoConocido: '2.200', movimientosSinSentido: '0' },
+    0.5,
+  );
+  assert.equal(row.movimientoNeto, 0.2);
+  assert.equal(row.promedioMensual, 0.2);
+  assert.equal(row.stockSeguridad, 0.4);
+  assert.equal(row.inventarioDisponible, 2.2);
+  assert.equal(
+    metricas({ entradas: 0, salidas: 0, saldoConocido: 5, movimientosSinSentido: 1 }, 1)
+      .inventarioDisponible,
+    null,
+  );
 });
 test('exportaciones contienen datos y archivos válidos', async () => {
   const { exportar } = require('../services/inventario/exportar.service');
@@ -186,6 +216,15 @@ test('exportaciones contienen datos y archivos válidos', async () => {
   const book = new ExcelJS.Workbook();
   await book.xlsx.load(output);
   assert.equal(book.getWorksheet('Informe').getCell('A2').value, '=1+1');
+  const headers = book.getWorksheet('Informe').getRow(1).values;
+  assert.ok(headers.includes('Tipo MP/PT'));
+  assert.ok(headers.includes('Categoría'));
+  assert.ok(!headers.includes('Sin sentido'));
+  assert.ok(
+    !require('../services/inventario/exportar.service')
+      .columnas(false)
+      .some(([key]) => key === 'movimientosSinSentido'),
+  );
   await exportar(res, data, 'pdf', false);
   assert.equal(output.subarray(0, 5).toString(), '%PDF-');
 });
