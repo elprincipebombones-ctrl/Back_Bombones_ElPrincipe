@@ -16,6 +16,25 @@ const router = Router();
 
 router.use(auth);
 
+const documentos = require('../../controllers/recepcion/documentoRecepcion.controller');
+const { upload } = require('../../services/calidad/almacenamiento-evidencias.service');
+router.post(
+  '/:id/documentos',
+  permiso('Recepcion.Crear'),
+  idRecepcionValidator,
+  validar,
+  upload.single('archivo'),
+  documentos.crear,
+);
+router.get(
+  '/:id/documentos/:documentoId/descarga',
+  permiso('Recepcion.Ver'),
+  idRecepcionValidator,
+  require('express-validator').param('documentoId').isUUID(),
+  validar,
+  documentos.descargar,
+);
+
 router.put(
   '/:id/bodegas',
   permiso('Recepcion.Editar'),

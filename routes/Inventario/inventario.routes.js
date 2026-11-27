@@ -12,6 +12,7 @@ const { ok, fail } = require('../../utils/response');
 const service = require('../../services/inventario/informes.service');
 const validar = require('../../middleware/validar');
 const router = Router();
+const { TIPOS_PRODUCTO } = require('../../services/inventario/tipo-producto');
 router.use(require('../../middleware/auth'), require('../../middleware/permiso')('Inventario.Ver'));
 router.use('/bloqueos', require('./bloqueos.routes'));
 router.use(require('./operaciones.routes'));
@@ -19,7 +20,15 @@ router.get('/catalogos', async (_req, res, next) => {
   try {
     const [productos, bodegas, categorias, unidades] = await Promise.all([
       Producto.findAll({
-        attributes: ['id', 'codigo', 'nombre', 'categoriaProductoId', 'unidadMedidaId', 'estado'],
+        attributes: [
+          'id',
+          'codigo',
+          'nombre',
+          'categoriaProductoId',
+          'unidadMedidaId',
+          'tipoProducto',
+          'estado',
+        ],
         order: [['codigo', 'ASC']],
       }),
       Bodega.findAll({
@@ -40,7 +49,7 @@ router.get('/catalogos', async (_req, res, next) => {
       bodegas,
       categorias,
       unidades,
-      capacidades: { filtroTipoProducto: false },
+      capacidades: { filtroTipoProducto: true },
     });
   } catch (err) {
     return next(err);
@@ -50,7 +59,7 @@ const filtros = [
   query('fechaDesde').isString(),
   query('fechaHasta').isString(),
   ...['bodegaId', 'productoId', 'categoriaProductoId'].map((key) => query(key).optional().isUUID()),
-  query('tipoProducto').optional().isIn(['MATERIA_PRIMA', 'PRODUCTO_TERMINADO']),
+  query('tipoProducto').optional().isIn(TIPOS_PRODUCTO),
   query('codigo').optional().isString().isLength({ max: 50 }),
   query('pagina').optional().isInt({ min: 1, max: 1000000 }),
   query('limite').optional().isInt({ min: 1, max: 200 }),

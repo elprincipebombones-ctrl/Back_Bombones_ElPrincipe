@@ -5,6 +5,7 @@ const permiso = require('../../middleware/permiso');
 const { ok, created } = require('../../utils/response');
 const operaciones = require('../../services/inventario/operaciones.service');
 const consultas = require('../../services/inventario/consultas.service');
+const { TIPOS_PRODUCTO } = require('../../services/inventario/tipo-producto');
 const router = Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
 const id = [param('id').isUUID(), validar];
@@ -46,7 +47,7 @@ router.get(
   query('productoId').optional().isUUID(),
   query('categoriaProductoId').optional().isUUID(),
   query('codigo').optional().isString().isLength({ max: 50 }),
-  query('tipoProducto').optional().isIn(['MATERIA_PRIMA', 'PRODUCTO_TERMINADO']),
+  query('tipoProducto').optional().isIn(TIPOS_PRODUCTO),
   query('estadoStock')
     .optional()
     .isIn(['AGOTADO', 'CRITICO', 'BAJO', 'NORMAL', 'SIN_CONFIGURAR', 'INDETERMINADO']),
